@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Sessions - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="js/page-protection.js"></script>
+    <style>
+        /* ========== MUJI THEME SYSTEM ========== */
+        :root {
+            --header-bg: #FFFFFF;
+            --body-bg: #F9FAFB;
+            --card-bg: #FFFFFF;
+            --text-dark: #111827;
+            --text-muted: #6B7280;
+            --border-color: #E5E7EB;
+            --accent-color: #8B7355;
+            --accent-hover: #6F5C45;
+        }
+
+        [data-theme="elegant"] {
+            --header-bg: #F4F3EE;
+            --body-bg: #F4F3EE;
+            --card-bg: #FDFCFA;
+            --text-dark: #1F2A44;
+            --text-muted: #6B7280;
+            --border-color: #DCC9B6;
+            --accent-color: #8B7355;
+            --accent-hover: #6F5C45;
+        }
+
+        [data-theme="eco"] {
+            --header-bg: #EFEDE0;
+            --body-bg: #EFEDE0;
+            --card-bg: #F9F8F0;
+            --text-dark: #2C3E2F;
+            --text-muted: #5A6C5A;
+            --border-color: #688C59;
+            --accent-color: #4A7C59;
+            --accent-hover: #3A6349;
+        }
+
+        [data-theme="santorini"] {
+            --header-bg: #F1F1F3;
+            --body-bg: #F1F1F3;
+            --card-bg: #FAFAFA;
+            --text-dark: #1A3B6B;
+            --text-muted: #5B6B7C;
+            --border-color: #53A8E2;
+            --accent-color: #2A5A8E;
+            --accent-hover: #1A4A7E;
+        }
+
+        [data-theme="colorful"] {
+            --header-bg: #FBE2B1;
+            --body-bg: #FBE2B1;
+            --card-bg: #FEF5E7;
+            --text-dark: #5C4A1E;
+            --text-muted: #8B7040;
+            --border-color: #B69030;
+            --accent-color: #B69030;
+            --accent-hover: #96701A;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--body-bg);
+            color: var(--text-dark);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.3s ease;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-dark);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn-secondary:hover {
+            background: var(--body-bg);
+        }
+
+        .btn-danger {
+            background: #EF4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            font-size: 13px;
+        }
+
+        .btn-danger:hover {
+            background: #DC2626;
+        }
+
+        /* Theme Dropdown */
+        .theme-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .theme-label {
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: background 0.2s;
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .theme-label:hover {
+            background: var(--body-bg);
+        }
+
+        .theme-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 8px;
+            z-index: 1000;
+            min-width: 160px;
+            margin-top: 4px;
+        }
+
+        .theme-dropdown:hover .theme-menu,
+        .theme-menu:hover {
+            display: block;
+        }
+        
+        .theme-menu.show {
+            display: block;
+        }
+
+        .theme-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 13px;
+            color: var(--text-dark);
+        }
+
+        .theme-option:hover {
+            background: var(--body-bg);
+        }
+
+        .theme-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .status-idle {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .status-inactive {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Stat Card */
+        .stat-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        /* Session Card */
+        .session-card {
+            position: relative;
+            transition: transform 0.2s;
+        }
+
+        .session-card:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Clickable elements */
+        .clickable {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .clickable:hover {
+            color: var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <button onclick="window.location.href='index.html'" class="btn-secondary">
+                        <i class="fas fa-arrow-left mr-2"></i>Back
+                    </button>
+                    <div>
+                        <h1 class="text-2xl font-semibold" style="color: var(--text-dark)">Active Sessions</h1>
+                        <p class="text-sm" style="color: var(--text-muted)">Monitor user activity in real-time</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <!-- Theme Switcher -->
+                    <div class="theme-dropdown">
+                        <div class="theme-label">
+                            <i class="fas fa-palette"></i>
+                            <span>Theme</span>
+                        </div>
+                        <div class="theme-menu">
+                            <div class="theme-option" onclick="switchTheme('default')">
+                                <div class="theme-color" style="background: #F9FAFB;"></div>
+                                <span>Default</span>
+                            </div>
+                            <div class="theme-option" onclick="switchTheme('elegant')">
+                                <div class="theme-color" style="background: #F4F3EE;"></div>
+                                <span>Elegant</span>
+                            </div>
+                            <div class="theme-option" onclick="switchTheme('eco')">
+                                <div class="theme-color" style="background: #EFEDE0;"></div>
+                                <span>Eco</span>
+                            </div>
+                            <div class="theme-option" onclick="switchTheme('santorini')">
+                                <div class="theme-color" style="background: #F1F1F3;"></div>
+                                <span>Santorini</span>
+                            </div>
+                            <div class="theme-option" onclick="switchTheme('colorful')">
+                                <div class="theme-color" style="background: #FBE2B1;"></div>
+                                <span>Colorful</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="window.location.href='admin-permissions.html'" class="btn-secondary">
+                        <i class="fas fa-shield-alt mr-2"></i>Permissions
+                    </button>
+                    <button onclick="refreshSessions()" class="btn-primary">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="card stat-card">
+                <div>
+                    <p class="text-sm" style="color: var(--text-muted)">Active Now</p>
+                    <p class="text-3xl font-bold" style="color: #10B981" id="activeCount">0</p>
+                </div>
+                <div class="stat-icon" style="background: #D1FAE5; color: #10B981;">
+                    <i class="fas fa-circle pulse-dot"></i>
+                </div>
+            </div>
+            <div class="card stat-card">
+                <div>
+                    <p class="text-sm" style="color: var(--text-muted)">Idle (30+ min)</p>
+                    <p class="text-3xl font-bold" style="color: #F59E0B" id="idleCount">0</p>
+                </div>
+                <div class="stat-icon" style="background: #FEF3C7; color: #F59E0B;">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+            <div class="card stat-card">
+                <div>
+                    <p class="text-sm" style="color: var(--text-muted)">Total Sessions</p>
+                    <p class="text-3xl font-bold" style="color: var(--text-dark)" id="totalCount">0</p>
+                </div>
+                <div class="stat-icon" style="background: #E0E7FF; color: #4F46E5;">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+            <div class="card stat-card">
+                <div>
+                    <p class="text-sm" style="color: var(--text-muted)">Expired (24h+)</p>
+                    <p class="text-3xl font-bold" style="color: #EF4444" id="expiredCount">0</p>
+                </div>
+                <div class="stat-icon" style="background: #FEE2E2; color: #EF4444;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sessions Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="sessionsGrid">
+            <!-- Sessions will be loaded here -->
+        </div>
+    </main>
+
+    <script>
+        // ===== GLOBAL STATE =====
+        let allSessions = [];
+        let refreshInterval = null;
+
+        // ===== THEME SYSTEM =====
+        function switchTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('itrusty_theme', theme);
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('itrusty_theme') || 'default';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        // ===== LOAD SESSIONS =====
+        async function loadSessions() {
+            try {
+                // Load from sessionStorage (simulated sessions)
+                const sessions = [];
+                
+                // Check for current user session
+                const currentUser = sessionStorage.getItem('itrusty_user');
+                const currentPerms = sessionStorage.getItem('itrusty_permissions');
+                
+                if (currentUser) {
+                    try {
+                        const userData = JSON.parse(currentUser);
+                        const permsData = currentPerms ? JSON.parse(currentPerms) : {};
+                        
+                        sessions.push({
+                            id: userData.session_id || 'current_session',
+                            user_id: userData.email || userData.username,
+                            user_name: userData.full_name || userData.username,
+                            role: permsData.role || userData.role || 'N/A',
+                            login_time: new Date(userData.login_time).getTime() || Date.now(),
+                            lastActivity: Date.now(), // Current user is always active NOW
+                            ip_address: 'Current Session',
+                            browser: navigator.userAgent.split(' ').pop()
+                        });
+                    } catch (e) {
+                        console.error('Error parsing current session:', e);
+                    }
+                }
+                
+                // Also load from local database if available
+                const response = await fetch('tables/user_sessions?limit=100').catch(() => null);
+                if (response && response.ok) {
+                    const data = await response.json();
+                    const dbSessions = data.data || [];
+                    
+                    dbSessions.forEach(dbSession => {
+                        // Check if not already in sessions array
+                        if (!sessions.find(s => s.user_id === dbSession.user_id)) {
+                            sessions.push(dbSession);
+                        }
+                    });
+                }
+                
+                allSessions = sessions;
+                displaySessions();
+                updateStats();
+                
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+            }
+        }
+
+        // ===== DISPLAY SESSIONS =====
+        function displaySessions() {
+            const grid = document.getElementById('sessionsGrid');
+            
+            if (allSessions.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <i class="fas fa-users-slash text-6xl mb-4" style="color: var(--text-muted); opacity: 0.3;"></i>
+                        <p class="text-lg" style="color: var(--text-muted)">No active sessions</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = allSessions.map(session => {
+                const now = Date.now();
+                const timeSinceLastActivity = now - (session.lastActivity || session.login_time || now);
+                const minutesIdle = Math.floor(timeSinceLastActivity / (1000 * 60));
+                const hoursIdle = Math.floor(minutesIdle / 60);
+                const isActive = minutesIdle < 30;
+                const isIdle = minutesIdle >= 30 && minutesIdle < 1440; // 30 min - 24 hours
+                const isExpired = minutesIdle >= 1440; // 24+ hours
+                
+                let statusClass = 'status-active';
+                let statusText = 'Active';
+                let statusIcon = 'fa-circle pulse-dot';
+                
+                if (isExpired) {
+                    statusClass = 'status-inactive';
+                    statusText = 'Expired';
+                    statusIcon = 'fa-exclamation-triangle';
+                } else if (isIdle) {
+                    statusClass = 'status-idle';
+                    statusText = 'Idle';
+                    statusIcon = 'fa-clock';
+                }
+                
+                const idleTimeText = hoursIdle > 0 
+                    ? `${hoursIdle}h ${minutesIdle % 60}m ago`
+                    : `${minutesIdle}m ago`;
+                
+                return `
+                    <div class="card session-card p-5">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold clickable" style="color: var(--text-dark)" onclick="viewUserDetails('${session.user_id}')">${session.user_name || session.user_id}</h3>
+                                <p class="text-xs" style="color: var(--text-muted)">${session.user_id}</p>
+                            </div>
+                            <span class="status-badge ${statusClass}">
+                                <i class="fas ${statusIcon}"></i>
+                                ${statusText}
+                            </span>
+                        </div>
+                        
+                        <div class="space-y-2 mb-4 text-sm">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-user-tag w-4" style="color: var(--text-muted)"></i>
+                                <span style="color: var(--text-dark)">${session.role || 'N/A'}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-clock w-4" style="color: var(--text-muted)"></i>
+                                <span style="color: var(--text-dark)">Last active: ${idleTimeText}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-sign-in-alt w-4" style="color: var(--text-muted)"></i>
+                                <span style="color: var(--text-dark)">Login: ${new Date(session.login_time || Date.now()).toLocaleString()}</span>
+                            </div>
+                            ${session.ip_address ? `
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-globe w-4" style="color: var(--text-muted)"></i>
+                                <span style="color: var(--text-dark)">${session.ip_address}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button onclick="viewSessionDetails('${session.id}')" class="flex-1 btn-secondary text-sm py-2">
+                                <i class="fas fa-eye mr-1"></i>View Details
+                            </button>
+                            ${isExpired ? `
+                            <button onclick="terminateSession('${session.id}')" class="btn-danger text-sm py-2 px-3" title="Terminate Session">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ===== UPDATE STATS =====
+        function updateStats() {
+            const now = Date.now();
+            
+            const active = allSessions.filter(s => {
+                const timeSinceLastActivity = now - (s.lastActivity || s.login_time || now);
+                const minutesIdle = Math.floor(timeSinceLastActivity / (1000 * 60));
+                return minutesIdle < 30;
+            }).length;
+            
+            const idle = allSessions.filter(s => {
+                const timeSinceLastActivity = now - (s.lastActivity || s.login_time || now);
+                const minutesIdle = Math.floor(timeSinceLastActivity / (1000 * 60));
+                return minutesIdle >= 30 && minutesIdle < 1440;
+            }).length;
+            
+            const expired = allSessions.filter(s => {
+                const timeSinceLastActivity = now - (s.lastActivity || s.login_time || now);
+                const minutesIdle = Math.floor(timeSinceLastActivity / (1000 * 60));
+                return minutesIdle >= 1440;
+            }).length;
+            
+            document.getElementById('activeCount').textContent = active;
+            document.getElementById('idleCount').textContent = idle;
+            document.getElementById('totalCount').textContent = allSessions.length;
+            document.getElementById('expiredCount').textContent = expired;
+        }
+
+        // ===== REFRESH SESSIONS =====
+        function refreshSessions() {
+            loadSessions();
+            console.log('🔄 Sessions refreshed');
+        }
+
+        // ===== VIEW USER DETAILS (INTERCONNECTIVITY) =====
+        function viewUserDetails(userId) {
+            alert(`View details for user: ${userId}\n\nThis will open user permissions page filtered by this user.`);
+            // TODO: Navigate to admin-permissions with user filter
+            // window.location.href = `admin-permissions.html?user=${userId}`;
+        }
+
+        // ===== VIEW SESSION DETAILS =====
+        function viewSessionDetails(sessionId) {
+            const session = allSessions.find(s => s.id === sessionId);
+            if (!session) return;
+            
+            const details = `
+Session ID: ${sessionId}
+User: ${session.user_name || session.user_id}
+Role: ${session.role || 'N/A'}
+Login Time: ${new Date(session.login_time || Date.now()).toLocaleString()}
+Last Activity: ${new Date(session.lastActivity || Date.now()).toLocaleString()}
+IP Address: ${session.ip_address || 'N/A'}
+Browser: ${session.browser || 'N/A'}
+            `.trim();
+            
+            alert(details);
+        }
+
+        // ===== TERMINATE SESSION =====
+        async function terminateSession(sessionId) {
+            if (!confirm('Are you sure you want to terminate this session?')) {
+                return;
+            }
+            
+            try {
+                // Remove from sessionStorage
+                sessionStorage.removeItem(`itrusty_session_${sessionId}`);
+                
+                // Remove from database if exists
+                await fetch(`tables/user_sessions/${sessionId}`, {
+                    method: 'DELETE'
+                }).catch(() => {});
+                
+                alert('Session terminated successfully');
+                loadSessions();
+            } catch (error) {
+                console.error('Error terminating session:', error);
+                alert('Failed to terminate session');
+            }
+        }
+
+        // ===== AUTO REFRESH =====
+        function startAutoRefresh() {
+            // Refresh every 30 seconds
+            refreshInterval = setInterval(() => {
+                loadSessions();
+            }, 30000);
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+
+        // ===== THEME DROPDOWN BEHAVIOR WITH DELAY =====
+        let themeCloseTimeout = null;
+        
+        // ===== INITIALIZE =====
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSessions();
+            startAutoRefresh();
+            
+            // Theme dropdown with delay
+            const themeDropdown = document.querySelector('.theme-dropdown');
+            const themeMenu = document.querySelector('.theme-menu');
+            
+            if (themeDropdown && themeMenu) {
+                themeDropdown.addEventListener('mouseenter', () => {
+                    clearTimeout(themeCloseTimeout);
+                    themeMenu.classList.add('show');
+                });
+                
+                themeDropdown.addEventListener('mouseleave', () => {
+                    themeCloseTimeout = setTimeout(() => {
+                        themeMenu.classList.remove('show');
+                    }, 1500); // 1.5 seconds delay
+                });
+                
+                themeMenu.addEventListener('mouseenter', () => {
+                    clearTimeout(themeCloseTimeout);
+                });
+                
+                themeMenu.addEventListener('mouseleave', () => {
+                    themeCloseTimeout = setTimeout(() => {
+                        themeMenu.classList.remove('show');
+                    }, 1500); // 1.5 seconds delay
+                });
+            }
+        });
+
+        // Stop auto-refresh when page is hidden
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopAutoRefresh();
+            } else {
+                loadSessions();
+                startAutoRefresh();
+            }
+        });
+    </script>
+</body>
+</html>

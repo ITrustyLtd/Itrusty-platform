@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Permissions Management - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="js/page-protection.js"></script>
+    <style>
+        /* ========== MUJI THEME SYSTEM ========== */
+        :root {
+            --header-bg: #FFFFFF;
+            --body-bg: #F9FAFB;
+            --card-bg: #FFFFFF;
+            --text-dark: #111827;
+            --text-muted: #6B7280;
+            --border-color: #E5E7EB;
+            --accent-color: #8B7355;
+            --accent-hover: #6F5C45;
+        }
+
+        [data-theme="elegant"] {
+            --header-bg: #F4F3EE;
+            --body-bg: #F4F3EE;
+            --card-bg: #FDFCFA;
+            --text-dark: #1F2A44;
+            --text-muted: #6B7280;
+            --border-color: #DCC9B6;
+            --accent-color: #8B7355;
+            --accent-hover: #6F5C45;
+        }
+
+        [data-theme="eco"] {
+            --header-bg: #EFEDE0;
+            --body-bg: #EFEDE0;
+            --card-bg: #F9F8F0;
+            --text-dark: #2C3E2F;
+            --text-muted: #5A6C5A;
+            --border-color: #688C59;
+            --accent-color: #4A7C59;
+            --accent-hover: #3A6349;
+        }
+
+        [data-theme="santorini"] {
+            --header-bg: #F1F1F3;
+            --body-bg: #F1F1F3;
+            --card-bg: #FAFAFA;
+            --text-dark: #1A3B6B;
+            --text-muted: #5B6B7C;
+            --border-color: #53A8E2;
+            --accent-color: #2A5A8E;
+            --accent-hover: #1A4A7E;
+        }
+
+        [data-theme="colorful"] {
+            --header-bg: #FBE2B1;
+            --body-bg: #FBE2B1;
+            --card-bg: #FEF5E7;
+            --text-dark: #5C4A1E;
+            --text-muted: #8B7040;
+            --border-color: #B69030;
+            --accent-color: #B69030;
+            --accent-hover: #96701A;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--body-bg);
+            color: var(--text-dark);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.3s ease;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-dark);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn-secondary:hover {
+            background: var(--body-bg);
+        }
+
+        .btn-delete {
+            background: #EF4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            font-size: 13px;
+        }
+
+        .btn-delete:hover {
+            background: #DC2626;
+        }
+
+        /* Theme Dropdown */
+        .theme-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .theme-label {
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: background 0.2s;
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .theme-label:hover {
+            background: var(--body-bg);
+        }
+
+        .theme-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 8px;
+            z-index: 1000;
+            min-width: 160px;
+            margin-top: 4px;
+        }
+
+        .theme-dropdown:hover .theme-menu,
+        .theme-menu:hover {
+            display: block;
+        }
+        
+        .theme-menu.show {
+            display: block;
+        }
+
+        .theme-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 13px;
+            color: var(--text-dark);
+        }
+
+        .theme-option:hover {
+            background: var(--body-bg);
+        }
+
+        .theme-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+        }
+
+        /* Role Badges */
+        .role-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .role-admin {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .role-manager {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+
+        .role-staff {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .role-limited {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        /* Status Toggle */
+        .status-toggle {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            background: #E5E7EB;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .status-toggle.active {
+            background: #10B981;
+        }
+
+        .status-toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .status-toggle.active .status-toggle-slider {
+            transform: translateX(24px);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        /* Editable Field */
+        .editable-field {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .editable-field:hover {
+            background: var(--body-bg);
+        }
+
+        .editable-field.editing {
+            background: #DBEAFE;
+        }
+
+        /* Stats Card */
+        .stat-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        /* User Card */
+        .user-card {
+            position: relative;
+            transition: transform 0.2s;
+        }
+
+        .user-card:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Multiselect */
+        .multiselect-container {
+            position: relative;
+        }
+
+        .multiselect-selected {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            min-height: 40px;
+            cursor: pointer;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .multiselect-tag {
+            background: var(--accent-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .multiselect-tag .remove {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .multiselect-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-top: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .multiselect-dropdown.active {
+            display: block;
+        }
+
+        .multiselect-option {
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .multiselect-option:hover {
+            background: var(--body-bg);
+        }
+
+        .multiselect-option input[type="checkbox"] {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <button onclick="window.location.href='index.html'" class="btn-secondary">
+                        <i class="fas fa-arrow-left mr-2"></i>Back
+                    </button>
+                    <div>
+                        <h1 class="text-2xl font-semibold" style="color: var(--text-dark)">User Permissions</h1>
+                        <p class="text-sm" style="color: var(--text-muted)">Manage access control for all users</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <!-- Theme Switcher -->
+                    <div class="theme-dropdown">
+                        <div class="theme-label">
+                            <i class="fas fa-palette"></i>
+                            <span>Theme</span>
+                        </div>
+                        <div class="theme-menu">
+                            <div class="theme-option" onclick="switchTheme('default')">
+                                <div class="theme-color" style="background: #F9FAFB;"></div>
+                                <span>Default</span>
+                            </div>
+                            <div class="theme-option" onclick="switchTheme('elegant')">
+                                <div class="theme-color" style="background: #F4F3EE;"></div>
+                                <span>Elegant</span>
+                            </div>
+                            <div class="theme-option" onclick="switchTheme('eco')">
+                                <div class="theme-color" style="background: #EFEDE0;"></div>
+                                <span>Eco</span>
+                            </div>
+                            <div class="theme-option" onclick="switchTheme('santorini')">
+                                <div class="theme-color" style="background: #F1F1F3;"></div>
+                                <span>Santorini</span>
+                            </div>
+                            <div class="theme-option" onclick="switchTheme('colorful')">
+                                <div class="theme-color" style="background: #FBE2B1;"></div>
+                                <span>Colorful</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Add New User Button -->
+                    <button onclick="openAddUserModal()" class="btn-primary">
+                        <i class="fas fa-plus mr-2"></i>Add New User
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="card stat-card">
+                <div>
+                    <p class="text-sm" style="color: var(--text-muted)">Total Users</p>
+                    <p class="text-3xl font-bold" style="color: var(--text-dark)" id="totalUsers">0</p>
+                </div>
+                <div class="stat-icon" style="background: #EEF2FF; color: #4F46E5;">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+            <div class="card stat-card">
+                <div>
+                    <p class="text-sm" style="color: var(--text-muted)">Admins</p>
+                    <p class="text-3xl font-bold" style="color: #EF4444" id="totalAdmins">0</p>
+                </div>
+                <div class="stat-icon" style="background: #FEE2E2; color: #EF4444;">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+            </div>
+            <div class="card stat-card">
+                <div>
+                    <p class="text-sm" style="color: var(--text-muted)">Managers</p>
+                    <p class="text-3xl font-bold" style="color: #3B82F6" id="totalManagers">0</p>
+                </div>
+                <div class="stat-icon" style="background: #DBEAFE; color: #3B82F6;">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+            </div>
+            <div class="card stat-card">
+                <div>
+                    <p class="text-sm" style="color: var(--text-muted)">Staff</p>
+                    <p class="text-3xl font-bold" style="color: #10B981" id="totalStaff">0</p>
+                </div>
+                <div class="stat-icon" style="background: #D1FAE5; color: #10B981;">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="usersGrid">
+            <!-- Users will be loaded here -->
+        </div>
+    </main>
+
+    <!-- Add/Edit User Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="p-6 border-b" style="border-color: var(--border-color)">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-semibold" style="color: var(--text-dark)" id="modalTitle">Add New User</h2>
+                    <button onclick="closeUserModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <form id="userForm" class="space-y-5">
+                    <!-- Username -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--text-dark)">Username *</label>
+                        <input type="text" id="userName" required class="w-full px-4 py-2 border rounded-lg" style="border-color: var(--border-color); background: var(--card-bg);" placeholder="e.g., lily, ruby">
+                    </div>
+
+                    <!-- User ID -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--text-dark)">User ID *</label>
+                        <input type="text" id="userId" required class="w-full px-4 py-2 border rounded-lg" style="border-color: var(--border-color); background: var(--card-bg);" placeholder="e.g., lily@itrusty.com">
+                    </div>
+
+                    <!-- Password (only for new users) -->
+                    <div id="passwordSection">
+                        <label class="block text-sm font-medium mb-2" style="color: var(--text-dark)">Password *</label>
+                        <input type="password" id="userPassword" class="w-full px-4 py-2 border rounded-lg" style="border-color: var(--border-color); background: var(--card-bg);" placeholder="Enter password">
+                    </div>
+
+                    <!-- Role Selection -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--text-dark)">Role *</label>
+                        <select id="userRole" required class="w-full px-4 py-2 border rounded-lg" style="border-color: var(--border-color); background: var(--card-bg);">
+                            <option value="admin">Admin</option>
+                            <option value="manager">Manager</option>
+                            <option value="staff">Staff</option>
+                            <option value="limited">Limited</option>
+                        </select>
+                    </div>
+
+                    <!-- Customer Access (Multiselect) -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--text-dark)">Customer Access</label>
+                        <p class="text-xs mb-2" style="color: var(--text-muted)">Leave empty for access to all customers</p>
+                        <div class="multiselect-container">
+                            <div class="multiselect-selected" onclick="toggleCustomerDropdown()">
+                                <div id="selectedCustomers" class="flex flex-wrap gap-2">
+                                    <span class="text-sm" style="color: var(--text-muted)">Select customers...</span>
+                                </div>
+                            </div>
+                            <div id="customerDropdown" class="multiselect-dropdown">
+                                <!-- Customers will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Page Access -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--text-dark)">Page Access</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-gray-50">
+                                <input type="checkbox" class="page-access" value="customers">
+                                <span class="text-sm">Customers</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-gray-50">
+                                <input type="checkbox" class="page-access" value="orders">
+                                <span class="text-sm">Orders</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-gray-50">
+                                <input type="checkbox" class="page-access" value="invoices">
+                                <span class="text-sm">Invoices</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-gray-50">
+                                <input type="checkbox" class="page-access" value="transactions">
+                                <span class="text-sm">Transactions</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-gray-50">
+                                <input type="checkbox" class="page-access" value="finance">
+                                <span class="text-sm">Finance</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-gray-50">
+                                <input type="checkbox" class="page-access" value="analytics">
+                                <span class="text-sm">Analytics</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Permissions Toggles -->
+                    <div class="space-y-3">
+                        <label class="flex items-center justify-between p-3 rounded" style="background: var(--body-bg)">
+                            <span class="text-sm font-medium">View Financials</span>
+                            <input type="checkbox" id="canViewFinancials" class="toggle">
+                        </label>
+                        <label class="flex items-center justify-between p-3 rounded" style="background: var(--body-bg)">
+                            <span class="text-sm font-medium">View Balances</span>
+                            <input type="checkbox" id="canViewBalances" class="toggle">
+                        </label>
+                        <label class="flex items-center justify-between p-3 rounded" style="background: var(--body-bg)">
+                            <span class="text-sm font-medium">Create Payments</span>
+                            <input type="checkbox" id="canCreatePayments" class="toggle">
+                        </label>
+                        <label class="flex items-center justify-between p-3 rounded" style="background: var(--body-bg)">
+                            <span class="text-sm font-medium">Edit Prices</span>
+                            <input type="checkbox" id="canEditPrices" class="toggle">
+                        </label>
+                        <label class="flex items-center justify-between p-3 rounded" style="background: var(--body-bg)">
+                            <span class="text-sm font-medium">Delete Records</span>
+                            <input type="checkbox" id="canDeleteRecords" class="toggle">
+                        </label>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="flex gap-3 pt-4">
+                        <button type="button" onclick="closeUserModal()" class="flex-1 btn-secondary">Cancel</button>
+                        <button type="submit" class="flex-1 btn-primary">
+                            <i class="fas fa-save mr-2"></i>Save User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== GLOBAL STATE =====
+        let allUsers = [];
+        let allCustomers = [];
+        let currentEditingUser = null;
+        let selectedCustomerCodes = [];
+
+        // ===== THEME SYSTEM =====
+        function switchTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('itrusty_theme', theme);
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('itrusty_theme') || 'default';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        // ===== LOAD DATA =====
+        async function loadUsers() {
+            try {
+                const response = await fetch('tables/user_permissions?page=1&limit=100');
+                if (response.ok) {
+                    const data = await response.json();
+                    allUsers = data.data || [];
+                    displayUsers();
+                    updateStats();
+                } else {
+                    console.error('Failed to load users');
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        async function loadCustomers() {
+            try {
+                const response = await fetch('tables/customers?limit=500');
+                if (response.ok) {
+                    const data = await response.json();
+                    allCustomers = data.data || [];
+                    populateCustomerDropdown();
+                }
+            } catch (error) {
+                console.error('Error loading customers:', error);
+            }
+        }
+
+        // ===== DISPLAY USERS =====
+        function displayUsers() {
+            const grid = document.getElementById('usersGrid');
+            
+            if (allUsers.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <i class="fas fa-users text-6xl mb-4" style="color: var(--text-muted); opacity: 0.3;"></i>
+                        <p class="text-lg" style="color: var(--text-muted)">No users found</p>
+                        <button onclick="openAddUserModal()" class="btn-primary mt-4">
+                            <i class="fas fa-plus mr-2"></i>Add First User
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = allUsers.map(user => {
+                const roleClass = `role-${user.role}`;
+                const customerCount = user.customers_access?.length || 0;
+                const pageCount = user.pages_access?.length || 0;
+                const isActive = user.active !== false;
+                
+                return `
+                    <div class="card user-card p-5">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h3 class="text-lg font-semibold editable-field" style="color: var(--text-dark)" onclick="editField('${user.id}', 'user_name', '${user.user_name}')">${user.user_name}</h3>
+                                    <i class="fas fa-edit text-xs" style="color: var(--text-muted); opacity: 0.5;"></i>
+                                </div>
+                                <p class="text-xs editable-field" style="color: var(--text-muted)" onclick="editField('${user.id}', 'user_id', '${user.user_id}')">${user.user_id}</p>
+                            </div>
+                            <div class="status-toggle ${isActive ? 'active' : ''}" onclick="toggleUserStatus('${user.id}')" title="${isActive ? 'Active' : 'Inactive'}">
+                                <div class="status-toggle-slider"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <span class="role-badge ${roleClass}">${user.role}</span>
+                        </div>
+                        
+                        <div class="space-y-2 mb-4 text-sm">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-file-alt w-4" style="color: var(--text-muted)"></i>
+                                <span style="color: var(--text-dark)">${pageCount} pages</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-users w-4" style="color: var(--text-muted)"></i>
+                                <span style="color: var(--text-dark)">${customerCount === 0 ? 'All customers' : customerCount + ' customers'}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-dollar-sign w-4" style="color: ${user.can_view_financials ? '#10B981' : '#EF4444'}"></i>
+                                <span style="color: var(--text-dark)">Financials: ${user.can_view_financials ? 'Yes' : 'No'}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button onclick="editUser('${user.id}')" class="flex-1 btn-secondary text-sm py-2">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </button>
+                            <button onclick="viewUserActivity('${user.id}')" class="btn-secondary text-sm py-2 px-3" title="View Activity">
+                                <i class="fas fa-chart-line"></i>
+                            </button>
+                            <button onclick="deleteUser('${user.id}')" class="btn-delete text-sm py-2 px-3" title="Delete User">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ===== UPDATE STATS =====
+        function updateStats() {
+            const stats = {
+                total: allUsers.length,
+                admin: allUsers.filter(u => u.role === 'admin').length,
+                manager: allUsers.filter(u => u.role === 'manager').length,
+                staff: allUsers.filter(u => (u.role === 'staff' || u.role === 'limited')).length
+            };
+            
+            document.getElementById('totalUsers').textContent = stats.total;
+            document.getElementById('totalAdmins').textContent = stats.admin;
+            document.getElementById('totalManagers').textContent = stats.manager;
+            document.getElementById('totalStaff').textContent = stats.staff;
+        }
+
+        // ===== MODAL FUNCTIONS =====
+        function openAddUserModal() {
+            currentEditingUser = null;
+            selectedCustomerCodes = [];
+            document.getElementById('modalTitle').textContent = 'Add New User';
+            document.getElementById('userForm').reset();
+            document.getElementById('passwordSection').style.display = 'block';
+            document.getElementById('userPassword').required = true;
+            updateSelectedCustomersDisplay();
+            document.getElementById('userModal').classList.add('active');
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').classList.remove('active');
+            currentEditingUser = null;
+            selectedCustomerCodes = [];
+        }
+
+        function editUser(userId) {
+            currentEditingUser = allUsers.find(u => u.id === userId);
+            if (!currentEditingUser) return;
+            
+            document.getElementById('modalTitle').textContent = 'Edit User';
+            document.getElementById('userName').value = currentEditingUser.user_name;
+            document.getElementById('userId').value = currentEditingUser.user_id;
+            document.getElementById('userRole').value = currentEditingUser.role;
+            
+            // Hide password field when editing
+            document.getElementById('passwordSection').style.display = 'none';
+            document.getElementById('userPassword').required = false;
+            
+            // Load customer access
+            selectedCustomerCodes = currentEditingUser.customers_access || [];
+            updateSelectedCustomersDisplay();
+            
+            // Load page access
+            const pagesAccess = currentEditingUser.pages_access || [];
+            document.querySelectorAll('.page-access').forEach(checkbox => {
+                checkbox.checked = pagesAccess.includes(checkbox.value);
+            });
+            
+            // Load permissions
+            document.getElementById('canViewFinancials').checked = currentEditingUser.can_view_financials || false;
+            document.getElementById('canViewBalances').checked = currentEditingUser.can_view_balances || false;
+            document.getElementById('canCreatePayments').checked = currentEditingUser.can_create_payments || false;
+            document.getElementById('canEditPrices').checked = currentEditingUser.can_edit_prices || false;
+            document.getElementById('canDeleteRecords').checked = currentEditingUser.can_delete_records || false;
+            
+            document.getElementById('userModal').classList.add('active');
+        }
+
+        // ===== CUSTOMER MULTISELECT =====
+        function populateCustomerDropdown() {
+            const dropdown = document.getElementById('customerDropdown');
+            dropdown.innerHTML = allCustomers.map(customer => `
+                <div class="multiselect-option" onclick="toggleCustomer('${customer.customer_code}')">
+                    <input type="checkbox" ${selectedCustomerCodes.includes(customer.customer_code) ? 'checked' : ''} onchange="toggleCustomer('${customer.customer_code}')">
+                    <span>${customer.customer_code} - ${customer.customer_name || customer.company_name || ''}</span>
+                </div>
+            `).join('');
+        }
+
+        function toggleCustomerDropdown() {
+            const dropdown = document.getElementById('customerDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        function toggleCustomer(customerCode) {
+            const index = selectedCustomerCodes.indexOf(customerCode);
+            if (index > -1) {
+                selectedCustomerCodes.splice(index, 1);
+            } else {
+                selectedCustomerCodes.push(customerCode);
+            }
+            updateSelectedCustomersDisplay();
+            populateCustomerDropdown();
+        }
+
+        function updateSelectedCustomersDisplay() {
+            const container = document.getElementById('selectedCustomers');
+            if (selectedCustomerCodes.length === 0) {
+                container.innerHTML = '<span class="text-sm" style="color: var(--text-muted)">All customers</span>';
+            } else {
+                container.innerHTML = selectedCustomerCodes.map(code => `
+                    <div class="multiselect-tag">
+                        <span>${code}</span>
+                        <span class="remove" onclick="event.stopPropagation(); toggleCustomer('${code}')">×</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // ===== FORM SUBMIT =====
+        document.getElementById('userForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const userName = document.getElementById('userName').value;
+            const userId = document.getElementById('userId').value;
+            const userPassword = document.getElementById('userPassword').value;
+            const userRole = document.getElementById('userRole').value;
+            
+            const pagesAccess = Array.from(document.querySelectorAll('.page-access:checked')).map(cb => cb.value);
+            
+            const userData = {
+                user_name: userName,
+                user_id: userId,
+                role: userRole,
+                customers_access: selectedCustomerCodes,
+                pages_access: pagesAccess,
+                can_view_financials: document.getElementById('canViewFinancials').checked,
+                can_view_balances: document.getElementById('canViewBalances').checked,
+                can_create_payments: document.getElementById('canCreatePayments').checked,
+                can_edit_prices: document.getElementById('canEditPrices').checked,
+                can_delete_records: document.getElementById('canDeleteRecords').checked,
+                active: true,
+                created_at: Date.now(),
+                updated_at: Date.now()
+            };
+            
+            try {
+                let response;
+                if (currentEditingUser) {
+                    // Update existing user
+                    response = await fetch(`tables/user_permissions/${currentEditingUser.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(userData)
+                    });
+                } else {
+                    // Create new user
+                    if (!userPassword) {
+                        alert('Password is required for new users');
+                        return;
+                    }
+                    userData.password = userPassword;
+                    response = await fetch('tables/user_permissions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(userData)
+                    });
+                }
+                
+                if (response.ok) {
+                    alert(currentEditingUser ? 'User updated successfully!' : 'User created successfully!');
+                    closeUserModal();
+                    loadUsers();
+                } else {
+                    alert('Failed to save user');
+                }
+            } catch (error) {
+                console.error('Error saving user:', error);
+                alert('Error saving user');
+            }
+        });
+
+        // ===== TOGGLE USER STATUS =====
+        async function toggleUserStatus(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+            
+            const newStatus = !user.active;
+            
+            try {
+                const response = await fetch(`tables/user_permissions/${userId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ active: newStatus })
+                });
+                
+                if (response.ok) {
+                    user.active = newStatus;
+                    displayUsers();
+                    console.log(`User ${user.user_name} ${newStatus ? 'activated' : 'deactivated'}`);
+                } else {
+                    alert('Failed to update user status');
+                }
+            } catch (error) {
+                console.error('Error updating user status:', error);
+            }
+        }
+
+        // ===== DELETE USER =====
+        async function deleteUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+            
+            if (!confirm(`Are you sure you want to delete user "${user.user_name}"?\n\nThis action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`tables/user_permissions/${userId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok || response.status === 204) {
+                    alert('User deleted successfully!');
+                    loadUsers();
+                } else {
+                    alert('Failed to delete user');
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('Error deleting user');
+            }
+        }
+
+        // ===== INLINE EDITING =====
+        function editField(userId, fieldName, currentValue) {
+            const newValue = prompt(`Edit ${fieldName}:`, currentValue);
+            if (newValue && newValue !== currentValue) {
+                updateUserField(userId, fieldName, newValue);
+            }
+        }
+
+        async function updateUserField(userId, fieldName, newValue) {
+            try {
+                const response = await fetch(`tables/user_permissions/${userId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ [fieldName]: newValue })
+                });
+                
+                if (response.ok) {
+                    const user = allUsers.find(u => u.id === userId);
+                    if (user) {
+                        user[fieldName] = newValue;
+                        displayUsers();
+                    }
+                    console.log(`Updated ${fieldName} for user ${userId}`);
+                } else {
+                    alert('Failed to update field');
+                }
+            } catch (error) {
+                console.error('Error updating field:', error);
+            }
+        }
+
+        // ===== VIEW USER ACTIVITY (INTERCONNECTIVITY) =====
+        function viewUserActivity(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+            
+            // Show confirmation with user info
+            const customerList = user.customers_access?.join(', ') || 'All';
+            const pagesList = user.pages_access?.join(', ') || 'All Pages';
+            
+            const confirmed = confirm(
+                `View Activity for: ${user.user_name}\n\n` +
+                `Customer Access: ${customerList}\n` +
+                `Pages: ${pagesList}\n\n` +
+                `This will open analytics filtered by this user's activity.\n\n` +
+                `Click OK to continue.`
+            );
+            
+            if (confirmed) {
+                // Open analytics dashboard in new window with user filter
+                window.open(`analytics-dashboard.html?user=${userId}&username=${encodeURIComponent(user.user_name)}`, '_blank');
+            }
+        }
+
+        // ===== THEME DROPDOWN BEHAVIOR WITH DELAY =====
+        let themeCloseTimeout = null;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeDropdown = document.querySelector('.theme-dropdown');
+            const themeMenu = document.querySelector('.theme-menu');
+            
+            if (themeDropdown && themeMenu) {
+                themeDropdown.addEventListener('mouseenter', () => {
+                    clearTimeout(themeCloseTimeout);
+                    themeMenu.classList.add('show');
+                });
+                
+                themeDropdown.addEventListener('mouseleave', () => {
+                    themeCloseTimeout = setTimeout(() => {
+                        themeMenu.classList.remove('show');
+                    }, 1500); // 1.5 seconds delay
+                });
+                
+                themeMenu.addEventListener('mouseenter', () => {
+                    clearTimeout(themeCloseTimeout);
+                });
+                
+                themeMenu.addEventListener('mouseleave', () => {
+                    themeCloseTimeout = setTimeout(() => {
+                        themeMenu.classList.remove('show');
+                    }, 1500); // 1.5 seconds delay
+                });
+            }
+        });
+        
+        // ===== CLOSE DROPDOWN ON OUTSIDE CLICK =====
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.multiselect-container')) {
+                document.getElementById('customerDropdown').classList.remove('active');
+            }
+        });
+
+        // ===== INITIALIZE =====
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUsers();
+            loadCustomers();
+        });
+    </script>
+</body>
+</html>

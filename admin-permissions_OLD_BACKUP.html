@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - User Permissions | I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .permission-card {
+            transition: all 0.3s ease;
+        }
+        
+        .permission-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: #e5e7eb;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: #10b981;
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: white;
+            top: 3px;
+            left: 3px;
+            transition: 0.3s;
+        }
+        
+        .toggle-switch.active::after {
+            left: 29px;
+        }
+        
+        .page-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 2px;
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+        
+        .customer-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 2px;
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .role-admin { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .role-manager { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        .role-staff { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .role-limited { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    </style>
+</head>
+<body class="p-6">
+    <!-- Header -->
+    <div class="max-w-7xl mx-auto mb-6">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                        <i class="fas fa-shield-alt text-purple-600"></i>
+                        User Permissions Management
+                    </h1>
+                    <p class="text-gray-600 mt-2">Control access levels for all staff members</p>
+                </div>
+                <button onclick="window.location.href='index.html'" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                    <i class="fas fa-home mr-2"></i>Back to Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="max-w-7xl mx-auto mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-lg shadow-md p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Total Users</p>
+                    <p class="text-2xl font-bold text-gray-900" id="totalUsers">0</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-purple-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Admins</p>
+                    <p class="text-2xl font-bold text-red-600" id="totalAdmins">0</p>
+                </div>
+                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-user-shield text-red-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Managers</p>
+                    <p class="text-2xl font-bold text-blue-600" id="totalManagers">0</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-user-tie text-blue-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Staff</p>
+                    <p class="text-2xl font-bold text-green-600" id="totalStaff">0</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-green-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Grid -->
+    <div class="max-w-7xl mx-auto">
+        <div id="usersGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- User cards will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Edit Permission Modal -->
+    <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-gray-900" id="modalTitle">Edit Permissions</h2>
+                    <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <input type="hidden" id="editUserId">
+                
+                <!-- Role Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">Role</label>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <button onclick="selectRole('admin')" id="roleAdmin" class="role-btn p-4 rounded-lg text-white font-semibold transition hover:opacity-90">
+                            <i class="fas fa-user-shield block text-2xl mb-2"></i>
+                            Admin
+                        </button>
+                        <button onclick="selectRole('manager')" id="roleManager" class="role-btn p-4 rounded-lg text-white font-semibold transition hover:opacity-90">
+                            <i class="fas fa-user-tie block text-2xl mb-2"></i>
+                            Manager
+                        </button>
+                        <button onclick="selectRole('staff')" id="roleStaff" class="role-btn p-4 rounded-lg text-white font-semibold transition hover:opacity-90">
+                            <i class="fas fa-user block text-2xl mb-2"></i>
+                            Staff
+                        </button>
+                        <button onclick="selectRole('limited')" id="roleLimited" class="role-btn p-4 rounded-lg text-white font-semibold transition hover:opacity-90">
+                            <i class="fas fa-user-lock block text-2xl mb-2"></i>
+                            Limited
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Page Access -->
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">
+                        <i class="fas fa-file-alt text-purple-600 mr-2"></i>Page Access
+                    </label>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3" id="pageAccessGrid">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Financial Permissions -->
+                <div class="mb-6 border-t pt-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">
+                        <i class="fas fa-dollar-sign text-green-600 mr-2"></i>Financial Permissions
+                    </label>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">View Financial Pages</span>
+                            <div class="toggle-switch" id="toggleFinancials" onclick="togglePermission('can_view_financials')"></div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">View Account Balances</span>
+                            <div class="toggle-switch" id="toggleBalances" onclick="togglePermission('can_view_balances')"></div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">Create Payments</span>
+                            <div class="toggle-switch" id="togglePayments" onclick="togglePermission('can_create_payments')"></div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">Edit Prices & Markups</span>
+                            <div class="toggle-switch" id="togglePrices" onclick="togglePermission('can_edit_prices')"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other Permissions -->
+                <div class="mb-6 border-t pt-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">
+                        <i class="fas fa-cogs text-blue-600 mr-2"></i>Other Permissions
+                    </label>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">View Analytics Dashboard</span>
+                            <div class="toggle-switch" id="toggleAnalytics" onclick="togglePermission('can_view_analytics')"></div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">Delete Records</span>
+                            <div class="toggle-switch" id="toggleDelete" onclick="togglePermission('can_delete_records')"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Password Management -->
+                <div class="mb-6 border-t pt-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">
+                        <i class="fas fa-key text-red-600 mr-2"></i>Password Management
+                    </label>
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div class="flex items-start gap-3 mb-3">
+                            <i class="fas fa-exclamation-triangle text-yellow-600 mt-1"></i>
+                            <div>
+                                <p class="text-sm font-semibold text-yellow-800">Admin Access Only</p>
+                                <p class="text-xs text-yellow-700 mt-1">Current password is displayed for demo accounts. You can reset it to a new value.</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Current Password</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="currentPassword" readonly 
+                                           class="flex-1 px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm font-mono">
+                                    <button onclick="togglePasswordVisibility()" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm">
+                                        <i class="fas fa-eye" id="passwordIcon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Reset Password (Optional)</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="newPassword" placeholder="Enter new password..." 
+                                           class="flex-1 px-3 py-2 border border-gray-300 rounded text-sm">
+                                    <button onclick="resetPassword()" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm">
+                                        <i class="fas fa-sync mr-1"></i>Reset
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Leave empty to keep current password</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Access -->
+                <div class="mb-6 border-t pt-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">
+                        <i class="fas fa-users text-orange-600 mr-2"></i>Customer Access
+                    </label>
+                    <p class="text-xs text-gray-500 mb-3">Leave empty for full access, or select specific customers</p>
+                    <div id="customerAccessGrid" class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="flex gap-3 justify-end pt-6 border-t">
+                    <button onclick="closeEditModal()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button onclick="savePermissions()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                        <i class="fas fa-save mr-2"></i>Save Permissions
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let allUsers = [];
+        let currentEditingUser = null;
+        let currentPermissions = {};
+        
+        const availablePages = [
+            { id: 'tasks', name: 'Tasks', icon: 'fa-tasks' },
+            { id: 'projects', name: 'Projects', icon: 'fa-project-diagram' },
+            { id: 'orders', name: 'Orders', icon: 'fa-shopping-cart' },
+            { id: 'invoices', name: 'Invoices', icon: 'fa-file-invoice' },
+            { id: 'products', name: 'Products', icon: 'fa-box' },
+            { id: 'customers', name: 'Customers', icon: 'fa-users' },
+            { id: 'daily-activities', name: 'Daily Activities', icon: 'fa-calendar-day' },
+            { id: 'finance', name: 'Finance', icon: 'fa-dollar-sign' },
+            { id: 'analytics', name: 'Analytics', icon: 'fa-chart-line' }
+        ];
+
+        // Load users on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUsers();
+        });
+
+        // Load all users with permissions
+        async function loadUsers() {
+            try {
+                const response = await fetch('tables/user_permissions?page=1&limit=100');
+                if (response.ok) {
+                    const data = await response.json();
+                    allUsers = data.data || [];
+                    displayUsers();
+                    updateStats();
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                alert('Failed to load users');
+            }
+        }
+
+        // Display users in grid
+        function displayUsers() {
+            const grid = document.getElementById('usersGrid');
+            
+            grid.innerHTML = allUsers.map(user => {
+                const roleClass = `role-${user.role}`;
+                const customerCount = user.customers_access.length;
+                const pageCount = user.pages_access.includes('all') ? 'All' : user.pages_access.length;
+                
+                return `
+                    <div class="permission-card bg-white rounded-lg shadow-md p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">${user.user_name}</h3>
+                                <p class="text-sm text-gray-500">${user.user_id}</p>
+                            </div>
+                            <span class="${roleClass} text-white px-3 py-1 rounded-full text-xs font-semibold uppercase">
+                                ${user.role}
+                            </span>
+                        </div>
+                        
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-file-alt text-purple-600 w-5"></i>
+                                <span class="text-gray-700">${pageCount} pages</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-users text-orange-600 w-5"></i>
+                                <span class="text-gray-700">${customerCount === 0 ? 'All customers' : customerCount + ' customers'}</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-dollar-sign ${user.can_view_financials ? 'text-green-600' : 'text-red-600'} w-5"></i>
+                                <span class="text-gray-700">Financials: ${user.can_view_financials ? 'Yes' : 'No'}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button onclick="editUser('${user.id}')" class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                                <i class="fas fa-edit mr-2"></i>Edit
+                            </button>
+                            <button onclick="viewDetails('${user.id}')" class="px-4 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update statistics
+        function updateStats() {
+            const stats = {
+                total: allUsers.length,
+                admin: allUsers.filter(u => u.role === 'admin').length,
+                manager: allUsers.filter(u => u.role === 'manager').length,
+                staff: allUsers.filter(u => u.role === 'staff' || u.role === 'limited').length
+            };
+            
+            document.getElementById('totalUsers').textContent = stats.total;
+            document.getElementById('totalAdmins').textContent = stats.admin;
+            document.getElementById('totalManagers').textContent = stats.manager;
+            document.getElementById('totalStaff').textContent = stats.staff;
+        }
+
+        // Edit user permissions
+        function editUser(userId) {
+            currentEditingUser = allUsers.find(u => u.id === userId);
+            if (!currentEditingUser) return;
+            
+            currentPermissions = { ...currentEditingUser };
+            
+            document.getElementById('editUserId').value = userId;
+            document.getElementById('modalTitle').textContent = `Edit Permissions: ${currentEditingUser.user_name}`;
+            
+            // Set role
+            selectRole(currentEditingUser.role);
+            
+            // Populate page access checkboxes
+            populatePageAccess();
+            
+            // Set financial permissions toggles
+            updateToggleState('toggleFinancials', currentEditingUser.can_view_financials);
+            updateToggleState('toggleBalances', currentEditingUser.can_view_balances);
+            updateToggleState('togglePayments', currentEditingUser.can_create_payments);
+            updateToggleState('togglePrices', currentEditingUser.can_edit_prices);
+            updateToggleState('toggleAnalytics', currentEditingUser.can_view_analytics);
+            updateToggleState('toggleDelete', currentEditingUser.can_delete_records);
+            
+            // Populate customer access
+            populateCustomerAccess();
+            
+            // Load user password
+            loadUserPassword(userId);
+            
+            // Clear new password field
+            document.getElementById('newPassword').value = '';
+            
+            // Show modal
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        // Populate page access grid
+        function populatePageAccess() {
+            const grid = document.getElementById('pageAccessGrid');
+            const userPages = currentPermissions.pages_access || [];
+            const hasAllAccess = userPages.includes('all');
+            
+            grid.innerHTML = availablePages.map(page => {
+                const isChecked = hasAllAccess || userPages.includes(page.id);
+                return `
+                    <label class="flex items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
+                        <input type="checkbox" 
+                               ${isChecked ? 'checked' : ''} 
+                               ${hasAllAccess ? 'disabled' : ''}
+                               onchange="togglePage('${page.id}')" 
+                               class="mr-3">
+                        <i class="fas ${page.icon} text-purple-600 mr-2"></i>
+                        <span class="text-sm font-medium">${page.name}</span>
+                    </label>
+                `;
+            }).join('');
+        }
+
+        // Populate customer access
+        async function populateCustomerAccess() {
+            try {
+                // Fetch customers
+                const response = await fetch('tables/customers?page=1&limit=100');
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                const customers = data.data || [];
+                const userCustomers = currentPermissions.customers_access || [];
+                
+                const grid = document.getElementById('customerAccessGrid');
+                grid.innerHTML = customers.map(customer => {
+                    const isChecked = userCustomers.includes(customer.customer_code);
+                    return `
+                        <label class="flex items-center p-2 bg-gray-50 rounded cursor-pointer hover:bg-gray-100 transition text-xs">
+                            <input type="checkbox" 
+                                   ${isChecked ? 'checked' : ''} 
+                                   onchange="toggleCustomer('${customer.customer_code}')" 
+                                   class="mr-2">
+                            <span class="font-medium">${customer.customer_code}</span>
+                        </label>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading customers:', error);
+            }
+        }
+
+        // Select role
+        function selectRole(role) {
+            document.querySelectorAll('.role-btn').forEach(btn => {
+                btn.classList.remove('ring-4', 'ring-white');
+            });
+            
+            const btn = document.getElementById('role' + role.charAt(0).toUpperCase() + role.slice(1));
+            if (btn) {
+                btn.classList.add('ring-4', 'ring-white');
+            }
+            
+            currentPermissions.role = role;
+        }
+
+        // Toggle page access
+        function togglePage(pageId) {
+            if (!currentPermissions.pages_access) {
+                currentPermissions.pages_access = [];
+            }
+            
+            const index = currentPermissions.pages_access.indexOf(pageId);
+            if (index > -1) {
+                currentPermissions.pages_access.splice(index, 1);
+            } else {
+                currentPermissions.pages_access.push(pageId);
+            }
+        }
+
+        // Toggle customer access
+        function toggleCustomer(customerCode) {
+            if (!currentPermissions.customers_access) {
+                currentPermissions.customers_access = [];
+            }
+            
+            const index = currentPermissions.customers_access.indexOf(customerCode);
+            if (index > -1) {
+                currentPermissions.customers_access.splice(index, 1);
+            } else {
+                currentPermissions.customers_access.push(customerCode);
+            }
+        }
+
+        // Toggle permission
+        function togglePermission(permissionKey) {
+            const toggle = document.getElementById('toggle' + permissionKey.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(''));
+            const isActive = toggle.classList.contains('active');
+            
+            if (isActive) {
+                toggle.classList.remove('active');
+                currentPermissions[permissionKey] = false;
+            } else {
+                toggle.classList.add('active');
+                currentPermissions[permissionKey] = true;
+            }
+        }
+
+        // Update toggle state
+        function updateToggleState(toggleId, isActive) {
+            const toggle = document.getElementById(toggleId);
+            if (isActive) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+        }
+
+        // Save permissions
+        async function savePermissions() {
+            const userId = document.getElementById('editUserId').value;
+            
+            try {
+                const response = await fetch(`tables/user_permissions/${userId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        role: currentPermissions.role,
+                        pages_access: currentPermissions.pages_access,
+                        customers_access: currentPermissions.customers_access,
+                        can_view_financials: currentPermissions.can_view_financials,
+                        can_view_balances: currentPermissions.can_view_balances,
+                        can_create_payments: currentPermissions.can_create_payments,
+                        can_edit_prices: currentPermissions.can_edit_prices,
+                        can_view_analytics: currentPermissions.can_view_analytics,
+                        can_delete_records: currentPermissions.can_delete_records,
+                        updated_at: new Date().toISOString()
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('✅ Permissions updated successfully!');
+                    closeEditModal();
+                    loadUsers();
+                } else {
+                    alert('❌ Failed to update permissions');
+                }
+            } catch (error) {
+                console.error('Error saving permissions:', error);
+                alert('❌ Error saving permissions');
+            }
+        }
+
+        // Load user password (from users table)
+        async function loadUserPassword(userId) {
+            try {
+                // Get user_id from user_permissions to find user in users table
+                const permResponse = await fetch(`tables/user_permissions/${userId}`);
+                if (!permResponse.ok) return;
+                
+                const perm = await permResponse.json();
+                const userIdField = perm.user_id;
+                
+                // Find user by searching users table
+                const usersResponse = await fetch(`tables/users?page=1&limit=100`);
+                if (!usersResponse.ok) return;
+                
+                const usersData = await usersResponse.json();
+                const user = usersData.data.find(u => u.id === userIdField || u.username === userIdField);
+                
+                if (user) {
+                    document.getElementById('currentPassword').value = user.password_hash || '***';
+                } else {
+                    document.getElementById('currentPassword').value = 'User not found in users table';
+                }
+            } catch (error) {
+                console.error('Error loading password:', error);
+                document.getElementById('currentPassword').value = 'Error loading';
+            }
+        }
+        
+        // Toggle password visibility
+        let passwordVisible = false;
+        function togglePasswordVisibility() {
+            const passwordField = document.getElementById('currentPassword');
+            const icon = document.getElementById('passwordIcon');
+            
+            if (passwordVisible) {
+                passwordField.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+                passwordVisible = false;
+            } else {
+                passwordField.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+                passwordVisible = true;
+            }
+        }
+        
+        // Reset password
+        async function resetPassword() {
+            const newPassword = document.getElementById('newPassword').value.trim();
+            
+            if (!newPassword) {
+                alert('⚠️ Please enter a new password');
+                return;
+            }
+            
+            if (newPassword.length < 4) {
+                alert('⚠️ Password must be at least 4 characters');
+                return;
+            }
+            
+            if (!confirm(`🔐 Are you sure you want to reset the password to: "${newPassword}"?`)) {
+                return;
+            }
+            
+            try {
+                // Get user_id from current editing user
+                const permResponse = await fetch(`tables/user_permissions/${currentEditingUser.id}`);
+                if (!permResponse.ok) {
+                    alert('❌ Failed to find user');
+                    return;
+                }
+                
+                const perm = await permResponse.json();
+                const userIdField = perm.user_id;
+                
+                // Find user in users table
+                const usersResponse = await fetch(`tables/users?page=1&limit=100`);
+                if (!usersResponse.ok) {
+                    alert('❌ Failed to load users');
+                    return;
+                }
+                
+                const usersData = await usersResponse.json();
+                const user = usersData.data.find(u => u.id === userIdField || u.username === userIdField);
+                
+                if (!user) {
+                    alert('❌ User not found in users table');
+                    return;
+                }
+                
+                // Update password
+                const updateResponse = await fetch(`tables/users/${user.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        password_hash: newPassword
+                    })
+                });
+                
+                if (updateResponse.ok) {
+                    alert('✅ Password reset successfully!');
+                    document.getElementById('currentPassword').value = newPassword;
+                    document.getElementById('newPassword').value = '';
+                } else {
+                    alert('❌ Failed to reset password');
+                }
+            } catch (error) {
+                console.error('Error resetting password:', error);
+                alert('❌ Error resetting password');
+            }
+        }
+        
+        // View user details
+        function viewDetails(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+            
+            const details = `
+User: ${user.user_name}
+Role: ${user.role}
+Pages: ${user.pages_access.includes('all') ? 'All' : user.pages_access.join(', ')}
+Customers: ${user.customers_access.length === 0 ? 'All' : user.customers_access.join(', ')}
+View Financials: ${user.can_view_financials ? 'Yes' : 'No'}
+View Balances: ${user.can_view_balances ? 'Yes' : 'No'}
+Create Payments: ${user.can_create_payments ? 'Yes' : 'No'}
+Edit Prices: ${user.can_edit_prices ? 'Yes' : 'No'}
+View Analytics: ${user.can_view_analytics ? 'Yes' : 'No'}
+Delete Records: ${user.can_delete_records ? 'Yes' : 'No'}
+            `;
+            
+            alert(details);
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+            currentEditingUser = null;
+            currentPermissions = {};
+        }
+    </script>
+</body>
+</html>
