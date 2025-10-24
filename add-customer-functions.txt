@@ -1,0 +1,56 @@
+
+        // ===== ADD CUSTOMER MODAL =====
+        function openAddCustomerModal() {
+            document.getElementById('addCustomerModal').classList.remove('hidden');
+            document.getElementById('addCustomerForm').reset();
+        }
+
+        function closeAddCustomerModal() {
+            document.getElementById('addCustomerModal').classList.add('hidden');
+        }
+
+        async function saveNewCustomer(event) {
+            event.preventDefault();
+            
+            const newCustomer = {
+                customer_code: document.getElementById('newCustomerCode').value.trim(),
+                customer_name: document.getElementById('newCustomerName').value.trim(),
+                contact_person: document.getElementById('newContactPerson').value.trim(),
+                email: document.getElementById('newEmail').value.trim(),
+                phone: document.getElementById('newPhone').value.trim(),
+                country: document.getElementById('newCountry').value.trim(),
+                city: document.getElementById('newCity').value.trim(),
+                tax_id: document.getElementById('newTaxId').value.trim(),
+                address: document.getElementById('newAddress').value.trim(),
+                notes: document.getElementById('newNotes').value.trim(),
+                status: 'active'
+            };
+
+            try {
+                console.log('💾 Creating new customer:', newCustomer);
+
+                const response = await fetch('tables/customers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newCustomer)
+                });
+
+                if (response.ok) {
+                    const created = await response.json();
+                    console.log('✅ Customer created:', created);
+                    
+                    alert('✅ Customer added successfully to Supabase!');
+                    closeAddCustomerModal();
+                    
+                    // Reload customers
+                    await loadCustomersFromGoogleSheets();
+                    renderCustomers();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Failed to add customer: ' + (error.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('❌ Error:', error);
+                alert('❌ Error adding customer: ' + error.message);
+            }
+        }

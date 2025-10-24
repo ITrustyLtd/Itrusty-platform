@@ -1,0 +1,2398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Trusty - Customers Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/page-protection.js"></script>
+    <script src="js/global-navigation.js"></script>
+    <style>
+        /* Hide old header when global navigation is present */
+        body:has(#globalNavigation) > header {
+            display: none !important;
+        }
+        
+        /* ===== ORIGINAL THEME (DEFAULT) ===== */
+        .customer-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .customer-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .tab-active {
+            border-bottom: 3px solid #3B82F6;
+            color: #3B82F6;
+            font-weight: 600;
+        }
+        
+        /* ===== THEME SELECTOR STYLES ===== */
+        .theme-selector {
+            display: flex;
+            gap: 8px;
+            background: white;
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid #E5E7EB;
+        }
+        
+        .theme-btn {
+            padding: 6px 16px;
+            border: none;
+            background: transparent;
+            color: #6B7280;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        
+        .theme-btn:hover {
+            background: #F3F4F6;
+            color: #374151;
+        }
+        
+        .theme-btn.active {
+            background: #374151;
+            color: white;
+        }
+        
+        /* ===== MUJI MINIMAL THEME ===== */
+        body[data-theme="muji"] {
+            background: #FAFAF8 !important; /* Natural warm white */
+        }
+        
+        /* MUJI: Header */
+        body[data-theme="muji"] header {
+            background: #F5F5DC !important; /* Beige */
+            box-shadow: none !important;
+            border-bottom: 1px solid #D4C5B9;
+        }
+        
+        body[data-theme="muji"] .w-12.h-12 {
+            background: #A08F80 !important; /* Soft brown */
+            border-radius: 4px !important; /* Square corners */
+        }
+        
+        body[data-theme="muji"] h1 {
+            color: #4A4A4A !important;
+            font-weight: 500 !important;
+        }
+        
+        body[data-theme="muji"] header p {
+            color: #8B8B8B !important;
+        }
+        
+        /* MUJI: Buttons - Minimal flat design */
+        body[data-theme="muji"] button,
+        body[data-theme="muji"] a.px-4 {
+            background: #E8E8E8 !important;
+            color: #4A4A4A !important;
+            border: 1px solid #D4C5B9 !important;
+            border-radius: 2px !important;
+            box-shadow: none !important;
+            font-weight: 400 !important;
+        }
+        
+        body[data-theme="muji"] button:hover,
+        body[data-theme="muji"] a.px-4:hover {
+            background: #D4C5B9 !important;
+            color: #2C2C2C !important;
+        }
+        
+        /* MUJI: Cards - Minimal shadows, clean borders */
+        body[data-theme="muji"] .customer-card {
+            background: white !important;
+            border: 1px solid #E8E8E8 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            padding: 24px !important;
+        }
+        
+        body[data-theme="muji"] .customer-card:hover {
+            transform: none !important;
+            border-color: #A08F80 !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+        }
+        
+        /* MUJI: Stat cards - Flat natural tones */
+        body[data-theme="muji"] .stat-card {
+            background: #E8E8E8 !important;
+            color: #4A4A4A !important;
+            border: 1px solid #D4C5B9 !important;
+            border-radius: 0 !important;
+        }
+        
+        /* MUJI: Tabs - Minimal underline */
+        body[data-theme="muji"] .tab-active {
+            border-bottom: 2px solid #A08F80 !important;
+            color: #4A4A4A !important;
+            font-weight: 500 !important;
+        }
+        
+        /* MUJI: Inputs and forms */
+        body[data-theme="muji"] input,
+        body[data-theme="muji"] select,
+        body[data-theme="muji"] textarea {
+            border: 1px solid #D4C5B9 !important;
+            border-radius: 0 !important;
+            background: white !important;
+        }
+        
+        body[data-theme="muji"] input:focus,
+        body[data-theme="muji"] select:focus,
+        body[data-theme="muji"] textarea:focus {
+            border-color: #A08F80 !important;
+            outline: none !important;
+            box-shadow: 0 0 0 2px rgba(160, 143, 128, 0.1) !important;
+        }
+        
+        /* MUJI: Backgrounds */
+        body[data-theme="muji"] .bg-blue-50 {
+            background: #F5F5DC !important;
+            border-color: #D4C5B9 !important;
+        }
+        
+        body[data-theme="muji"] .bg-white {
+            background: #FFFFFF !important;
+        }
+        
+        /* MUJI: Text colors */
+        body[data-theme="muji"] .text-blue-600,
+        body[data-theme="muji"] .text-blue-700,
+        body[data-theme="muji"] .text-blue-900 {
+            color: #4A4A4A !important;
+        }
+        
+        /* MUJI: Remove all gradients */
+        body[data-theme="muji"] [class*="gradient"] {
+            background: #E8E8E8 !important;
+        }
+        
+        /* MUJI: Generous spacing */
+        body[data-theme="muji"] .max-w-7xl {
+            padding-left: 3rem !important;
+            padding-right: 3rem !important;
+        }
+        
+        /* ===== MODERN THEME ===== */
+        body[data-theme="modern"] {
+            background: #F9FAFB !important;
+        }
+        
+        body[data-theme="modern"] header {
+            background: white !important;
+            border-bottom: 1px solid #E5E7EB !important;
+        }
+        
+        body[data-theme="modern"] .w-12.h-12 {
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%) !important;
+            border-radius: 12px !important;
+        }
+        
+        body[data-theme="modern"] .stat-card {
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%) !important;
+        }
+        
+        body[data-theme="modern"] .customer-card {
+            border-radius: 12px !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+        }
+        
+        body[data-theme="modern"] .customer-card:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.12) !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-users text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Customers Management</h1>
+                        <p class="text-sm text-gray-500">Complete customer profiles, orders & financial tracking</p>
+                    </div>
+                </div>
+                <div class="flex gap-3 items-center">
+                    <!-- Theme Selector -->
+                    <div class="theme-selector">
+                        <button class="theme-btn" onclick="setTheme('muji')" data-theme="muji">
+                            MUJI
+                        </button>
+                        <button class="theme-btn active" onclick="setTheme('modern')" data-theme="modern">
+                            Modern
+                        </button>
+                        <button class="theme-btn" onclick="setTheme('original')" data-theme="original">
+                            Original
+                        </button>
+                    </div>
+                    
+                    <button onclick="exportToExcel()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                        <i class="fas fa-file-excel mr-2"></i>Export Excel
+                    </button>
+                    <button onclick="exportToPDF()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition">
+                        <i class="fas fa-file-pdf mr-2"></i>Export PDF
+                    </button>
+                    <a href="index.html" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Google Sheets Sync Section -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-blue-900 mb-2">
+                        <i class="fas fa-link mr-2"></i>Google Sheets URL
+                    </label>
+                    <input type="text" id="googleSheetsUrl" 
+                           placeholder="https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit..."
+                           class="w-full border border-blue-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-sm"
+                           value="https://docs.google.com/spreadsheets/d/1qBFGD4HVd6AfOviyRHTyggVQ-v0ZHE0NOQ1-oIr47NE/edit?gid=1358544916">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-blue-900 mb-2">
+                        <i class="fas fa-file-alt mr-2"></i>Sheet Name (optional)
+                    </label>
+                    <input type="text" id="sheetNameInput" 
+                           placeholder="Auto-detect or enter name"
+                           class="w-full border border-blue-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="manualSyncGoogleSheets()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center gap-2">
+                    <i class="fas fa-sync-alt"></i>
+                    Sync Now
+                </button>
+                <button onclick="testGoogleSheetsConnection()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition flex items-center gap-2 text-sm">
+                    <i class="fas fa-vial"></i>
+                    Test Connection
+                </button>
+                <a href="https://docs.google.com/spreadsheets/d/1qBFGD4HVd6AfOviyRHTyggVQ-v0ZHE0NOQ1-oIr47NE/edit" 
+                   target="_blank" 
+                   class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition flex items-center gap-2 text-sm">
+                    <i class="fas fa-external-link-alt"></i>
+                    Open Sheet
+                </a>
+            </div>
+            <div id="syncStatus" class="mt-3 text-sm text-blue-700"></div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm opacity-90">Total Customers</span>
+                    <i class="fas fa-users text-2xl opacity-75"></i>
+                </div>
+                <div class="text-4xl font-bold" id="totalCustomers">0</div>
+                <div class="text-xs opacity-75 mt-1">Active & Inactive</div>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-gray-600">Total Orders</span>
+                    <i class="fas fa-shopping-cart text-2xl text-blue-600"></i>
+                </div>
+                <div class="text-4xl font-bold text-blue-600" id="totalOrders">0</div>
+                <div class="text-xs text-gray-500 mt-1">All customer orders</div>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-gray-600">Total Revenue</span>
+                    <i class="fas fa-euro-sign text-2xl text-green-600"></i>
+                </div>
+                <div class="text-4xl font-bold text-green-600" id="totalRevenue">€0</div>
+                <div class="text-xs text-gray-500 mt-1">Customer orders value</div>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-gray-600">Avg Order Value</span>
+                    <i class="fas fa-chart-line text-2xl text-purple-600"></i>
+                </div>
+                <div class="text-4xl font-bold text-purple-600" id="avgOrderValue">€0</div>
+                <div class="text-xs text-gray-500 mt-1">Per customer</div>
+            </div>
+        </div>
+
+        <!-- Filters & Search -->
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-search mr-1"></i>Search Customer
+                    </label>
+                    <input type="text" id="searchInput" placeholder="Name, code, email..." 
+                           class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                           oninput="filterCustomers()">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-globe mr-1"></i>Country
+                    </label>
+                    <select id="filterCountry" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                            onchange="filterCustomers()">
+                        <option value="">All Countries</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-city mr-1"></i>City
+                    </label>
+                    <select id="filterCity" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                            onchange="filterCustomers()">
+                        <option value="">All Cities</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-toggle-on mr-1"></i>Status
+                    </label>
+                    <select id="filterStatus" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                            onchange="filterCustomers()">
+                        <option value="">All Status</option>
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section - Fixed Height -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white rounded-2xl shadow-sm p-6">
+                <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <i class="fas fa-chart-pie text-blue-600"></i>
+                    Top 10 Customers by Revenue
+                </h3>
+                <div style="height: 350px; max-height: 350px; position: relative;">
+                    <canvas id="topCustomersChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-sm p-6">
+                <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <i class="fas fa-globe text-green-600"></i>
+                    Customers by Country
+                </h3>
+                <div style="height: 350px; max-height: 350px; position: relative;">
+                    <canvas id="countriesChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customers Grid -->
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">Customer Profiles</h3>
+                <button onclick="openAddCustomerModal()" class="px-6 py-2 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white rounded-lg transition flex items-center gap-2 font-semibold shadow-lg">
+                    <i class="fas fa-plus-circle"></i> Add New Customer
+                </button>
+                <div class="flex gap-2">
+                    <button onclick="viewMode='grid'; renderCustomers()" id="gridBtn" class="px-3 py-2 bg-blue-100 text-blue-600 rounded-lg">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                    <button onclick="viewMode='list'; renderCustomers()" id="listBtn" class="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg">
+                        <i class="fas fa-list"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="loadingState" class="flex flex-col items-center justify-center py-20">
+                <div class="loading-spinner mb-4"></div>
+                <p class="text-gray-600">Loading customers from Google Sheets...</p>
+            </div>
+            
+            <div id="customersContainer" class="hidden"></div>
+        </div>
+    </div>
+
+    <!-- Customer Profile Modal -->
+    <div id="customerModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                <!-- Modal Header -->
+                <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-2xl">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 class="text-3xl font-bold mb-2" id="modalCustomerName">Customer Name</h2>
+                            <div class="flex items-center gap-4 text-sm">
+                                <span id="modalCustomerCode" class="px-3 py-1 bg-white bg-opacity-20 rounded-full"></span>
+                                <span id="modalCustomerCountry"></span>
+                                <span id="modalCustomerStatus"></span>
+                            </div>
+                        </div>
+                        <button onclick="closeCustomerModal()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-6">
+                    <!-- Contact Info -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                            <i class="fas fa-user text-blue-600 text-xl"></i>
+                            <div>
+                                <div class="text-xs text-gray-500">Contact Person</div>
+                                <div class="font-semibold" id="modalContactPerson">-</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                            <i class="fas fa-envelope text-green-600 text-xl"></i>
+                            <div>
+                                <div class="text-xs text-gray-500">Email</div>
+                                <div class="font-semibold" id="modalEmail">-</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                            <i class="fas fa-phone text-purple-600 text-xl"></i>
+                            <div>
+                                <div class="text-xs text-gray-500">Phone</div>
+                                <div class="font-semibold" id="modalPhone">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Summary -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <div class="text-sm text-blue-600 mb-1">Total Orders</div>
+                            <div class="text-2xl font-bold text-blue-700" id="modalTotalOrders">0</div>
+                        </div>
+                        <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+                            <div class="text-sm text-green-600 mb-1">Total Revenue</div>
+                            <div class="text-2xl font-bold text-green-700" id="modalTotalRevenue">€0</div>
+                        </div>
+                        <div class="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                            <div class="text-sm text-purple-600 mb-1">Payments Received</div>
+                            <div class="text-2xl font-bold text-purple-700" id="modalPaymentsReceived">€0</div>
+                        </div>
+                        <div class="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                            <div class="text-sm text-orange-600 mb-1">Pending</div>
+                            <div class="text-2xl font-bold text-orange-700" id="modalPending">€0</div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="border-b mb-6">
+                        <div class="flex gap-6">
+                            <button onclick="switchTab('orders')" id="tabOrders" class="tab-active py-3">
+                                <i class="fas fa-shopping-cart mr-2"></i>Orders History
+                            </button>
+                            <button onclick="switchTab('payments')" id="tabPayments" class="py-3 text-gray-600 hover:text-blue-600">
+                                <i class="fas fa-money-bill-wave mr-2"></i>Payments Received
+                            </button>
+                            <button onclick="switchTab('suppliers')" id="tabSuppliers" class="py-3 text-gray-600 hover:text-blue-600">
+                                <i class="fas fa-industry mr-2"></i>Supplier Costs
+                            </button>
+                            <button onclick="switchTab('analytics')" id="tabAnalytics" class="py-3 text-gray-600 hover:text-blue-600">
+                                <i class="fas fa-chart-bar mr-2"></i>Analytics
+                            </button>
+                            <button onclick="switchTab('transactions')" id="tabTransactions" class="py-3 text-gray-600 hover:text-blue-600">
+                                <i class="fas fa-exchange-alt mr-2"></i>Transactions
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div id="tabContent">
+                        <!-- Content will be dynamically loaded -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const GOOGLE_SHEETS_API_KEY = 'AIzaSyCmkmFVYAe06mCFuF8943oC7YoeNyWpDFI';
+        const SPREADSHEET_ID = '1qBFGD4HVd6AfOviyRHTyggVQ-v0ZHE0NOQ1-oIr47NE';
+        const SHEET_NAME = 'ΠΕΛΑΤΕΣ'; // Greek sheet name from the URL gid
+
+        // Global Variables
+        let allCustomers = [];
+        let filteredCustomers = [];
+        let currentCustomer = null;
+        let viewMode = 'grid';
+        let topCustomersChart = null;
+        let countriesChart = null;
+
+        // Load data on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadCustomersFromGoogleSheets();
+            await loadOrdersData();
+            await loadTransactionsFromGoogleSheets(); // 💰 PHASE 1: Test transactions fetch
+            renderStats();
+            renderCharts();
+            renderCustomers();
+            populateFilters();
+        });
+
+        // Load customers from Google Sheets
+        async function loadCustomersFromGoogleSheets() {
+            try {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_NAME}?key=${GOOGLE_SHEETS_API_KEY}`;
+                
+                console.log('📡 Fetching from Google Sheets:', url);
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('📥 Google Sheets response:', data);
+                
+                if (data.values && data.values.length > 1) {
+                    const headers = data.values[0];
+                    const rows = data.values.slice(1);
+                    
+                    // Log headers for debugging
+                    console.log('📋 Headers:', headers);
+                    console.log('📄 First row sample:', rows[0]);
+                    
+                    // Column mapping (0-indexed):
+                    // A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9, K=10, L=11
+                    allCustomers = rows.map((row, index) => {
+                        const customer = {
+                            customer_code: row[0] || '',        // Column A
+                            customer_name: row[2] || row[1] || '',  // Try Column C first, fallback to B
+                            contact_person: row[3] || '',       // Column D
+                            email: row[4] || '',                // Column E
+                            phone: row[5] || '',                // Column F
+                            country: row[10] || '',             // Column K ✅ FIXED
+                            city: row[11] || '',                // Column L ✅ FIXED
+                            total_orders: parseInt(row[7]) || 0,      // Column H
+                            total_value_eur: parseFloat(row[8]) || 0, // Column I
+                            active: (row[1]?.toString().toLowerCase() === 'active' || 
+                                    row[1]?.toString().toLowerCase() === 'true' || 
+                                    row[1] === '1' ||
+                                    row[1]?.toString().toLowerCase() === 'yes')  // Column B ✅ FIXED
+                        };
+                        
+                        // Log first 3 customers for debugging
+                        if (index < 3) {
+                            console.log(`Customer ${index + 1}:`, customer);
+                        }
+                        
+                        return customer;
+                    });
+                    
+                    // ===== CUSTOMER FILTERING BY PERMISSIONS =====
+                    // Apply user permissions filter if PageProtection is available
+                    if (window.PageProtection && window.PageProtection.filterCustomersByPermission) {
+                        const originalCount = allCustomers.length;
+                        allCustomers = await window.PageProtection.filterCustomersByPermission(allCustomers);
+                        const filteredCount = allCustomers.length;
+                        
+                        if (filteredCount < originalCount) {
+                            console.log(`🔐 Customer filtering applied: ${filteredCount}/${originalCount} customers visible`);
+                        }
+                    }
+                    
+                    filteredCustomers = [...allCustomers];
+                    console.log('✅ Loaded', filteredCustomers.length, 'customers from Google Sheets');
+                    
+                    // Update sync status
+                    const statusEl = document.getElementById('syncStatus');
+                    if (statusEl) {
+                        statusEl.innerHTML = `<i class="fas fa-check-circle mr-1"></i>Successfully loaded ${allCustomers.length} customers`;
+                        statusEl.className = 'mt-2 text-sm text-green-700';
+                    }
+                } else {
+                    console.error('No data found in Google Sheets');
+                    const statusEl = document.getElementById('syncStatus');
+                    if (statusEl) {
+                        statusEl.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i>No data found. Check sheet name: "${SHEET_NAME}"`;
+                        statusEl.className = 'mt-2 text-sm text-orange-700';
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error loading Google Sheets:', error);
+                const statusEl = document.getElementById('syncStatus');
+                if (statusEl) {
+                    statusEl.innerHTML = `<i class="fas fa-times-circle mr-1"></i>Error: ${error.message}. Check console (F12) for details.`;
+                    statusEl.className = 'mt-2 text-sm text-red-700';
+                }
+            }
+        }
+
+        // Manual sync function with enhanced debugging
+        async function manualSyncGoogleSheets() {
+            const urlInput = document.getElementById('googleSheetsUrl').value.trim();
+            const statusEl = document.getElementById('syncStatus');
+            
+            // Show loading
+            statusEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Syncing... Please wait...';
+            statusEl.className = 'mt-2 text-sm text-blue-700';
+            
+            // Extract spreadsheet ID from URL if provided
+            let spreadsheetId = SPREADSHEET_ID;
+            if (urlInput && urlInput.includes('spreadsheets/d/')) {
+                const match = urlInput.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                if (match) {
+                    spreadsheetId = match[1];
+                    console.log('📋 Using spreadsheet ID from URL:', spreadsheetId);
+                }
+            }
+            
+            // Get custom sheet name if provided
+            const customSheetName = document.getElementById('sheetNameInput').value.trim();
+            
+            // Try different sheet name approaches
+            const sheetNamesToTry = customSheetName 
+                ? [customSheetName]  // If user provided a name, only try that
+                : [
+                    'ΠΕΛΑΤΕΣ',           // Original Greek
+                    encodeURIComponent('ΠΕΛΑΤΕΣ'),  // URL encoded
+                    'Sheet1',            // Default name
+                    'Customers',         // English
+                    'CUSTOMERS'          // Uppercase
+                ];
+            
+            let lastError = null;
+            
+            for (const sheetName of sheetNamesToTry) {
+                try {
+                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${sheetName}?key=${GOOGLE_SHEETS_API_KEY}`;
+                    
+                    console.log(`🔍 Trying sheet name: "${sheetName}"`);
+                    console.log(`📡 Full URL: ${url}`);
+                    
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    console.log(`📥 Response for "${sheetName}":`, response.status, data);
+                    
+                    if (response.ok && data.values && data.values.length > 1) {
+                        // Success!
+                        const headers = data.values[0];
+                        const rows = data.values.slice(1);
+                        
+                        console.log('📋 Headers:', headers);
+                        console.log('📄 First row sample:', rows[0]);
+                        
+                        allCustomers = rows.map((row, index) => {
+                            const customer = {
+                                customer_code: row[0] || '',        // Column A
+                                customer_name: row[2] || row[1] || '',  // Try Column C first, fallback to B
+                                contact_person: row[3] || '',       // Column D
+                                email: row[4] || '',                // Column E
+                                phone: row[5] || '',                // Column F
+                                country: row[10] || '',             // Column K ✅ FIXED
+                                city: row[11] || '',                // Column L ✅ FIXED
+                                total_orders: parseInt(row[7]) || 0,      // Column H
+                                total_value_eur: parseFloat(row[8]) || 0, // Column I
+                                active: (row[1]?.toString().toLowerCase() === 'active' || 
+                                        row[1]?.toString().toLowerCase() === 'true' || 
+                                        row[1] === '1' ||
+                                        row[1]?.toString().toLowerCase() === 'yes')  // Column B ✅ FIXED
+                            };
+                            
+                            if (index < 3) {
+                                console.log(`Customer ${index + 1}:`, customer);
+                            }
+                            
+                            return customer;
+                        });
+                        
+                        filteredCustomers = [...allCustomers];
+                        
+                        // Re-render everything
+                        renderStats();
+                        renderCharts();
+                        renderCustomers();
+                        populateFilters();
+                        
+                        statusEl.innerHTML = `<i class="fas fa-check-circle mr-1"></i>✅ Success! Loaded ${allCustomers.length} customers from sheet "${sheetName}" at ${new Date().toLocaleTimeString()}`;
+                        statusEl.className = 'mt-2 text-sm text-green-700 font-semibold';
+                        
+                        // Update the sheet name for future use
+                        console.log(`✅ Found working sheet name: "${sheetName}"`);
+                        return; // Exit function on success
+                    }
+                    
+                    lastError = data.error || {message: `No data in sheet "${sheetName}"`};
+                    
+                } catch (error) {
+                    console.error(`❌ Error with sheet name "${sheetName}":`, error);
+                    lastError = error;
+                }
+            }
+            
+            // If we get here, all sheet names failed
+            console.error('❌ All sheet names failed. Last error:', lastError);
+            
+            // Show helpful error message
+            statusEl.innerHTML = `
+                <div>
+                    <i class="fas fa-times-circle mr-1"></i>❌ Could not find sheet. Tried: ${sheetNamesToTry.join(', ')}
+                    <br>
+                    <span class="text-xs">Error: ${lastError?.message || 'Unknown error'}</span>
+                    <br>
+                    <button onclick="showSheetNameHelper()" class="mt-2 px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">
+                        🔧 How to Fix
+                    </button>
+                </div>
+            `;
+            statusEl.className = 'mt-2 text-sm text-red-700';
+        }
+        
+        // Helper function to show troubleshooting
+        function showSheetNameHelper() {
+            alert(`🔧 How to Fix Google Sheets Sync:
+
+1. Open your Google Sheet
+2. Look at the bottom tabs - find the tab name
+3. Common names: "Sheet1", "ΠΕΛΑΤΕΣ", "Customers"
+4. Make sure the sheet is SHARED:
+   - Click "Share" button (top-right)
+   - Change to "Anyone with the link can VIEW"
+   - Copy the link
+   
+5. Check your data format:
+   - Row 1 should be HEADERS
+   - Row 2+ should be DATA
+   - Columns: Code, Name, Contact, Email, Phone, Country, City, Orders, Value, Active
+   
+6. Check the URL in the input field matches your sheet
+
+Press F12 (Console) to see detailed error messages.`);
+        }
+        
+        // Test Google Sheets connection
+        async function testGoogleSheetsConnection() {
+            const statusEl = document.getElementById('syncStatus');
+            const urlInput = document.getElementById('googleSheetsUrl').value.trim();
+            
+            statusEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Testing connection...';
+            statusEl.className = 'mt-3 text-sm text-blue-700';
+            
+            // Extract spreadsheet ID
+            let spreadsheetId = SPREADSHEET_ID;
+            if (urlInput && urlInput.includes('spreadsheets/d/')) {
+                const match = urlInput.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                if (match) {
+                    spreadsheetId = match[1];
+                }
+            }
+            
+            try {
+                // First, get the spreadsheet metadata to list all sheets
+                const metadataUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${GOOGLE_SHEETS_API_KEY}`;
+                
+                console.log('🔍 Testing connection to:', metadataUrl);
+                const response = await fetch(metadataUrl);
+                const data = await response.json();
+                
+                if (response.ok && data.sheets) {
+                    const sheetNames = data.sheets.map(s => s.properties.title);
+                    
+                    statusEl.innerHTML = `
+                        <div class="bg-green-50 border border-green-200 rounded p-3">
+                            <div class="font-semibold text-green-900 mb-2">
+                                <i class="fas fa-check-circle mr-1"></i>✅ Connection successful!
+                            </div>
+                            <div class="text-xs text-green-800">
+                                <strong>Spreadsheet:</strong> ${data.properties.title}
+                                <br>
+                                <strong>Available sheets:</strong> ${sheetNames.join(', ')}
+                                <br>
+                                <strong>Spreadsheet ID:</strong> ${spreadsheetId}
+                            </div>
+                            <div class="mt-2 text-xs text-green-700">
+                                💡 Copy one of the sheet names above and paste it in the "Sheet Name" field, then click "Sync Now"
+                            </div>
+                        </div>
+                    `;
+                    statusEl.className = 'mt-3 text-sm';
+                    
+                    console.log('📊 Available sheets:', sheetNames);
+                    console.log('📄 Full metadata:', data);
+                    
+                } else if (data.error) {
+                    throw new Error(data.error.message || 'Unknown error');
+                } else {
+                    throw new Error('No sheets found');
+                }
+                
+            } catch (error) {
+                console.error('❌ Connection test failed:', error);
+                
+                statusEl.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded p-3">
+                        <div class="font-semibold text-red-900 mb-2">
+                            <i class="fas fa-times-circle mr-1"></i>❌ Connection failed
+                        </div>
+                        <div class="text-xs text-red-800">
+                            <strong>Error:</strong> ${error.message}
+                        </div>
+                        <div class="mt-2 text-xs text-red-700">
+                            <strong>Possible fixes:</strong><br>
+                            1. Make sure the sheet is shared (Anyone with link can VIEW)<br>
+                            2. Check the API key is correct<br>
+                            3. Verify the spreadsheet URL<br>
+                            4. Open browser console (F12) for details
+                        </div>
+                    </div>
+                `;
+                statusEl.className = 'mt-3 text-sm';
+            }
+        }
+
+        // Load orders data from database
+        async function loadOrdersData() {
+            try {
+                // Load customer orders
+                const ordersResponse = await fetch('tables/customer_orders');
+                if (ordersResponse.ok) {
+                    const ordersData = await ordersResponse.json();
+                    window.customerOrders = ordersData.data || [];
+                }
+
+                // Load supplier payments
+                const paymentsResponse = await fetch('tables/supplier_payments');
+                if (paymentsResponse.ok) {
+                    const paymentsData = await paymentsResponse.json();
+                    window.supplierPayments = paymentsData.data || [];
+                }
+            } catch (error) {
+                console.error('Error loading orders data:', error);
+            }
+        }
+
+        // 💰 PHASE 1: Load transactions from Google Sheets Transactions Tracker (TEST ONLY)
+        async function loadTransactionsFromGoogleSheets() {
+            try {
+                const sheetName = 'Transactions Tracker';
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(sheetName)}?key=${GOOGLE_SHEETS_API_KEY}`;
+                
+                console.log('💰 =====================================');
+                console.log('💰 PHASE 1: TRANSACTIONS TRACKER TEST');
+                console.log('💰 =====================================');
+                console.log('📡 Fetching Transactions Tracker from:', url);
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('📥 Transactions Tracker raw response:', data);
+                
+                if (data.values && data.values.length > 1) {
+                    const headers = data.values[0];
+                    const rows = data.values.slice(1);
+                    
+                    console.log('📋 Transaction Headers:', headers);
+                    console.log('📄 Total transaction rows:', rows.length);
+                    console.log('🔍 First row raw data (all 18 columns):', rows[0]);
+                    
+                    // Parse transactions with column mapping
+                    // Column A=0: Staff name
+                    // Column B=1: Invoice number
+                    // Column C=2: Transaction type (Payment / Commercial Invoice)
+                    // Column D=3: Date
+                    // Column E=4: Customer Name
+                    // Column F=5: Customer code (3-letter)
+                    // Column G=6: Currency (EUR/USD/RMB)
+                    // Column H=7: Exchange Rate
+                    // Column I=8: Invoice amount (ORIGINAL CURRENCY)
+                    // Column J=9: Invoice amount EUR
+                    // Column K=10: Payment method
+                    // Column L=11: Bank/Account
+                    // Column M=12: Amount paid (ORIGINAL CURRENCY)
+                    // Column N=13: Amount paid EUR
+                    // Column O=14: Record date
+                    // Column P=15: Outstanding balance (ORIGINAL CURRENCY)
+                    // Column Q=16: Outstanding balance EUR
+                    // Column R=17: Notes
+                    const transactions = rows.map((row, index) => {
+                        const txn = {
+                            staff_name: row[0] || '',           // Column A
+                            invoice_number: row[1] || '',       // Column B
+                            transaction_type: row[2] || '',     // Column C (Payment / Commercial Invoice)
+                            date: row[3] || '',                 // Column D
+                            customer_name: row[4] || '',        // Column E
+                            customer_code: row[5] || '',        // Column F (3-letter code like AGL, SRP, etc.)
+                            currency: row[6] || 'EUR',          // Column G
+                            exchange_rate: parseFloat(row[7]) || 1,     // Column H
+                            invoice_amount: parseFloat(row[8]) || 0,    // Column I (original currency)
+                            invoice_amount_eur: parseFloat(row[9]) || 0,    // Column J (EUR)
+                            payment_method: row[10] || '',      // Column K
+                            bank_account: row[11] || '',        // Column L
+                            amount_paid: parseFloat(row[12]) || 0,      // Column M (original currency)
+                            amount_paid_eur: parseFloat(row[13]) || 0,  // Column N (EUR)
+                            record_date: row[14] || '',         // Column O
+                            outstanding_balance: parseFloat(row[15]) || 0,  // Column P (original)
+                            outstanding_balance_eur: parseFloat(row[16]) || 0,  // Column Q (EUR)
+                            notes: row[17] || ''                // Column R
+                        };
+                        
+                        // Log first 3 transactions for verification
+                        if (index < 3) {
+                            console.log(`💳 Transaction ${index + 1}:`, txn);
+                            console.log(`   Raw row data:`, row);
+                        }
+                        
+                        return txn;
+                    });
+                    
+                    // Store globally for later use (Phase 2 & 3)
+                    window.customerTransactions = transactions;
+                    
+                    console.log('✅ Total transactions parsed:', transactions.length);
+                    
+                    // Test filtering by customer code (change 'AGL' to any existing customer code)
+                    const testCustomerCodes = ['AGL', 'SRP', 'CTC', 'IRED', 'AMD']; // Common customer codes
+                    
+                    testCustomerCodes.forEach(code => {
+                        const customerTxns = transactions.filter(t => t.customer_code === code);
+                        if (customerTxns.length > 0) {
+                            console.log(`💵 Transactions for customer "${code}":`, customerTxns.length, 'transactions');
+                            console.log(`   First transaction:`, customerTxns[0]);
+                        }
+                    });
+                    
+                    // Summary statistics (using EUR amounts)
+                    const totalInvoiceAmount = transactions.reduce((sum, t) => sum + t.invoice_amount_eur, 0);
+                    const totalPaid = transactions.reduce((sum, t) => sum + t.amount_paid_eur, 0);
+                    const totalOutstanding = transactions.reduce((sum, t) => sum + t.outstanding_balance_eur, 0);
+                    const uniqueCustomers = [...new Set(transactions.map(t => t.customer_code).filter(c => c))];
+                    
+                    console.log('📊 TRANSACTION SUMMARY (EUR):');
+                    console.log('   Total Invoice Amount:', '€' + totalInvoiceAmount.toLocaleString());
+                    console.log('   Total Amount Paid:', '€' + totalPaid.toLocaleString());
+                    console.log('   Total Outstanding:', '€' + totalOutstanding.toLocaleString());
+                    console.log('   Unique Customers:', uniqueCustomers.length, '→', uniqueCustomers.slice(0, 10).join(', '));
+                    
+                    console.log('💰 =====================================');
+                    console.log('✅ PHASE 1 TEST COMPLETE - Check console output above');
+                    console.log('💰 =====================================');
+                    
+                    return transactions;
+                } else {
+                    console.warn('⚠️ No transaction data found in sheet');
+                    return [];
+                }
+            } catch (error) {
+                console.error('❌ Error loading transactions:', error);
+                console.error('💡 Possible issues:');
+                console.error('   1. Sheet name might be different (check exact name in Google Sheets)');
+                console.error('   2. Sheet might be in different spreadsheet');
+                console.error('   3. API permissions issue');
+                return [];
+            }
+        }
+
+        // Calculate stats
+        function renderStats() {
+            const totalCustomers = allCustomers.length;
+            const totalOrders = allCustomers.reduce((sum, c) => sum + c.total_orders, 0);
+            const totalRevenue = allCustomers.reduce((sum, c) => sum + c.total_value_eur, 0);
+            const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+            document.getElementById('totalCustomers').textContent = totalCustomers;
+            document.getElementById('totalOrders').textContent = totalOrders;
+            document.getElementById('totalRevenue').textContent = '€' + totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+            document.getElementById('avgOrderValue').textContent = '€' + avgOrderValue.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+        }
+
+        // Render charts
+        function renderCharts() {
+            // Top 10 Customers Chart
+            const topCustomers = [...allCustomers]
+                .sort((a, b) => b.total_value_eur - a.total_value_eur)
+                .slice(0, 10);
+
+            const ctxTop = document.getElementById('topCustomersChart').getContext('2d');
+            if (topCustomersChart) topCustomersChart.destroy();
+            
+            topCustomersChart = new Chart(ctxTop, {
+                type: 'bar',
+                data: {
+                    labels: topCustomers.map(c => c.customer_code),
+                    datasets: [{
+                        label: 'Revenue (EUR)',
+                        data: topCustomers.map(c => c.total_value_eur),
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Countries Chart
+            const countryCounts = {};
+            allCustomers.forEach(c => {
+                const country = c.country || 'Unknown';
+                countryCounts[country] = (countryCounts[country] || 0) + 1;
+            });
+
+            const ctxCountries = document.getElementById('countriesChart').getContext('2d');
+            if (countriesChart) countriesChart.destroy();
+            
+            countriesChart = new Chart(ctxCountries, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(countryCounts),
+                    datasets: [{
+                        data: Object.values(countryCounts),
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(139, 92, 246, 0.8)',
+                            'rgba(236, 72, 153, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        // Render customers
+        function renderCustomers() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('customersContainer').classList.remove('hidden');
+
+            const container = document.getElementById('customersContainer');
+            
+            if (filteredCustomers.length === 0) {
+                container.innerHTML = '<div class="text-center py-20 text-gray-400"><i class="fas fa-inbox text-5xl mb-4"></i><p>No customers found</p></div>';
+                return;
+            }
+
+            if (viewMode === 'grid') {
+                container.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+                container.innerHTML = filteredCustomers.map(customer => `
+                    <div class="customer-card bg-white rounded-xl p-6 shadow-sm border" onclick="openCustomerModal('${customer.customer_code}')">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                                    ${customer.customer_code.charAt(0)}
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg">${customer.customer_code}</h3>
+                                    <p class="text-sm text-gray-500">${customer.customer_name}</p>
+                                </div>
+                            </div>
+                            <span class="px-2 py-1 rounded-full text-xs ${customer.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}">
+                                ${customer.active ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                        
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center gap-2 text-sm text-gray-600">
+                                <i class="fas fa-globe w-4"></i>
+                                <span>${customer.country}${customer.city ? ', ' + customer.city : ''}</span>
+                            </div>
+                            ${customer.email ? `
+                            <div class="flex items-center gap-2 text-sm text-gray-600">
+                                <i class="fas fa-envelope w-4"></i>
+                                <span class="truncate">${customer.email}</span>
+                            </div>` : ''}
+                            ${customer.phone ? `
+                            <div class="flex items-center gap-2 text-sm text-gray-600">
+                                <i class="fas fa-phone w-4"></i>
+                                <span>${customer.phone}</span>
+                            </div>` : ''}
+                        </div>
+                        
+                        <div class="pt-4 border-t grid grid-cols-2 gap-4">
+                            <div>
+                                <div class="text-xs text-gray-500">Orders</div>
+                                <div class="text-xl font-bold text-blue-600">${customer.total_orders}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-500">Revenue</div>
+                                <div class="text-xl font-bold text-green-600">€${customer.total_value_eur.toLocaleString()}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.className = 'space-y-3';
+                container.innerHTML = filteredCustomers.map(customer => `
+                    <div class="customer-card bg-white rounded-lg p-4 shadow-sm border flex items-center justify-between" onclick="openCustomerModal('${customer.customer_code}')">
+                        <div class="flex items-center gap-4 flex-1">
+                            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                                ${customer.customer_code.charAt(0)}
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-bold">${customer.customer_code} - ${customer.customer_name}</h3>
+                                <p class="text-sm text-gray-500">${customer.country}${customer.city ? ', ' + customer.city : ''}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-8">
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500">Orders</div>
+                                <div class="font-bold text-blue-600">${customer.total_orders}</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500">Revenue</div>
+                                <div class="font-bold text-green-600">€${customer.total_value_eur.toLocaleString()}</div>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs ${customer.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}">
+                                ${customer.active ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Populate filter dropdowns
+        function populateFilters() {
+            const countries = [...new Set(allCustomers.map(c => c.country))].filter(c => c).sort();
+            const cities = [...new Set(allCustomers.map(c => c.city))].filter(c => c).sort();
+
+            document.getElementById('filterCountry').innerHTML = '<option value="">All Countries</option>' +
+                countries.map(c => `<option value="${c}">${c}</option>`).join('');
+
+            document.getElementById('filterCity').innerHTML = '<option value="">All Cities</option>' +
+                cities.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+
+        // Filter customers
+        function filterCustomers() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const country = document.getElementById('filterCountry').value;
+            const city = document.getElementById('filterCity').value;
+            const status = document.getElementById('filterStatus').value;
+
+            filteredCustomers = allCustomers.filter(customer => {
+                const matchSearch = !search || 
+                    customer.customer_code.toLowerCase().includes(search) ||
+                    customer.customer_name.toLowerCase().includes(search) ||
+                    (customer.email && customer.email.toLowerCase().includes(search));
+                
+                const matchCountry = !country || customer.country === country;
+                const matchCity = !city || customer.city === city;
+                const matchStatus = !status || customer.active.toString() === status;
+
+                return matchSearch && matchCountry && matchCity && matchStatus;
+            });
+
+            renderCustomers();
+        }
+
+        // Open customer modal
+        function openCustomerModal(customerCode) {
+            currentCustomer = allCustomers.find(c => c.customer_code === customerCode);
+            if (!currentCustomer) return;
+
+            // Populate header
+            document.getElementById('modalCustomerName').textContent = currentCustomer.customer_name;
+            document.getElementById('modalCustomerCode').textContent = currentCustomer.customer_code;
+            document.getElementById('modalCustomerCountry').innerHTML = `<i class="fas fa-globe mr-1"></i>${currentCustomer.country}${currentCustomer.city ? ', ' + currentCustomer.city : ''}`;
+            document.getElementById('modalCustomerStatus').innerHTML = `<span class="px-3 py-1 ${currentCustomer.active ? 'bg-green-500' : 'bg-gray-500'} rounded-full text-sm">${currentCustomer.active ? 'Active' : 'Inactive'}</span>`;
+
+            // Populate contact info
+            document.getElementById('modalContactPerson').textContent = currentCustomer.contact_person || '-';
+            document.getElementById('modalEmail').textContent = currentCustomer.email || '-';
+            document.getElementById('modalPhone').textContent = currentCustomer.phone || '-';
+
+            // Populate financial summary FROM TRANSACTIONS
+            const customerTxns = (window.customerTransactions || []).filter(t => t.customer_code === currentCustomer.customer_code);
+            
+            // Get unique invoices
+            const uniqueInvoices = [...new Set(customerTxns.map(t => t.invoice_number).filter(i => i))];
+            
+            // Calculate totals from transactions
+            const totalRevenue = customerTxns.filter(t => t.transaction_type === 'Commercial Invoice').reduce((sum, t) => sum + t.invoice_amount_eur, 0);
+            const totalPaymentsReceived = customerTxns.filter(t => t.transaction_type === 'Payment').reduce((sum, t) => sum + t.amount_paid_eur, 0);
+            const latestOutstanding = customerTxns.length > 0 ? customerTxns.sort((a, b) => new Date(b.date) - new Date(a.date))[0].outstanding_balance_eur : 0;
+            
+            document.getElementById('modalTotalOrders').textContent = uniqueInvoices.length;
+            document.getElementById('modalTotalRevenue').textContent = '€' + totalRevenue.toLocaleString();
+            document.getElementById('modalPaymentsReceived').textContent = '€' + totalPaymentsReceived.toLocaleString();
+            document.getElementById('modalPending').textContent = '€' + latestOutstanding.toLocaleString();
+
+            // Show modal and load orders tab
+            document.getElementById('customerModal').classList.remove('hidden');
+            switchTab('orders');
+        }
+
+        // Close customer modal
+        function closeCustomerModal() {
+            document.getElementById('customerModal').classList.add('hidden');
+            currentCustomer = null;
+        }
+
+        // Switch tabs
+        function switchTab(tab) {
+            // Update tab buttons
+            ['orders', 'payments', 'suppliers', 'analytics', 'transactions'].forEach(t => {
+                const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+                if (t === tab) {
+                    btn.className = 'tab-active py-3';
+                } else {
+                    btn.className = 'py-3 text-gray-600 hover:text-blue-600';
+                }
+            });
+
+            // Load tab content
+            const content = document.getElementById('tabContent');
+            
+            switch(tab) {
+                case 'orders':
+                    loadOrdersTab(content);
+                    break;
+                case 'payments':
+                    loadPaymentsTab(content);
+                    break;
+                case 'suppliers':
+                    loadSuppliersTab(content);
+                    break;
+                case 'analytics':
+                    loadAnalyticsTab(content);
+                    break;
+                case 'transactions':
+                    loadTransactionsTab(content);
+                    break;
+            }
+        }
+
+        // Load orders tab - REBUILT FROM TRANSACTIONS
+        function loadOrdersTab(container) {
+            container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-blue-600"></i></div>';
+            
+            // Get transactions for this customer
+            const customerTxns = (window.customerTransactions || []).filter(t => t.customer_code === currentCustomer.customer_code);
+            
+            if (customerTxns.length === 0) {
+                container.innerHTML = '<div class="text-center py-12 text-gray-400"><i class="fas fa-inbox text-5xl mb-3"></i><p>No transactions found for this customer</p></div>';
+                return;
+            }
+            
+            // Group transactions by invoice number to create "orders"
+            const invoiceGroups = {};
+            customerTxns.forEach(txn => {
+                const inv = txn.invoice_number;
+                if (!inv) return;
+                
+                if (!invoiceGroups[inv]) {
+                    invoiceGroups[inv] = {
+                        invoice_number: inv,
+                        customer_name: txn.customer_name,
+                        currency: txn.currency,
+                        date: txn.date,
+                        invoice_amount: txn.invoice_amount_eur,
+                        total_paid: 0,
+                        outstanding: 0,
+                        transactions: []
+                    };
+                }
+                
+                invoiceGroups[inv].transactions.push(txn);
+                
+                // Sum payments
+                if (txn.transaction_type === 'Payment') {
+                    invoiceGroups[inv].total_paid += txn.amount_paid_eur;
+                }
+                
+                // Get latest outstanding balance
+                if (txn.outstanding_balance_eur) {
+                    invoiceGroups[inv].outstanding = txn.outstanding_balance_eur;
+                }
+            });
+            
+            const invoices = Object.values(invoiceGroups).sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            container.innerHTML = `
+                <div class="space-y-3">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <div class="text-sm text-blue-700">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Showing ${invoices.length} invoice(s) from Transactions Tracker
+                        </div>
+                    </div>
+                    
+                    ${invoices.map(inv => {
+                        const paymentPercent = inv.invoice_amount > 0 ? (inv.total_paid / inv.invoice_amount * 100).toFixed(0) : 0;
+                        const isFullyPaid = inv.outstanding <= 0;
+                        const isPartiallyPaid = inv.total_paid > 0 && inv.outstanding > 0;
+                        const isUnpaid = inv.total_paid === 0;
+                        
+                        return `
+                        <div class="border rounded-lg p-4 hover:bg-blue-50 hover:shadow-md transition cursor-pointer" onclick='openInvoiceEdit("${inv.invoice_number}")'>
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h4 class="font-bold text-lg text-blue-700">${inv.invoice_number}</h4>
+                                    <p class="text-sm text-gray-600">${inv.customer_name || currentCustomer.customer_name}</p>
+                                    <p class="text-xs text-gray-500 mt-1"><i class="fas fa-calendar mr-1"></i>${new Date(inv.date).toLocaleDateString()}</p>
+                                </div>
+                                <span class="px-3 py-1 rounded-full text-xs ${
+                                    isFullyPaid ? 'bg-green-100 text-green-700' : 
+                                    isPartiallyPaid ? 'bg-yellow-100 text-yellow-700' : 
+                                    'bg-red-100 text-red-700'
+                                }">
+                                    ${isFullyPaid ? '✓ Fully Paid' : isPartiallyPaid ? '◐ Partial' : '○ Unpaid'}
+                                </span>
+                            </div>
+                            
+                            <div class="grid grid-cols-3 gap-4 text-sm mb-3">
+                                <div>
+                                    <div class="text-gray-500">Invoice Amount</div>
+                                    <div class="font-bold text-blue-600">${inv.currency} €${inv.invoice_amount.toLocaleString()}</div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500">Paid</div>
+                                    <div class="font-bold text-green-600">€${inv.total_paid.toLocaleString()}</div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500">Outstanding</div>
+                                    <div class="font-bold text-orange-600">€${inv.outstanding.toLocaleString()}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="${isFullyPaid ? 'bg-green-600' : 'bg-yellow-500'} h-2 rounded-full transition-all" style="width: ${paymentPercent}%"></div>
+                            </div>
+                            <div class="text-xs text-gray-600 mt-1 text-right">${paymentPercent}% paid • ${inv.transactions.length} transaction(s)</div>
+                        </div>
+                    `}).join('')}
+                </div>
+            `;
+        }
+
+        // Load payments tab - REBUILT FROM TRANSACTIONS
+        function loadPaymentsTab(container) {
+            container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-purple-600"></i></div>';
+            
+            // Get transactions for this customer
+            const customerTxns = (window.customerTransactions || []).filter(t => t.customer_code === currentCustomer.customer_code);
+            
+            if (customerTxns.length === 0) {
+                container.innerHTML = '<div class="text-center py-12 text-gray-400"><i class="fas fa-inbox text-5xl mb-3"></i><p>No payment transactions found</p></div>';
+                return;
+            }
+            
+            // Calculate summary from transactions
+            let totalInvoiced = 0;
+            let totalPaid = 0;
+            let totalOutstanding = 0;
+            
+            // Get unique invoices and their latest outstanding balance
+            const invoices = {};
+            customerTxns.forEach(txn => {
+                if (!txn.invoice_number) return;
+                
+                if (!invoices[txn.invoice_number]) {
+                    invoices[txn.invoice_number] = {
+                        invoice_number: txn.invoice_number,
+                        invoice_amount: txn.invoice_amount_eur,
+                        total_paid: 0,
+                        outstanding: txn.outstanding_balance_eur,
+                        currency: txn.currency,
+                        date: txn.date
+                    };
+                    totalInvoiced += txn.invoice_amount_eur;
+                }
+                
+                if (txn.transaction_type === 'Payment') {
+                    invoices[txn.invoice_number].total_paid += txn.amount_paid_eur;
+                    totalPaid += txn.amount_paid_eur;
+                }
+                
+                // Update outstanding with latest value
+                invoices[txn.invoice_number].outstanding = txn.outstanding_balance_eur;
+            });
+            
+            // Calculate total outstanding (sum of latest outstanding balances)
+            totalOutstanding = Object.values(invoices).reduce((sum, inv) => sum + inv.outstanding, 0);
+            
+            const paymentRate = totalInvoiced > 0 ? (totalPaid / totalInvoiced * 100).toFixed(1) : 0;
+            
+            // Get payment transactions only
+            const payments = customerTxns.filter(t => t.transaction_type === 'Payment').sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <!-- Payment Summary -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="text-sm text-blue-600 mb-1">Total Invoiced</div>
+                            <div class="text-2xl font-bold text-blue-700">€${totalInvoiced.toLocaleString()}</div>
+                        </div>
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="text-sm text-green-600 mb-1">Total Paid</div>
+                            <div class="text-2xl font-bold text-green-700">€${totalPaid.toLocaleString()}</div>
+                        </div>
+                        <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                            <div class="text-sm text-orange-600 mb-1">Outstanding</div>
+                            <div class="text-2xl font-bold text-orange-700">€${totalOutstanding.toLocaleString()}</div>
+                        </div>
+                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                            <div class="text-sm text-purple-600 mb-1">Payment Rate</div>
+                            <div class="text-2xl font-bold text-purple-700">${paymentRate}%</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Payments -->
+                    <h4 class="text-lg font-bold text-gray-900 mb-4"><i class="fas fa-money-bill-wave mr-2"></i>Recent Payments (${payments.length})</h4>
+                    <div class="space-y-3">
+                        ${payments.length === 0 ? '<div class="text-center py-8 text-gray-400">No payments recorded yet</div>' : ''}
+                        ${payments.map(payment => `
+                            <div class="border rounded-lg p-4 bg-white hover:bg-green-50 hover:shadow-md transition cursor-pointer" onclick='openPaymentEdit(${JSON.stringify(payment)})'>
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <h5 class="font-bold text-lg text-green-700">
+                                            <i class="fas fa-check-circle mr-1"></i>
+                                            Payment Received
+                                        </h5>
+                                        <p class="text-sm text-gray-600">Invoice: <span class="font-semibold">${payment.invoice_number}</span></p>
+                                        <p class="text-xs text-gray-500 mt-1">
+                                            <i class="fas fa-calendar mr-1"></i>${new Date(payment.date).toLocaleDateString()}
+                                            ${payment.staff_name ? ` • <i class="fas fa-user ml-2 mr-1"></i>${payment.staff_name}` : ''}
+                                        </p>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-2xl font-bold text-green-600">€${payment.amount_paid_eur.toLocaleString()}</div>
+                                        <div class="text-xs text-gray-500">${payment.currency} ${payment.amount_paid.toLocaleString()}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-2 gap-4 mt-3 pt-3 border-t text-sm">
+                                    <div>
+                                        <div class="text-xs text-gray-500">Payment Method</div>
+                                        <div class="font-semibold">${payment.payment_method || '-'}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-500">Bank/Account</div>
+                                        <div class="font-semibold">${payment.bank_account || '-'}</div>
+                                    </div>
+                                </div>
+                                
+                                ${payment.notes ? `<div class="mt-3 pt-3 border-t text-sm text-gray-600"><i class="fas fa-sticky-note mr-2"></i>${payment.notes}</div>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load suppliers tab
+        async function loadSuppliersTab(container) {
+            container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-indigo-600"></i></div>';
+            
+            try {
+                // Get all orders for this customer
+                const customerOrdersList = (window.customerOrders || []).filter(o => o.customer_code === currentCustomer.customer_code);
+                const orderIds = customerOrdersList.map(o => o.id);
+                
+                if (orderIds.length === 0) {
+                    container.innerHTML = '<div class="text-center py-12 text-gray-400"><i class="fas fa-inbox text-5xl mb-3"></i><p>No orders found for this customer</p></div>';
+                    return;
+                }
+                
+                // Get supplier payments for these orders
+                const allSupplierPayments = window.supplierPayments || [];
+                const relevantPayments = allSupplierPayments.filter(p => orderIds.includes(p.order_id));
+                
+                if (relevantPayments.length === 0) {
+                    container.innerHTML = '<div class="text-center py-12 text-gray-400"><i class="fas fa-industry text-5xl mb-3"></i><p>No supplier payments recorded for this customer\'s orders yet</p></div>';
+                    return;
+                }
+                
+                // Calculate totals
+                const totalSupplierCosts = relevantPayments.reduce((sum, p) => sum + (parseFloat(p.payment_amount_rmb) || 0), 0);
+                const uniqueSuppliers = [...new Set(relevantPayments.map(p => p.supplier_name))];
+                
+                // Group payments by order
+                const paymentsByOrder = {};
+                relevantPayments.forEach(payment => {
+                    if (!paymentsByOrder[payment.order_id]) {
+                        paymentsByOrder[payment.order_id] = [];
+                    }
+                    paymentsByOrder[payment.order_id].push(payment);
+                });
+                
+                // Calculate customer revenue vs supplier costs (profit margin)
+                const totalRevenue = customerOrdersList.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0);
+                const avgProfitMargin = totalRevenue > 0 ? ((totalRevenue - totalSupplierCosts) / totalRevenue * 100).toFixed(1) : 0;
+                
+                container.innerHTML = `
+                    <div class="space-y-6">
+                        <!-- Supplier Cost Summary -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                                <div class="text-sm text-indigo-600 mb-1">Total Supplier Costs</div>
+                                <div class="text-2xl font-bold text-indigo-700">¥${totalSupplierCosts.toLocaleString()}</div>
+                            </div>
+                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                <div class="text-sm text-purple-600 mb-1">Unique Suppliers</div>
+                                <div class="text-2xl font-bold text-purple-700">${uniqueSuppliers.length}</div>
+                            </div>
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div class="text-sm text-blue-600 mb-1">Customer Revenue</div>
+                                <div class="text-2xl font-bold text-blue-700">€${totalRevenue.toLocaleString()}</div>
+                            </div>
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <div class="text-sm text-green-600 mb-1">Avg Profit Margin</div>
+                                <div class="text-2xl font-bold text-green-700">${avgProfitMargin}%</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Supplier Payments by Order -->
+                        <h4 class="text-lg font-bold text-gray-900 mb-4"><i class="fas fa-list mr-2"></i>Supplier Payments by Order</h4>
+                        <div class="space-y-4">
+                            ${customerOrdersList.map(order => {
+                                const orderPayments = paymentsByOrder[order.id] || [];
+                                const orderSupplierCost = orderPayments.reduce((sum, p) => sum + (parseFloat(p.payment_amount_rmb) || 0), 0);
+                                const orderRevenue = parseFloat(order.total_amount) || 0;
+                                const orderProfit = orderRevenue - orderSupplierCost;
+                                const orderMargin = orderRevenue > 0 ? (orderProfit / orderRevenue * 100).toFixed(1) : 0;
+                                
+                                return `
+                                    <div class="border rounded-lg p-4 bg-white">
+                                        <div class="flex justify-between items-start mb-4">
+                                            <div>
+                                                <h5 class="font-bold text-lg">${order.order_number}</h5>
+                                                <p class="text-sm text-gray-600">${order.product_description || 'No description'}</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="text-xs text-gray-500">Profit Margin</div>
+                                                <div class="text-xl font-bold ${
+                                                    parseFloat(orderMargin) > 30 ? 'text-green-600' : 
+                                                    parseFloat(orderMargin) > 15 ? 'text-yellow-600' : 
+                                                    'text-red-600'
+                                                }">${orderMargin}%</div>
+                                            </div>
+                                        </div>
+                                        
+                                        ${orderPayments.length > 0 ? `
+                                            <div class="space-y-2">
+                                                ${orderPayments.map(payment => `
+                                                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded border border-gray-200 hover:bg-indigo-50 hover:shadow-md transition cursor-pointer" onclick='openSupplierPaymentEdit("${payment.id}")'>
+                                                        <div class="flex items-center gap-3">
+                                                            <i class="fas fa-industry text-indigo-600"></i>
+                                                            <div>
+                                                                <div class="font-semibold">${payment.supplier_name}</div>
+                                                                <div class="text-xs text-gray-500">
+                                                                    <i class="fas fa-calendar mr-1"></i>${new Date(payment.payment_date).toLocaleDateString()}
+                                                                    ${payment.payment_method ? `<i class="fas fa-credit-card ml-2 mr-1"></i>${payment.payment_method}` : ''}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-right">
+                                                            <div class="font-bold text-indigo-700">¥${parseFloat(payment.payment_amount_rmb).toLocaleString()}</div>
+                                                            <div class="text-xs ${
+                                                                payment.status === 'paid' ? 'text-green-600' : 
+                                                                payment.status === 'pending' ? 'text-yellow-600' : 
+                                                                'text-gray-600'
+                                                            }">${payment.status || 'unknown'}</div>
+                                                        </div>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                            
+                                            <div class="mt-4 pt-4 border-t grid grid-cols-3 gap-4 text-center">
+                                                <div>
+                                                    <div class="text-xs text-gray-500">Order Revenue</div>
+                                                    <div class="font-bold text-blue-600">€${orderRevenue.toLocaleString()}</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-xs text-gray-500">Supplier Costs</div>
+                                                    <div class="font-bold text-indigo-600">¥${orderSupplierCost.toLocaleString()}</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-xs text-gray-500">Net Profit</div>
+                                                    <div class="font-bold ${orderProfit > 0 ? 'text-green-600' : 'text-red-600'}">€${orderProfit.toLocaleString()}</div>
+                                                </div>
+                                            </div>
+                                        ` : `
+                                            <div class="text-center py-4 text-gray-400">
+                                                <i class="fas fa-info-circle mr-2"></i>No supplier payments recorded for this order yet
+                                            </div>
+                                        `}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading supplier costs:', error);
+                container.innerHTML = '<div class="text-center py-12 text-red-400"><i class="fas fa-exclamation-triangle text-5xl mb-3"></i><p>Error loading supplier data</p></div>';
+            }
+        }
+
+        // Load analytics tab
+        async function loadAnalyticsTab(container) {
+            container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-blue-600"></i></div>';
+            
+            try {
+                // Get all orders for this customer
+                const customerOrdersList = (window.customerOrders || []).filter(o => o.customer_code === currentCustomer.customer_code);
+                
+                if (customerOrdersList.length === 0) {
+                    container.innerHTML = '<div class="text-center py-12 text-gray-400"><i class="fas fa-inbox text-5xl mb-3"></i><p>No orders to analyze</p></div>';
+                    return;
+                }
+                
+                // Calculate comprehensive analytics
+                const totalOrders = customerOrdersList.length;
+                const totalRevenue = customerOrdersList.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0);
+                const avgOrderValue = totalRevenue / totalOrders;
+                
+                // Order status breakdown
+                const statusCounts = {};
+                customerOrdersList.forEach(o => {
+                    const status = o.status || 'unknown';
+                    statusCounts[status] = (statusCounts[status] || 0) + 1;
+                });
+                
+                // Monthly revenue trend (last 12 months)
+                const monthlyRevenue = {};
+                customerOrdersList.forEach(o => {
+                    const date = new Date(o.order_date);
+                    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] || 0) + (parseFloat(o.total_amount) || 0);
+                });
+                
+                // Top products (by quantity)
+                const productCounts = {};
+                customerOrdersList.forEach(o => {
+                    const product = o.product_description || 'Unknown Product';
+                    productCounts[product] = (productCounts[product] || 0) + (parseInt(o.quantity) || 0);
+                });
+                const topProducts = Object.entries(productCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5);
+                
+                // Calculate profit margin
+                const allSupplierPayments = window.supplierPayments || [];
+                const orderIds = customerOrdersList.map(o => o.id);
+                const relevantPayments = allSupplierPayments.filter(p => orderIds.includes(p.order_id));
+                const totalSupplierCosts = relevantPayments.reduce((sum, p) => sum + (parseFloat(p.payment_amount_rmb) || 0), 0);
+                const avgProfitMargin = totalRevenue > 0 ? ((totalRevenue - totalSupplierCosts) / totalRevenue * 100).toFixed(1) : 0;
+                
+                container.innerHTML = `
+                    <div class="space-y-6">
+                        <!-- Key Metrics -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg p-4">
+                                <div class="text-sm opacity-90 mb-1">Total Orders</div>
+                                <div class="text-3xl font-bold">${totalOrders}</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg p-4">
+                                <div class="text-sm opacity-90 mb-1">Total Revenue</div>
+                                <div class="text-3xl font-bold">€${totalRevenue.toLocaleString()}</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg p-4">
+                                <div class="text-sm opacity-90 mb-1">Avg Order Value</div>
+                                <div class="text-3xl font-bold">€${avgOrderValue.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-lg p-4">
+                                <div class="text-sm opacity-90 mb-1">Profit Margin</div>
+                                <div class="text-3xl font-bold">${avgProfitMargin}%</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Charts Row - Fixed Height Containers -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Order Status Distribution -->
+                            <div class="bg-white rounded-lg p-6 border">
+                                <h4 class="text-lg font-bold text-gray-900 mb-4"><i class="fas fa-chart-pie mr-2"></i>Order Status Distribution</h4>
+                                <div style="height: 280px; max-height: 280px; position: relative;">
+                                    <canvas id="statusChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- Monthly Revenue Trend -->
+                            <div class="bg-white rounded-lg p-6 border">
+                                <h4 class="text-lg font-bold text-gray-900 mb-4"><i class="fas fa-chart-line mr-2"></i>Monthly Revenue Trend</h4>
+                                <div style="height: 280px; max-height: 280px; position: relative;">
+                                    <canvas id="trendChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Top Products -->
+                        <div class="bg-white rounded-lg p-6 border">
+                            <h4 class="text-lg font-bold text-gray-900 mb-4"><i class="fas fa-box mr-2"></i>Top 5 Products by Quantity</h4>
+                            <div class="space-y-3">
+                                ${topProducts.map(([ product, qty], idx) => `
+                                    <div class="flex items-center gap-4">
+                                        <div class="text-2xl font-bold text-gray-400 w-8">#${idx + 1}</div>
+                                        <div class="flex-1">
+                                            <div class="font-semibold text-gray-900">${product}</div>
+                                            <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                                <div class="bg-blue-600 h-2 rounded-full" style="width: ${(qty / topProducts[0][1] * 100)}%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="text-xl font-bold text-blue-600">${qty}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <!-- Order Timeline -->
+                        <div class="bg-white rounded-lg p-6 border">
+                            <h4 class="text-lg font-bold text-gray-900 mb-4"><i class="fas fa-history mr-2"></i>Recent Orders Timeline</h4>
+                            <div class="space-y-2">
+                                ${customerOrdersList.slice(0, 5).map(order => `
+                                    <div class="flex items-center gap-4 p-3 bg-gray-50 rounded">
+                                        <div class="text-sm font-mono text-gray-500">${new Date(order.order_date).toLocaleDateString()}</div>
+                                        <div class="flex-1">
+                                            <div class="font-semibold">${order.order_number}</div>
+                                            <div class="text-sm text-gray-600">${order.product_description}</div>
+                                        </div>
+                                        <div class="font-bold text-green-600">€${parseFloat(order.total_amount).toLocaleString()}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Render charts after DOM is ready
+                setTimeout(() => {
+                    // Status Chart
+                    const ctxStatus = document.getElementById('statusChart');
+                    if (ctxStatus) {
+                        new Chart(ctxStatus.getContext('2d'), {
+                            type: 'doughnut',
+                            data: {
+                                labels: Object.keys(statusCounts),
+                                datasets: [{
+                                    data: Object.values(statusCounts),
+                                    backgroundColor: [
+                                        'rgba(59, 130, 246, 0.8)',
+                                        'rgba(16, 185, 129, 0.8)',
+                                        'rgba(245, 158, 11, 0.8)',
+                                        'rgba(239, 68, 68, 0.8)',
+                                        'rgba(139, 92, 246, 0.8)'
+                                    ]
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { position: 'bottom' }
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Trend Chart
+                    const ctxTrend = document.getElementById('trendChart');
+                    if (ctxTrend) {
+                        const sortedMonths = Object.keys(monthlyRevenue).sort();
+                        new Chart(ctxTrend.getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: sortedMonths,
+                                datasets: [{
+                                    label: 'Revenue (€)',
+                                    data: sortedMonths.map(m => monthlyRevenue[m]),
+                                    borderColor: 'rgba(59, 130, 246, 1)',
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                    fill: true,
+                                    tension: 0.4
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: { beginAtZero: true }
+                                },
+                                plugins: {
+                                    legend: { display: false }
+                                }
+                            }
+                        });
+                    }
+                }, 100);
+                
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                container.innerHTML = '<div class="text-center py-12 text-red-400"><i class="fas fa-exclamation-triangle text-5xl mb-3"></i><p>Error loading analytics</p></div>';
+            }
+        }
+
+        // Load transactions tab - FULL TRANSACTION TIMELINE
+        function loadTransactionsTab(container) {
+            container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-indigo-600"></i></div>';
+            
+            // Get transactions for this customer
+            const customerTxns = (window.customerTransactions || []).filter(t => t.customer_code === currentCustomer.customer_code);
+            
+            if (customerTxns.length === 0) {
+                container.innerHTML = '<div class="text-center py-12 text-gray-400"><i class="fas fa-inbox text-5xl mb-3"></i><p>No transactions found for this customer</p></div>';
+                return;
+            }
+            
+            // Sort by date (newest first)
+            const sortedTxns = [...customerTxns].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Calculate totals
+            const totalInvoiced = customerTxns.filter(t => t.transaction_type === 'Commercial Invoice').reduce((sum, t) => sum + t.invoice_amount_eur, 0);
+            const totalPaid = customerTxns.filter(t => t.transaction_type === 'Payment').reduce((sum, t) => sum + t.amount_paid_eur, 0);
+            const latestOutstanding = sortedTxns[0]?.outstanding_balance_eur || 0;
+            
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <!-- Transaction Summary -->
+                    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-6 mb-6">
+                        <h3 class="text-lg font-bold text-indigo-900 mb-4">
+                            <i class="fas fa-receipt mr-2"></i>Transaction Summary
+                        </h3>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <div class="text-sm text-indigo-600 mb-1">Total Invoiced</div>
+                                <div class="text-2xl font-bold text-indigo-700">€${totalInvoiced.toLocaleString()}</div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-green-600 mb-1">Total Paid</div>
+                                <div class="text-2xl font-bold text-green-700">€${totalPaid.toLocaleString()}</div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-orange-600 mb-1">Current Outstanding</div>
+                                <div class="text-2xl font-bold text-orange-700">€${latestOutstanding.toLocaleString()}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Transaction Timeline -->
+                    <h4 class="text-lg font-bold text-gray-900 mb-4">
+                        <i class="fas fa-history mr-2"></i>Transaction Timeline (${sortedTxns.length} records)
+                    </h4>
+                    
+                    <div class="space-y-3">
+                        ${sortedTxns.map(txn => {
+                            const isInvoice = txn.transaction_type === 'Commercial Invoice';
+                            const isPayment = txn.transaction_type === 'Payment';
+                            
+                            return `
+                            <div class="border-l-4 ${isInvoice ? 'border-blue-500' : 'border-green-500'} bg-white rounded-lg p-4 hover:shadow-md transition cursor-pointer" onclick='openTransactionDetail(${JSON.stringify(txn)})'>
+                                <div class="flex justify-between items-start mb-3">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 rounded-full ${isInvoice ? 'bg-blue-100' : 'bg-green-100'} flex items-center justify-center">
+                                            <i class="fas ${isInvoice ? 'fa-file-invoice' : 'fa-check-circle'} ${isInvoice ? 'text-blue-600' : 'text-green-600'}"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="font-bold text-lg ${isInvoice ? 'text-blue-700' : 'text-green-700'}">
+                                                ${isInvoice ? '📄 Invoice Created' : '💰 Payment Received'}
+                                            </h5>
+                                            <p class="text-sm text-gray-600">${txn.invoice_number}</p>
+                                            <p class="text-xs text-gray-500 mt-1">
+                                                <i class="fas fa-calendar mr-1"></i>${new Date(txn.date).toLocaleDateString()}
+                                                ${txn.staff_name ? ` • <i class="fas fa-user ml-2 mr-1"></i>${txn.staff_name}` : ''}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        ${isInvoice ? `
+                                            <div class="text-xl font-bold text-blue-600">€${txn.invoice_amount_eur.toLocaleString()}</div>
+                                            <div class="text-xs text-gray-500">${txn.currency} ${txn.invoice_amount.toLocaleString()}</div>
+                                        ` : `
+                                            <div class="text-xl font-bold text-green-600">€${txn.amount_paid_eur.toLocaleString()}</div>
+                                            <div class="text-xs text-gray-500">${txn.currency} ${txn.amount_paid.toLocaleString()}</div>
+                                        `}
+                                    </div>
+                                </div>
+                                
+                                <!-- Transaction Details Grid -->
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 pt-3 border-t text-sm">
+                                    ${isPayment ? `
+                                        <div>
+                                            <div class="text-xs text-gray-500">Payment Method</div>
+                                            <div class="font-semibold">${txn.payment_method || '-'}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-gray-500">Bank/Account</div>
+                                            <div class="font-semibold">${txn.bank_account || '-'}</div>
+                                        </div>
+                                    ` : ''}
+                                    <div>
+                                        <div class="text-xs text-gray-500">Exchange Rate</div>
+                                        <div class="font-semibold">${txn.exchange_rate || '1.00'}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-500">Outstanding Balance</div>
+                                        <div class="font-semibold ${txn.outstanding_balance_eur > 0 ? 'text-orange-600' : 'text-green-600'}">
+                                            €${txn.outstanding_balance_eur.toLocaleString()}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                ${txn.notes ? `
+                                    <div class="mt-3 pt-3 border-t text-sm text-gray-600">
+                                        <i class="fas fa-sticky-note mr-2"></i>${txn.notes}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `}).join('')}
+                    </div>
+                    
+                    <!-- Data Source Info -->
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-6 text-sm text-gray-600">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Transaction data sourced from <strong>"Transactions Tracker"</strong> Google Sheet • 
+                        ${customerTxns.filter(t => t.transaction_type === 'Commercial Invoice').length} invoice(s) • 
+                        ${customerTxns.filter(t => t.transaction_type === 'Payment').length} payment(s)
+                    </div>
+                </div>
+            `;
+        }
+
+        // Export to Excel
+        function exportToExcel() {
+            const ws_data = [
+                ['Customer Code', 'Customer Name', 'Contact Person', 'Email', 'Phone', 'Country', 'City', 'Total Orders', 'Total Value (EUR)', 'Status'],
+                ...filteredCustomers.map(c => [
+                    c.customer_code,
+                    c.customer_name,
+                    c.contact_person,
+                    c.email,
+                    c.phone,
+                    c.country,
+                    c.city,
+                    c.total_orders,
+                    c.total_value_eur,
+                    c.active ? 'Active' : 'Inactive'
+                ])
+            ];
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            XLSX.utils.book_append_sheet(wb, ws, "Customers");
+            XLSX.writeFile(wb, `I_Trusty_Customers_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        // Export to PDF
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(18);
+            doc.text('I Trusty Ltd - Customers Report', 14, 22);
+            doc.setFontSize(11);
+            doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
+
+            const tableData = filteredCustomers.map(c => [
+                c.customer_code,
+                c.customer_name,
+                c.country,
+                c.total_orders,
+                '€' + c.total_value_eur.toLocaleString()
+            ]);
+
+            doc.autoTable({
+                startY: 35,
+                head: [['Code', 'Name', 'Country', 'Orders', 'Revenue']],
+                body: tableData,
+                theme: 'striped',
+                styles: { fontSize: 8 }
+            });
+
+            doc.save(`I_Trusty_Customers_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        // ========== PHASE 1: CLICKABLE HISTORY ITEMS WITH EDIT/DELETE ==========
+        
+        // Open invoice/order for editing (from transactions/orders history)
+        function openInvoiceEdit(invoiceNumber) {
+            // Find the invoice in transactions
+            const txns = (window.customerTransactions || []).filter(t => t.invoice_number === invoiceNumber);
+            if (txns.length === 0) {
+                alert('❌ Invoice not found');
+                return;
+            }
+            
+            const invoice = txns[0]; // Get first transaction for basic info
+            
+            // Try to find matching order
+            const order = (window.customerOrders || []).find(o => o.order_number === invoiceNumber);
+            
+            if (order) {
+                // If order exists, redirect to orders page to edit
+                window.location.href = `orders-enhanced.html?orderId=${order.id}`;
+            } else {
+                // Show invoice detail modal (read-only from Google Sheets)
+                showInvoiceDetailModal(invoiceNumber, txns);
+            }
+        }
+        
+        // Show invoice detail modal (for Google Sheets invoices)
+        function showInvoiceDetailModal(invoiceNumber, txns) {
+            const invoice = txns[0];
+            const payments = txns.filter(t => t.transaction_type === 'Payment');
+            const totalPaid = payments.reduce((sum, p) => sum + (p.amount_paid_eur || 0), 0);
+            const outstanding = invoice.outstanding_balance_eur || 0;
+            
+            const modalHTML = `
+                <div id="invoiceDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 rounded-t-xl">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-2xl font-bold">Invoice ${invoiceNumber}</h3>
+                                    <p class="text-sm opacity-90 mt-1">${invoice.customer_name}</p>
+                                </div>
+                                <button onclick="closeInvoiceDetailModal()" class="text-white hover:text-gray-200">
+                                    <i class="fas fa-times text-2xl"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="p-6 space-y-6">
+                            <!-- Summary -->
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <div class="text-sm text-blue-600">Invoice Amount</div>
+                                    <div class="text-2xl font-bold text-blue-700">€${invoice.invoice_amount_eur.toLocaleString()}</div>
+                                </div>
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <div class="text-sm text-green-600">Total Paid</div>
+                                    <div class="text-2xl font-bold text-green-700">€${totalPaid.toLocaleString()}</div>
+                                </div>
+                                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                    <div class="text-sm text-orange-600">Outstanding</div>
+                                    <div class="text-2xl font-bold text-orange-700">€${outstanding.toLocaleString()}</div>
+                                </div>
+                            </div>
+
+                            <!-- Invoice Details -->
+                            <div class="border-t pt-4">
+                                <h4 class="font-semibold text-gray-800 mb-3">Invoice Details</h4>
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <div class="text-gray-500">Date</div>
+                                        <div class="font-medium">${new Date(invoice.date).toLocaleDateString()}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-gray-500">Currency</div>
+                                        <div class="font-medium">${invoice.currency}</div>
+                                    </div>
+                                    ${invoice.staff_name ? `
+                                        <div>
+                                            <div class="text-gray-500">Created By</div>
+                                            <div class="font-medium">${invoice.staff_name}</div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <!-- Payments -->
+                            ${payments.length > 0 ? `
+                                <div class="border-t pt-4">
+                                    <h4 class="font-semibold text-gray-800 mb-3">
+                                        <i class="fas fa-money-bill-wave text-green-600 mr-2"></i>
+                                        Payments Received (${payments.length})
+                                    </h4>
+                                    <div class="space-y-2">
+                                        ${payments.map(p => `
+                                            <div class="bg-green-50 border border-green-200 rounded p-3 flex justify-between items-center">
+                                                <div>
+                                                    <div class="font-medium text-green-700">€${p.amount_paid_eur.toLocaleString()}</div>
+                                                    <div class="text-xs text-gray-600">
+                                                        ${new Date(p.date).toLocaleDateString()}
+                                                        ${p.payment_method ? ` • ${p.payment_method}` : ''}
+                                                    </div>
+                                                </div>
+                                                <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                                                    ✓ Paid
+                                                </span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <!-- Info Banner -->
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div class="flex items-start gap-2">
+                                    <i class="fas fa-info-circle text-blue-600 mt-1"></i>
+                                    <div class="text-sm text-blue-700">
+                                        <strong>Note:</strong> This invoice is synced from Google Sheets Transactions Tracker. 
+                                        To edit, please update the spreadsheet or create a corresponding order in the Orders system.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="flex gap-3 pt-4 border-t">
+                                <a href="https://docs.google.com/spreadsheets/d/1qBFGD4HVd6AfOviyRHTyggVQ-v0ZHE0NOQ1-oIr47NE/edit" 
+                                   target="_blank"
+                                   class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg text-center">
+                                    <i class="fas fa-external-link-alt mr-2"></i> Open in Google Sheets
+                                </a>
+                                <button onclick="closeInvoiceDetailModal()" class="px-6 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+        
+        function closeInvoiceDetailModal() {
+            const modal = document.getElementById('invoiceDetailModal');
+            if (modal) modal.remove();
+        }
+        
+        // Open payment for editing
+        function openPaymentEdit(paymentData) {
+            // Payment detail modal (from Google Sheets - read only in Phase 1)
+            const modalHTML = `
+                <div id="paymentDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div class="p-6">
+                            <!-- Header -->
+                            <div class="flex justify-between items-start mb-6">
+                                <div>
+                                    <h2 class="text-2xl font-bold text-green-700">
+                                        <i class="fas fa-money-check-alt mr-2"></i> Payment Details
+                                    </h2>
+                                    <p class="text-sm text-gray-600 mt-1">Invoice: ${paymentData.invoice_number}</p>
+                                </div>
+                                <button onclick="closePaymentDetailModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Payment Info Grid -->
+                            <div class="grid grid-cols-2 gap-6 mb-6">
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <div class="text-xs text-green-600 font-semibold mb-1">PAYMENT AMOUNT</div>
+                                    <div class="text-3xl font-bold text-green-700">€${paymentData.amount_paid_eur.toLocaleString()}</div>
+                                    <div class="text-sm text-gray-600 mt-1">${paymentData.currency} ${paymentData.amount_paid.toLocaleString()}</div>
+                                </div>
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <div class="text-xs text-blue-600 font-semibold mb-1">PAYMENT DATE</div>
+                                    <div class="text-xl font-bold text-blue-700">${new Date(paymentData.date).toLocaleDateString()}</div>
+                                    <div class="text-sm text-gray-600 mt-1">
+                                        <i class="fas fa-exchange-alt mr-1"></i> Rate: ${paymentData.exchange_rate}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Payment Details -->
+                            <div class="space-y-3 mb-6">
+                                <div class="flex items-center justify-between py-2 border-b">
+                                    <span class="text-gray-600"><i class="fas fa-credit-card mr-2"></i> Payment Method</span>
+                                    <span class="font-semibold">${paymentData.payment_method || 'N/A'}</span>
+                                </div>
+                                <div class="flex items-center justify-between py-2 border-b">
+                                    <span class="text-gray-600"><i class="fas fa-university mr-2"></i> Bank Account</span>
+                                    <span class="font-semibold">${paymentData.bank_account || 'N/A'}</span>
+                                </div>
+                                <div class="flex items-center justify-between py-2 border-b">
+                                    <span class="text-gray-600"><i class="fas fa-user mr-2"></i> Staff</span>
+                                    <span class="font-semibold">${paymentData.staff_name || 'N/A'}</span>
+                                </div>
+                                <div class="flex items-center justify-between py-2 border-b">
+                                    <span class="text-gray-600"><i class="fas fa-wallet mr-2"></i> Outstanding Balance</span>
+                                    <span class="font-bold ${paymentData.outstanding_balance_eur > 0 ? 'text-orange-600' : 'text-green-600'}">
+                                        €${paymentData.outstanding_balance_eur.toLocaleString()}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            ${paymentData.notes ? `
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                                    <div class="text-xs text-yellow-700 font-semibold mb-2"><i class="fas fa-sticky-note mr-1"></i> NOTES</div>
+                                    <div class="text-sm text-gray-700">${paymentData.notes}</div>
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Data Source Info -->
+                            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                                <i class="fas fa-info-circle mr-2 text-gray-600"></i>
+                                <span class="text-sm text-gray-600">
+                                    This payment is synced from <strong>Google Sheets Transactions Tracker</strong>. 
+                                    To edit or delete, please update the spreadsheet directly.
+                                </span>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div class="flex gap-3">
+                                <a href="https://docs.google.com/spreadsheets/d/1qBFGD4HVd6AfOviyRHTyggVQ-v0ZHE0NOQ1-oIr47NE/edit" 
+                                   target="_blank"
+                                   class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg text-center">
+                                    <i class="fas fa-external-link-alt mr-2"></i> Open in Google Sheets
+                                </a>
+                                <button onclick="closePaymentDetailModal()" class="px-6 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+        
+        function closePaymentDetailModal() {
+            const modal = document.getElementById('paymentDetailModal');
+            if (modal) modal.remove();
+        }
+        
+        // Open supplier payment for editing  
+        function openSupplierPaymentEdit(paymentId) {
+            // Find the payment
+            const payment = (window.supplierPayments || []).find(p => p.id === paymentId);
+            if (!payment) {
+                alert('❌ Supplier payment not found');
+                return;
+            }
+            
+            // Redirect to orders page to edit
+            window.location.href = `orders-enhanced.html?orderId=${payment.order_id}`;
+        }
+        
+        // Open transaction detail
+        function openTransactionDetail(txnData) {
+            if (txnData.transaction_type === 'Commercial Invoice') {
+                openInvoiceEdit(txnData.invoice_number);
+            } else if (txnData.transaction_type === 'Payment') {
+                openPaymentEdit(txnData);
+            }
+        }
+        
+        // Delete order
+        async function deleteOrder(orderId, orderNumber) {
+            if (!confirm(`⚠️ Delete order ${orderNumber}?\n\nThis will permanently delete the order and all associated data.\n\nAre you sure?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`tables/orders/${orderId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert(`✅ Order ${orderNumber} deleted successfully!`);
+                    // Reload data
+                    await loadOrdersData();
+                    // Refresh customer detail if open
+                    if (currentCustomer) {
+                        showCustomerDetails(currentCustomer);
+                    }
+                } else {
+                    alert('❌ Failed to delete order');
+                }
+            } catch (error) {
+                console.error('Error deleting order:', error);
+                alert('❌ Error deleting order');
+            }
+        }
+        
+        // Delete supplier payment
+        async function deleteSupplierPayment(paymentId, supplierName) {
+            if (!confirm(`⚠️ Delete supplier payment to ${supplierName}?\n\nThis action cannot be undone.\n\nAre you sure?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`tables/supplier_payments/${paymentId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert(`✅ Supplier payment deleted successfully!`);
+                    // Reload data
+                    await loadOrdersData(); // This loads supplier payments too
+                    // Refresh customer detail if open
+                    if (currentCustomer) {
+                        showCustomerDetails(currentCustomer);
+                    }
+                } else {
+                    alert('❌ Failed to delete payment');
+                }
+            } catch (error) {
+                console.error('Error deleting payment:', error);
+                alert('❌ Error deleting payment');
+            }
+        }
+        
+        // ===== THEME SWITCHING SYSTEM =====
+        function setTheme(themeName) {
+            // Set theme on body
+            document.body.setAttribute('data-theme', themeName);
+            
+            // Save to localStorage
+            localStorage.setItem('customers-theme', themeName);
+            
+            // Update active button
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-theme') === themeName) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            console.log('✅ Theme changed to:', themeName);
+        }
+        
+        // Load saved theme on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('customers-theme') || 'modern';
+            setTheme(savedTheme);
+        });
+    </script>
+</body>
+</html>
