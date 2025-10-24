@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Trusty - Data Initialization</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-4xl w-full bg-white rounded-lg shadow-lg p-8">
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-database text-white text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">I Trusty CRM - Data Initialization</h1>
+            <p class="text-gray-600">Initialize your system with team members and financial accounts</p>
+        </div>
+
+        <div class="space-y-4">
+            <div id="status" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p class="text-blue-800 font-medium">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Ready to initialize data. Click the button below to start.
+                </p>
+            </div>
+
+            <div id="progress" class="hidden">
+                <div class="space-y-2">
+                    <div id="staffStatus" class="p-3 bg-gray-50 rounded flex items-center gap-3">
+                        <i class="fas fa-circle-notch fa-spin text-blue-600"></i>
+                        <span>Checking staff members...</span>
+                    </div>
+                    <div id="accountsStatus" class="p-3 bg-gray-50 rounded flex items-center gap-3">
+                        <i class="fas fa-circle-notch fa-spin text-blue-600"></i>
+                        <span>Checking financial accounts...</span>
+                    </div>
+                    <div id="customersStatus" class="p-3 bg-gray-50 rounded flex items-center gap-3">
+                        <i class="fas fa-circle-notch fa-spin text-blue-600"></i>
+                        <span>Checking customers...</span>
+                    </div>
+                    <div id="usersStatus" class="p-3 bg-gray-50 rounded flex items-center gap-3">
+                        <i class="fas fa-circle-notch fa-spin text-blue-600"></i>
+                        <span>Checking users...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results" class="hidden space-y-2"></div>
+
+            <div class="flex justify-center gap-4 pt-4">
+                <button id="initButton" onclick="initializeData()" class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 font-semibold flex items-center gap-2">
+                    <i class="fas fa-play"></i>
+                    Initialize Data
+                </button>
+                <a href="index.html" class="bg-gray-200 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-300 font-semibold flex items-center gap-2">
+                    <i class="fas fa-home"></i>
+                    Go to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function initializeData() {
+            const button = document.getElementById('initButton');
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Initializing...';
+            
+            document.getElementById('status').classList.add('hidden');
+            document.getElementById('progress').classList.remove('hidden');
+            
+            const results = [];
+            
+            // Initialize Staff Members
+            try {
+                const staffResponse = await fetch('tables/staff_members');
+                const staffData = await staffResponse.json();
+                
+                if (!staffData.data || staffData.data.length === 0) {
+                    updateStatus('staffStatus', 'Adding 11 team members...', 'blue');
+                    
+                    const teamMembers = [
+                        {"name": "Peng", "role": "Manager", "office_location": "Yiwu", "monthly_salary_rmb": 12000, "monthly_salary_eur": 0, "capacity_hours_per_week": 48, "skills": ["Management", "Sourcing", "QC"], "active": true},
+                        {"name": "Zheng (Big Brother)", "role": "QC Inspector", "office_location": "Yiwu", "monthly_salary_rmb": 6000, "monthly_salary_eur": 0, "capacity_hours_per_week": 45, "skills": ["Quality Control", "Inspection"], "active": true},
+                        {"name": "Lin Yi", "role": "QC & Warehouse", "office_location": "Yiwu", "monthly_salary_rmb": 7000, "monthly_salary_eur": 0, "capacity_hours_per_week": 45, "skills": ["Quality Control", "Warehouse Management"], "active": true},
+                        {"name": "James", "role": "Finance", "office_location": "Yiwu", "monthly_salary_rmb": 5000, "monthly_salary_eur": 0, "capacity_hours_per_week": 40, "skills": ["Banking", "Finance", "Payments"], "active": true},
+                        {"name": "Lily", "role": "Manager", "office_location": "Shenzhen", "monthly_salary_rmb": 18500, "monthly_salary_eur": 0, "capacity_hours_per_week": 50, "skills": ["Management", "Sourcing", "Client Relations"], "active": true},
+                        {"name": "Ruby", "role": "Purchasing", "office_location": "Shenzhen", "monthly_salary_rmb": 8500, "monthly_salary_eur": 0, "capacity_hours_per_week": 48, "skills": ["Purchasing", "Supplier Relations"], "active": true},
+                        {"name": "Xiao Min", "role": "Sourcing", "office_location": "Shenzhen", "monthly_salary_rmb": 6500, "monthly_salary_eur": 0, "capacity_hours_per_week": 45, "skills": ["Product Sourcing", "Research"], "active": true},
+                        {"name": "Silent Artist", "role": "Designer", "office_location": "Shenzhen", "monthly_salary_rmb": 7000, "monthly_salary_eur": 0, "capacity_hours_per_week": 40, "skills": ["Graphic Design", "Packaging Design"], "active": true},
+                        {"name": "Johny (CEO)", "role": "CEO", "office_location": "Shenzhen", "monthly_salary_rmb": 0, "monthly_salary_eur": 0, "capacity_hours_per_week": 60, "skills": ["Strategy", "Management", "Business Development"], "active": true},
+                        {"name": "Nikos", "role": "Operations Greece", "office_location": "Greece", "monthly_salary_rmb": 10760, "monthly_salary_eur": 1230, "capacity_hours_per_week": 40, "skills": ["Operations", "Client Relations", "Logistics"], "active": true},
+                        {"name": "Chrysanthi", "role": "Admin Greece", "office_location": "Greece", "monthly_salary_rmb": 6565, "monthly_salary_eur": 750, "capacity_hours_per_week": 35, "skills": ["Administration", "Data Entry", "Documentation"], "active": true}
+                    ];
+                    
+                    for (const member of teamMembers) {
+                        await fetch('tables/staff_members', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(member)
+                        });
+                    }
+                    
+                    updateStatus('staffStatus', '✓ Added 11 team members', 'green');
+                    results.push('✅ Staff Members: 11 added');
+                } else {
+                    updateStatus('staffStatus', `✓ Already exists (${staffData.data.length} members)`, 'green');
+                    results.push(`✅ Staff Members: ${staffData.data.length} already exist`);
+                }
+            } catch (error) {
+                updateStatus('staffStatus', '✗ Error adding staff', 'red');
+                results.push('❌ Staff Members: Error');
+            }
+            
+            // Initialize Financial Accounts
+            try {
+                const accountsResponse = await fetch('tables/financial_accounts');
+                const accountsData = await accountsResponse.json();
+                
+                if (!accountsData.data || accountsData.data.length === 0) {
+                    updateStatus('accountsStatus', 'Adding 24 financial accounts...', 'blue');
+                    
+                    const accounts = [
+                        {"account_name": "CCB RMB", "account_type": "Current Account", "currency": "CNY", "balance": 2044786.18, "bank_name": "China Construction Bank", "icon_color": "#3B82F6", "active": true},
+                        {"account_name": "CCB €", "account_type": "Current Account", "currency": "EUR", "balance": 177824.68, "bank_name": "China Construction Bank", "icon_color": "#10B981", "active": true},
+                        {"account_name": "CCB $", "account_type": "Cash", "currency": "USD", "balance": 0, "bank_name": "China Construction Bank", "icon_color": "#60A5FA", "active": true},
+                        {"account_name": "Merchants Bank RMB", "account_type": "Cash", "currency": "CNY", "balance": 41362.35, "bank_name": "Merchants Bank", "icon_color": "#EF4444", "active": true},
+                        {"account_name": "RAPYD €", "account_type": "Current Account", "currency": "EUR", "balance": 72232.77, "bank_name": "RAPYD", "icon_color": "#1F2937", "active": true},
+                        {"account_name": "NEAT $", "account_type": "Current Account", "currency": "USD", "balance": 2593.37, "bank_name": "NEAT", "icon_color": "#374151", "active": true},
+                        {"account_name": "MANA", "account_type": "Cash", "currency": "EUR", "balance": 99400, "bank_name": "MANA", "icon_color": "#059669", "active": true},
+                        {"account_name": "REVOLUTE", "account_type": "General", "currency": "EUR", "balance": 1735, "bank_name": "Revolut", "icon_color": "#3B82F6", "active": true},
+                        {"account_name": "PAYPAL $", "account_type": "General", "currency": "USD", "balance": 72.99, "bank_name": "PayPal", "icon_color": "#2563EB", "active": true},
+                        {"account_name": "N26", "account_type": "Saving Account", "currency": "EUR", "balance": 12634.84, "bank_name": "N26", "icon_color": "#14B8A6", "active": true},
+                        {"account_name": "NEAT HKD", "account_type": "Current Account", "currency": "HKD", "balance": 7150, "bank_name": "NEAT", "icon_color": "#6B7280", "active": true},
+                        {"account_name": "Saving 5 years", "account_type": "Saving Account", "currency": "CNY", "balance": 250000, "bank_name": "CCB", "icon_color": "#3B82F6", "active": true},
+                        {"account_name": "Wechat", "account_type": "Cash", "currency": "CNY", "balance": 9339.62, "bank_name": "WeChat Pay", "icon_color": "#10B981", "active": true},
+                        {"account_name": "Saving account", "account_type": "Saving Account", "currency": "CNY", "balance": 0, "bank_name": "CCB", "icon_color": "#60A5FA", "active": true},
+                        {"account_name": "Mario €", "account_type": "Cash", "currency": "EUR", "balance": 7591.02, "bank_name": "Personal", "icon_color": "#10B981", "active": true},
+                        {"account_name": "Mario CNY", "account_type": "Cash", "currency": "CNY", "balance": 0, "bank_name": "Personal", "icon_color": "#F97316", "active": true},
+                        {"account_name": "BDS GKS", "account_type": "Cash", "currency": "EUR", "balance": 0, "bank_name": "BDS", "icon_color": "#6B7280", "active": true},
+                        {"account_name": "TRANSFER WISE €", "account_type": "Cash", "currency": "EUR", "balance": 356.2, "bank_name": "Wise", "icon_color": "#3B82F6", "active": true},
+                        {"account_name": "Alipay", "account_type": "Cash", "currency": "CNY", "balance": 1946.18, "bank_name": "Alipay", "icon_color": "#60A5FA", "active": true},
+                        {"account_name": "Liakos Cash", "account_type": "Cash", "currency": "CNY", "balance": 0, "bank_name": "Personal", "icon_color": "#3B82F6", "active": true},
+                        {"account_name": "Lily", "account_type": "Cash", "currency": "CNY", "balance": 0, "bank_name": "Personal", "icon_color": "#EC4899", "active": true},
+                        {"account_name": "Φοινικιανακης", "account_type": "Cash", "currency": "EUR", "balance": 5989, "bank_name": "Personal", "icon_color": "#3B82F6", "active": true},
+                        {"account_name": "AYW money", "account_type": "Cash", "currency": "EUR", "balance": -3768, "bank_name": "Personal", "icon_color": "#3B82F6", "active": true},
+                        {"account_name": "Cash on Hand", "account_type": "Cash", "currency": "EUR", "balance": -1200, "bank_name": "Physical Cash", "icon_color": "#10B981", "active": true}
+                    ];
+                    
+                    for (const account of accounts) {
+                        await fetch('tables/financial_accounts', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(account)
+                        });
+                    }
+                    
+                    updateStatus('accountsStatus', '✓ Added 24 financial accounts', 'green');
+                    results.push('✅ Financial Accounts: 24 added');
+                } else {
+                    updateStatus('accountsStatus', `✓ Already exists (${accountsData.data.length} accounts)`, 'green');
+                    results.push(`✅ Financial Accounts: ${accountsData.data.length} already exist`);
+                }
+            } catch (error) {
+                updateStatus('accountsStatus', '✗ Error adding accounts', 'red');
+                results.push('❌ Financial Accounts: Error');
+            }
+            
+            // Show final results
+            document.getElementById('progress').classList.add('hidden');
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+                    <h3 class="text-xl font-bold text-green-800 mb-4">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Initialization Complete!
+                    </h3>
+                    <ul class="space-y-2">
+                        ${results.map(r => `<li class="text-green-700">${r}</li>`).join('')}
+                    </ul>
+                    <div class="mt-6 flex gap-3">
+                        <a href="index.html" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 inline-flex items-center gap-2">
+                            <i class="fas fa-home"></i>
+                            Go to Dashboard
+                        </a>
+                        <a href="finance.html" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 inline-flex items-center gap-2">
+                            <i class="fas fa-university"></i>
+                            View Financial Accounts
+                        </a>
+                    </div>
+                </div>
+            `;
+            resultsDiv.classList.remove('hidden');
+            
+            button.innerHTML = '<i class="fas fa-check mr-2"></i>Completed';
+        }
+        
+        function updateStatus(id, message, color) {
+            const element = document.getElementById(id);
+            const colors = {
+                'blue': 'text-blue-600',
+                'green': 'text-green-600',
+                'red': 'text-red-600'
+            };
+            
+            if (color === 'green') {
+                element.innerHTML = `<i class="fas fa-check-circle ${colors[color]}"></i><span>${message}</span>`;
+            } else if (color === 'red') {
+                element.innerHTML = `<i class="fas fa-times-circle ${colors[color]}"></i><span>${message}</span>`;
+            } else {
+                element.innerHTML = `<i class="fas fa-circle-notch fa-spin ${colors[color]}"></i><span>${message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

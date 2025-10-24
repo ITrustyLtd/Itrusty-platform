@@ -1,0 +1,394 @@
+<!-- ========================================
+     DROPDOWN NAVIGATION COMPONENT
+     Universal navigation for all pages
+     ======================================== -->
+
+<style>
+/* Dropdown Navigation System */
+.nav-dropdown-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.nav-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.nav-dropdown-btn {
+    padding: 0.625rem 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.nav-dropdown-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.nav-dropdown-btn i {
+    font-size: 0.875rem;
+}
+
+/* Color variations */
+.nav-dropdown-btn.operations {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.nav-dropdown-btn.financial {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.nav-dropdown-btn.crm {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.nav-dropdown-btn.settings {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+}
+
+/* Dropdown menu */
+.nav-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 0.25rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    min-width: 220px;
+    z-index: 1000;
+    overflow: hidden;
+    padding-top: 0.25rem;
+}
+
+.nav-dropdown-menu.active {
+    display: block;
+}
+
+/* Keep menu visible when hovering over it */
+.nav-dropdown:hover .nav-dropdown-menu,
+.nav-dropdown-menu:hover {
+    display: block;
+}
+
+.nav-dropdown-menu a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: #374151;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all 0.15s;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.nav-dropdown-menu a:last-child {
+    border-bottom: none;
+}
+
+.nav-dropdown-menu a:hover {
+    background: #f9fafb;
+    color: #667eea;
+    padding-left: 1.25rem;
+}
+
+.nav-dropdown-menu a i {
+    width: 20px;
+    text-align: center;
+    color: #9ca3af;
+}
+
+.nav-dropdown-menu a:hover i {
+    color: #667eea;
+}
+
+/* NEW badge */
+.nav-new-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    font-size: 0.625rem;
+    font-weight: 700;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    margin-left: auto;
+    animation: pulse-badge 2s infinite;
+}
+
+@keyframes pulse-badge {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Admin badge */
+.nav-admin-badge {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: auto;
+}
+
+/* Home button */
+.nav-home-btn {
+    padding: 0.625rem 1rem;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.nav-home-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .nav-dropdown-container {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .nav-dropdown-btn {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .nav-dropdown-menu {
+        min-width: 200px;
+    }
+}
+</style>
+
+<!-- Navigation Component -->
+<div class="nav-dropdown-container">
+    <!-- Home Button -->
+    <a href="index.html" class="nav-home-btn">
+        <i class="fas fa-home"></i>
+        <span>Dashboard</span>
+    </a>
+    
+    <!-- Operations Dropdown -->
+    <div class="nav-dropdown">
+        <button class="nav-dropdown-btn operations">
+            <i class="fas fa-briefcase"></i>
+            <span>Operations</span>
+            <i class="fas fa-chevron-down" style="font-size: 0.65rem; margin-left: 0.25rem;"></i>
+        </button>
+        <div class="nav-dropdown-menu">
+            <a href="index.html">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="projects.html">
+                <i class="fas fa-project-diagram"></i>
+                <span>Projects</span>
+            </a>
+            <a href="daily-activities.html">
+                <i class="fas fa-clock"></i>
+                <span>Daily Activities</span>
+            </a>
+            <a href="orders-enhanced.html">
+                <i class="fas fa-shipping-fast"></i>
+                <span>Orders & Workflow</span>
+            </a>
+            <a href="orders-comprehensive.html">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Orders System</span>
+            </a>
+            <a href="team-management.html">
+                <i class="fas fa-users-cog"></i>
+                <span>Team Management</span>
+            </a>
+            <a href="staff-costs.html">
+                <i class="fas fa-user-tie"></i>
+                <span>Staff Costs</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Financial Dropdown -->
+    <div class="nav-dropdown">
+        <button class="nav-dropdown-btn financial">
+            <i class="fas fa-dollar-sign"></i>
+            <span>Financial</span>
+            <i class="fas fa-chevron-down" style="font-size: 0.65rem; margin-left: 0.25rem;"></i>
+        </button>
+        <div class="nav-dropdown-menu">
+            <a href="finance.html">
+                <i class="fas fa-university"></i>
+                <span>Finance Dashboard</span>
+            </a>
+            <a href="analytics-dashboard.html">
+                <i class="fas fa-chart-line"></i>
+                <span>Analytics Dashboard</span>
+                <span class="nav-new-badge">NEW</span>
+            </a>
+            <a href="invoices-creator.html">
+                <i class="fas fa-file-invoice"></i>
+                <span>Invoices</span>
+                <span class="nav-new-badge">NEW</span>
+            </a>
+            <a href="invoices-history.html">
+                <i class="fas fa-history"></i>
+                <span>Invoice History</span>
+                <span class="nav-new-badge">NEW</span>
+            </a>
+            <a href="transactions-customers.html">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Customer Invoices</span>
+            </a>
+            <a href="transactions-suppliers.html">
+                <i class="fas fa-hand-holding-usd"></i>
+                <span>Supplier Payments</span>
+            </a>
+            <a href="profit-analysis.html">
+                <i class="fas fa-chart-line"></i>
+                <span>Profit Analysis</span>
+            </a>
+            <a href="company-expenses.html">
+                <i class="fas fa-receipt"></i>
+                <span>Company Expenses</span>
+            </a>
+            <a href="financial-summary.html">
+                <i class="fas fa-balance-scale"></i>
+                <span>Balance Summary</span>
+            </a>
+            <a href="sales-commissions.html">
+                <i class="fas fa-percentage"></i>
+                <span>Sales Commissions</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- CRM & Sales Dropdown -->
+    <div class="nav-dropdown">
+        <button class="nav-dropdown-btn crm">
+            <i class="fas fa-handshake"></i>
+            <span>CRM & Sales</span>
+            <i class="fas fa-chevron-down" style="font-size: 0.65rem; margin-left: 0.25rem;"></i>
+        </button>
+        <div class="nav-dropdown-menu">
+            <a href="customers.html">
+                <i class="fas fa-users"></i>
+                <span>Customers</span>
+            </a>
+            <a href="suppliers-list.html">
+                <i class="fas fa-truck"></i>
+                <span>Suppliers</span>
+            </a>
+            <a href="products-library.html">
+                <i class="fas fa-box-open"></i>
+                <span>Products Library</span>
+                <span class="nav-new-badge">NEW</span>
+            </a>
+            <a href="orders.html">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Orders</span>
+            </a>
+            <a href="messaging.html">
+                <i class="fas fa-comments"></i>
+                <span>Messages</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Settings Dropdown -->
+    <div class="nav-dropdown">
+        <button class="nav-dropdown-btn settings">
+            <i class="fas fa-cog"></i>
+            <i class="fas fa-chevron-down" style="font-size: 0.65rem; margin-left: 0.25rem;"></i>
+        </button>
+        <div class="nav-dropdown-menu">
+            <a href="#" onclick="window.i18n?.toggleLanguage(); return false;">
+                <i class="fas fa-language"></i>
+                <span>Language</span>
+            </a>
+            <a href="#" onclick="return false;">
+                <i class="fas fa-palette"></i>
+                <span>Theme</span>
+            </a>
+            <a href="admin-permissions.html" id="navAdminPermissions">
+                <i class="fas fa-user-shield"></i>
+                <span>User Permissions</span>
+                <span class="nav-admin-badge">ADMIN</span>
+            </a>
+            <a href="admin-sessions.html" id="navAdminSessions">
+                <i class="fas fa-users-cog"></i>
+                <span>Active Sessions</span>
+                <span class="nav-admin-badge">ADMIN</span>
+            </a>
+            <a href="#" onclick="if(window.SessionTracker) SessionTracker.logoutUser(); else window.location.href='login.html'; return false;">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+// Enhanced dropdown behavior - click to toggle, stays open
+document.addEventListener('DOMContentLoaded', function() {
+    const dropdowns = document.querySelectorAll('.nav-dropdown');
+    
+    dropdowns.forEach(dropdown => {
+        const btn = dropdown.querySelector('.nav-dropdown-btn');
+        const menu = dropdown.querySelector('.nav-dropdown-menu');
+        
+        // Click to toggle
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            // Close all other dropdowns
+            dropdowns.forEach(other => {
+                if (other !== dropdown) {
+                    other.querySelector('.nav-dropdown-menu').classList.remove('active');
+                }
+            });
+            
+            // Toggle current dropdown
+            menu.classList.toggle('active');
+        });
+        
+        // Prevent menu from closing when clicking inside
+        menu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function() {
+        dropdowns.forEach(dropdown => {
+            dropdown.querySelector('.nav-dropdown-menu').classList.remove('active');
+        });
+    });
+});
+</script>

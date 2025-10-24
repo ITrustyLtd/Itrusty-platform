@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Ruby's Salary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-2xl font-bold mb-4">🔧 Fix Ruby's Salary</h1>
+        
+        <div id="status" class="mb-4"></div>
+        
+        <button onclick="findAndFixRuby()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+            Find & Fix Ruby's Salary
+        </button>
+        
+        <div id="results" class="mt-6"></div>
+    </div>
+
+    <script>
+        async function findAndFixRuby() {
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                statusDiv.innerHTML = '<p class="text-blue-600">🔍 Searching for Ruby\'s record...</p>';
+                
+                // Load all expenses
+                const response = await fetch('tables/company_expenses?limit=1000');
+                if (!response.ok) {
+                    throw new Error('Failed to load expenses');
+                }
+                
+                const data = await response.json();
+                const expenses = data.data || [];
+                
+                console.log('📊 Total expenses loaded:', expenses.length);
+                
+                // Find Ruby's record
+                const rubyRecord = expenses.find(exp => 
+                    exp.payee && exp.payee.toLowerCase().includes('ruby')
+                );
+                
+                if (!rubyRecord) {
+                    statusDiv.innerHTML = '<p class="text-red-600">❌ Ruby\'s record not found!</p>';
+                    resultsDiv.innerHTML = '<pre class="bg-gray-100 p-4 rounded">' + 
+                        JSON.stringify(expenses.map(e => ({ id: e.id, payee: e.payee, amount: e.amount })), null, 2) + 
+                        '</pre>';
+                    return;
+                }
+                
+                statusDiv.innerHTML = '<p class="text-green-600">✅ Found Ruby\'s record!</p>';
+                resultsDiv.innerHTML = `
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                        <h3 class="font-bold mb-2">📋 Current Data:</h3>
+                        <pre class="text-sm">${JSON.stringify(rubyRecord, null, 2)}</pre>
+                    </div>
+                `;
+                
+                // Check if already correct
+                if (parseFloat(rubyRecord.amount) === 13900) {
+                    statusDiv.innerHTML += '<p class="text-green-600">✅ Ruby\'s salary is already correct (¥13,900)!</p>';
+                    return;
+                }
+                
+                // Update Ruby's salary
+                statusDiv.innerHTML += '<p class="text-blue-600">🔄 Updating salary from ¥' + rubyRecord.amount + ' to ¥13,900...</p>';
+                
+                const updateResponse = await fetch(`tables/company_expenses/${rubyRecord.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: 13900
+                    })
+                });
+                
+                if (!updateResponse.ok) {
+                    throw new Error('Failed to update Ruby\'s salary');
+                }
+                
+                const updatedRecord = await updateResponse.json();
+                
+                statusDiv.innerHTML += '<p class="text-green-600 font-bold">✅ Ruby\'s salary updated successfully!</p>';
+                resultsDiv.innerHTML += `
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h3 class="font-bold mb-2">✅ Updated Data:</h3>
+                        <pre class="text-sm">${JSON.stringify(updatedRecord, null, 2)}</pre>
+                    </div>
+                `;
+                
+                // Redirect after 3 seconds
+                setTimeout(() => {
+                    statusDiv.innerHTML += '<p class="text-blue-600 mt-4">↪️ Redirecting to Company Expenses page...</p>';
+                    setTimeout(() => {
+                        window.location.href = 'company-expenses.html';
+                    }, 1000);
+                }, 3000);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.innerHTML = '<p class="text-red-600">❌ Error: ' + error.message + '</p>';
+            }
+        }
+        
+        // Auto-run on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(findAndFixRuby, 500);
+        });
+    </script>
+</body>
+</html>

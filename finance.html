@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Trusty Ltd - Financial Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="js/supabase-config.js"></script>
+    <script src="js/page-protection.js"></script>
+    <script src="js/global-navigation.js"></script>
+    <style>
+        :root {
+            --header-bg: #FFFFFF;
+            --body-bg: #F9FAFB;
+            --text-dark: #111827;
+            --border-color: #E5E7EB;
+        }
+
+        body {
+            background-color: var(--body-bg);
+            color: var(--text-dark);
+            transition: background-color 0.3s ease;
+        }
+
+        header {
+            background-color: var(--header-bg);
+            border-color: var(--border-color);
+            transition: background-color 0.3s ease;
+        }
+
+        .account-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .account-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .currency-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .currency-cny { background: linear-gradient(135deg, #EF4444, #DC2626); color: white; }
+        .currency-eur { background: linear-gradient(135deg, #3B82F6, #2563EB); color: white; }
+        .currency-usd { background: linear-gradient(135deg, #10B981, #059669); color: white; }
+        .currency-hkd { background: linear-gradient(135deg, #F59E0B, #D97706); color: white; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="border-b shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-university text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">Financial Management</h1>
+                        <p class="text-sm text-gray-500">Multi-Currency Account Dashboard</p>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3">
+                    <a href="index.html" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </a>
+                    <button onclick="showTransferModal()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                        <i class="fas fa-exchange-alt mr-2"></i>Transfer Money
+                    </button>
+                    <button onclick="showTransferHistory()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-exchange-alt mr-2"></i>Transfers
+                    </button>
+                    <button onclick="showPaymentHistory()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                        <i class="fas fa-receipt mr-2"></i>Payments
+                    </button>
+                    <button onclick="showAddPaymentModal()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                        <i class="fas fa-plus mr-2"></i>Record Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-red-500">
+                <div class="text-sm text-gray-500 mb-1">Total CNY</div>
+                <div class="text-3xl font-bold text-gray-900" id="totalCNY">¥0.00</div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
+                <div class="text-sm text-gray-500 mb-1">Total EUR</div>
+                <div class="text-3xl font-bold text-gray-900" id="totalEUR">€0.00</div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
+                <div class="text-sm text-gray-500 mb-1">Total USD</div>
+                <div class="text-3xl font-bold text-gray-900" id="totalUSD">$0.00</div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-orange-500">
+                <div class="text-sm text-gray-500 mb-1">Total HKD</div>
+                <div class="text-3xl font-bold text-gray-900" id="totalHKD">HK$0.00</div>
+            </div>
+        </div>
+
+        <!-- Accounts Grid -->
+        <div id="accountsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Accounts will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Add Payment Modal -->
+    <div id="addPaymentModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-2xl w-full p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold">
+                        <i class="fas fa-money-bill-wave text-green-600 mr-2"></i>
+                        Record Payment
+                    </h3>
+                    <button onclick="closeAddPaymentModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <form id="addPaymentForm" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Account *</label>
+                            <select name="account_id" id="accountSelect" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select account...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+                            <input type="number" name="amount" step="0.01" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+                            <select name="transaction_type" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                                <option value="income">Income (Received)</option>
+                                <option value="expense">Expense (Paid)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                            <input type="date" name="transaction_date" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Related Order/Customer</label>
+                            <input type="text" name="related_ref" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="e.g., ORD-2024-001 or AGL">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea name="description" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Payment details..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4 border-t">
+                        <button type="button" onclick="closeAddPaymentModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                        <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+                            <i class="fas fa-save mr-2"></i>Save Payment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transfer Money Modal -->
+    <div id="transferModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-3xl w-full p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold">
+                        <i class="fas fa-exchange-alt text-purple-600 mr-2"></i>
+                        Transfer Money Between Accounts
+                    </h3>
+                    <button onclick="closeTransferModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <form id="transferForm" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- FROM Account -->
+                        <div class="bg-red-50 p-4 rounded-lg border-2 border-red-200">
+                            <h4 class="font-bold text-red-700 mb-3 flex items-center gap-2">
+                                <i class="fas fa-arrow-circle-up"></i>
+                                From Account (Debit)
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Account *</label>
+                                    <select name="from_account_id" id="fromAccountSelect" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500" onchange="updateFromCurrency()">
+                                        <option value="">Select source account...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Amount to Debit *</label>
+                                    <input type="number" name="from_amount" id="fromAmount" step="0.01" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500" placeholder="0.00" onchange="calculateToAmount()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                                    <input type="text" id="fromCurrency" readonly class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100" placeholder="Select account first">
+                                </div>
+                                <div class="text-sm text-gray-600">
+                                    <strong>Current Balance:</strong> <span id="fromBalance">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TO Account -->
+                        <div class="bg-green-50 p-4 rounded-lg border-2 border-green-200">
+                            <h4 class="font-bold text-green-700 mb-3 flex items-center gap-2">
+                                <i class="fas fa-arrow-circle-down"></i>
+                                To Account (Credit)
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Account *</label>
+                                    <select name="to_account_id" id="toAccountSelect" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500" onchange="updateToCurrency()">
+                                        <option value="">Select destination account...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Amount to Credit *</label>
+                                    <input type="number" name="to_amount" id="toAmount" step="0.01" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500" placeholder="0.00" onchange="calculateFXRate()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                                    <input type="text" id="toCurrency" readonly class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100" placeholder="Select account first">
+                                </div>
+                                <div class="text-sm text-gray-600">
+                                    <strong>Current Balance:</strong> <span id="toBalance">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FX Rate Section -->
+                    <div class="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
+                        <h4 class="font-bold text-yellow-700 mb-3 flex items-center gap-2">
+                            <i class="fas fa-calculator"></i>
+                            Exchange Rate
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">FX Rate (1 FROM = ? TO) *</label>
+                                <input type="number" name="fx_rate" id="fxRate" step="0.0001" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-yellow-500" placeholder="0.0000">
+                                <p class="text-xs text-gray-500 mt-1">Example: 1 EUR = 7.85 CNY, enter 7.85</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Transfer Date *</label>
+                                <input type="date" name="transfer_date" id="transferDate" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-yellow-500">
+                            </div>
+                        </div>
+                        <div class="mt-3 p-3 bg-white rounded border border-yellow-300">
+                            <div class="text-sm font-medium text-gray-700">Transfer Summary:</div>
+                            <div class="text-lg font-bold text-purple-600 mt-1" id="transferSummary">
+                                Fill in amounts to see summary
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea name="notes" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500" placeholder="Reason for transfer, reference numbers, etc."></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4 border-t">
+                        <button type="button" onclick="closeTransferModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                        <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2">
+                            <i class="fas fa-exchange-alt"></i>
+                            Execute Transfer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transfer History Modal -->
+    <div id="transferHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold">
+                            <i class="fas fa-history text-blue-600 mr-2"></i>
+                            Transfer History
+                        </h3>
+                        <button onclick="closeTransferHistory()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div id="transferHistoryContent" class="space-y-4">
+                        <!-- Transfer history will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let accounts = [];
+        let transfers = [];
+
+        async function loadAccounts() {
+            try {
+                const response = await fetch('tables/financial_accounts');
+                const data = await response.json();
+                accounts = data.data || [];
+                
+                renderAccounts();
+                calculateTotals();
+                populateAccountSelect();
+            } catch (error) {
+                console.error('Error loading accounts:', error);
+            }
+        }
+
+        function renderAccounts() {
+            const grid = document.getElementById('accountsGrid');
+            
+            grid.innerHTML = accounts.filter(acc => acc.active).map(account => `
+                <div class="account-card bg-white rounded-lg shadow-md p-6 border-l-4 cursor-pointer hover:shadow-lg transition" style="border-left-color: ${account.icon_color}" onclick="showEditBankAccountModal('${account.id}')">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">${account.account_name}</h3>
+                            <p class="text-sm text-gray-500">${account.account_type}</p>
+                        </div>
+                        <span class="currency-badge currency-${account.currency.toLowerCase()}">${account.currency}</span>
+                    </div>
+                    
+                    <div class="text-3xl font-bold mb-2 ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}">
+                        ${formatCurrency(account.balance, account.currency)}
+                    </div>
+                    
+                    <div class="text-xs text-gray-400">${account.bank_name}</div>
+                    
+                    <div class="mt-4 pt-4 border-t flex gap-2">
+                        <button onclick="event.stopPropagation(); showPaymentHistory('${account.id}')" class="flex-1 text-sm px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition">
+                            <i class="fas fa-history mr-1"></i>History
+                        </button>
+                        <button onclick="event.stopPropagation(); showAccountLedger('${account.id}')" class="flex-1 text-sm px-3 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg transition">
+                            <i class="fas fa-book mr-1"></i>Ledger
+                        </button>
+                        <button onclick="event.stopPropagation(); editAccountBalance('${account.id}')" class="flex-1 text-sm px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition">
+                            <i class="fas fa-edit mr-1"></i>Edit
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function calculateTotals() {
+            const totals = {
+                CNY: 0,
+                EUR: 0,
+                USD: 0,
+                HKD: 0
+            };
+            
+            accounts.forEach(account => {
+                if (totals.hasOwnProperty(account.currency)) {
+                    totals[account.currency] += account.balance;
+                }
+            });
+            
+            document.getElementById('totalCNY').textContent = formatCurrency(totals.CNY, 'CNY');
+            document.getElementById('totalEUR').textContent = formatCurrency(totals.EUR, 'EUR');
+            document.getElementById('totalUSD').textContent = formatCurrency(totals.USD, 'USD');
+            document.getElementById('totalHKD').textContent = formatCurrency(totals.HKD, 'HKD');
+        }
+
+        function formatCurrency(amount, currency) {
+            const symbols = {
+                'CNY': '¥',
+                'EUR': '€',
+                'USD': '$',
+                'HKD': 'HK$'
+            };
+            
+            return symbols[currency] + amount.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function populateAccountSelect() {
+            const select = document.getElementById('accountSelect');
+            select.innerHTML = '<option value="">Select account...</option>' +
+                accounts.filter(acc => acc.active).map(acc => 
+                    `<option value="${acc.id}">${acc.account_name} (${acc.currency})</option>`
+                ).join('');
+        }
+
+        function showAddPaymentModal() {
+            document.getElementById('addPaymentModal').classList.remove('hidden');
+            document.querySelector('input[name="transaction_date"]').valueAsDate = new Date();
+        }
+
+        function closeAddPaymentModal() {
+            document.getElementById('addPaymentModal').classList.add('hidden');
+            document.getElementById('addPaymentForm').reset();
+        }
+
+        // ✅ HANDLE PAYMENT FORM SUBMISSION
+        async function handlePaymentFormSubmit(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const accountId = formData.get('account_id');
+            const amount = parseFloat(formData.get('amount'));
+            const transactionType = formData.get('transaction_type');
+            const transactionDate = formData.get('transaction_date');
+            const relatedRef = formData.get('related_ref') || '';
+            const description = formData.get('description') || '';
+            
+            // Validate
+            if (!accountId || !amount || amount <= 0) {
+                alert('⚠️ Please fill in all required fields');
+                return;
+            }
+            
+            // Find account
+            const account = accounts.find(a => a.id === accountId);
+            if (!account) {
+                alert('❌ Account not found');
+                return;
+            }
+            
+            try {
+                // Calculate new balance
+                const balanceBefore = parseFloat(account.balance) || 0;
+                const balanceChange = transactionType === 'income' ? amount : -amount;
+                const balanceAfter = balanceBefore + balanceChange;
+                
+                // Generate transaction number
+                const transactionNumber = `PMT-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 99999)).padStart(5, '0')}`;
+                
+                // Create payment transaction record
+                const paymentData = {
+                    transaction_number: transactionNumber,
+                    account_id: accountId,
+                    account_name: account.account_name,
+                    transaction_date: new Date(transactionDate).toISOString(),
+                    transaction_type: transactionType,
+                    amount: amount,
+                    currency: account.currency,
+                    related_ref: relatedRef,
+                    description: description,
+                    payment_method: 'Bank Transfer',
+                    balance_before: balanceBefore,
+                    balance_after: balanceAfter,
+                    created_by: localStorage.getItem('username') || 'Admin',
+                    status: 'completed'
+                };
+                
+                console.log('💰 Recording payment:', paymentData);
+                
+                // Save payment transaction
+                const paymentResponse = await fetch('tables/payment_transactions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(paymentData)
+                });
+                
+                if (!paymentResponse.ok) {
+                    throw new Error('Failed to save payment transaction');
+                }
+                
+                const paymentResult = await paymentResponse.json();
+                console.log('✅ Payment saved:', paymentResult);
+                
+                // Update account balance
+                const balanceResponse = await fetch(`tables/financial_accounts/${accountId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ balance: balanceAfter })
+                });
+                
+                if (!balanceResponse.ok) {
+                    throw new Error('Failed to update account balance');
+                }
+                
+                console.log(`✅ Balance updated: ${account.account_name} | ${formatCurrency(balanceBefore, account.currency)} → ${formatCurrency(balanceAfter, account.currency)} | Change: ${balanceChange > 0 ? '+' : ''}${formatCurrency(balanceChange, account.currency)}`);
+                
+                // Close modal and reload accounts
+                closeAddPaymentModal();
+                await loadAccounts();
+                alert(`✅ Payment recorded successfully!\n\nTransaction: ${transactionNumber}\nAmount: ${formatCurrency(amount, account.currency)}\nType: ${transactionType === 'income' ? 'Income (Received)' : 'Expense (Paid)'}\nNew Balance: ${formatCurrency(balanceAfter, account.currency)}`);
+                
+            } catch (error) {
+                console.error('❌ Error recording payment:', error);
+                alert('❌ Error recording payment. Please try again.');
+            }
+        }
+
+        async function editAccountBalance(accountId) {
+            // Redirect to new modal
+            showEditBankAccountModal(accountId);
+        }
+
+        // Edit Bank Account Modal Functions
+        function showEditBankAccountModal(accountId) {
+            const account = accounts.find(a => a.id === accountId);
+            if (!account) return;
+            
+            // Populate form
+            document.getElementById('editAccountId').value = account.id;
+            document.getElementById('editAccountName').value = account.account_name;
+            document.getElementById('editBankName').value = account.bank_name;
+            document.getElementById('editCurrency').value = account.currency;
+            document.getElementById('editBalance').value = account.balance;
+            document.getElementById('editAccountType').value = account.account_type;
+            
+            // Show modal
+            document.getElementById('editBankAccountModal').classList.remove('hidden');
+        }
+
+        function closeEditBankAccountModal() {
+            document.getElementById('editBankAccountModal').classList.add('hidden');
+        }
+
+        async function saveEditBankAccount(event) {
+            event.preventDefault();
+            
+            const accountId = document.getElementById('editAccountId').value;
+            const updatedData = {
+                account_name: document.getElementById('editAccountName').value,
+                bank_name: document.getElementById('editBankName').value,
+                currency: document.getElementById('editCurrency').value,
+                balance: parseFloat(document.getElementById('editBalance').value),
+                account_type: document.getElementById('editAccountType').value
+            };
+            
+            try {
+                const response = await fetch(`tables/financial_accounts/${accountId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedData)
+                });
+                
+                if (!response.ok) throw new Error('Update failed');
+                
+                closeEditBankAccountModal();
+                alert('✅ Bank account updated successfully!');
+                loadAccounts(); // Reload accounts list
+            } catch (error) {
+                console.error('Error updating account:', error);
+                alert('❌ Error updating account');
+            }
+        }
+
+        async function showPaymentHistory(accountId) {
+            // ✅ UNIFIED PAYMENT HISTORY: Load from ALL payment sources
+            try {
+                console.log('📊 Loading unified payment history...');
+                
+                // Load from all payment sources in parallel
+                const [paymentTxnsRes, supplierPaymentsRes, customerPaymentsRes, transCustomersRes, transSuppliersRes] = await Promise.all([
+                    fetch('tables/payment_transactions?limit=1000').catch(() => ({ ok: false })),
+                    fetch('tables/supplier_payments?limit=1000').catch(() => ({ ok: false })),
+                    fetch('tables/customer_payments?limit=1000').catch(() => ({ ok: false })),
+                    fetch('tables/transactions_customers?limit=1000').catch(() => ({ ok: false })),
+                    fetch('tables/transactions_suppliers?limit=1000').catch(() => ({ ok: false }))
+                ]);
+                
+                // Parse responses
+                let paymentTxns = paymentTxnsRes.ok ? (await paymentTxnsRes.json()).data || [] : [];
+                let supplierPayments = supplierPaymentsRes.ok ? (await supplierPaymentsRes.json()).data || [] : [];
+                let customerPayments = customerPaymentsRes.ok ? (await customerPaymentsRes.json()).data || [] : [];
+                let transCustomers = transCustomersRes.ok ? (await transCustomersRes.json()).data || [] : [];
+                let transSuppliers = transSuppliersRes.ok ? (await transSuppliersRes.json()).data || [] : [];
+                
+                console.log(`📊 Loaded: ${paymentTxns.length} payment_transactions, ${supplierPayments.length} supplier_payments, ${customerPayments.length} customer_payments, ${transCustomers.length} transactions_customers, ${transSuppliers.length} transactions_suppliers`);
+                
+                // ===== APPLY CUSTOMER FILTERING =====
+                if (window.PageProtection && window.PageProtection.filterTransactionsByCustomerAccess) {
+                    const origCustomers = transCustomers.length;
+                    const origSuppliers = transSuppliers.length;
+                    
+                    transCustomers = window.PageProtection.filterTransactionsByCustomerAccess(transCustomers);
+                    transSuppliers = window.PageProtection.filterTransactionsByCustomerAccess(transSuppliers);
+                    
+                    if (transCustomers.length < origCustomers || transSuppliers.length < origSuppliers) {
+                        console.log(`🔐 Finance filtering: customers ${transCustomers.length}/${origCustomers}, suppliers ${transSuppliers.length}/${origSuppliers}`);
+                    }
+                }
+                
+                // Normalize all to unified format
+                const allPayments = [
+                    ...paymentTxns.map(p => ({
+                        date: new Date(p.transaction_date),
+                        amount: p.amount,
+                        currency: p.currency,
+                        type: p.transaction_type === 'income' ? 'Income' : 'Expense',
+                        reference: p.transaction_number,
+                        description: p.description || p.related_ref || 'Payment',
+                        accountId: p.account_id,
+                        accountName: p.account_name,
+                        source: 'Finance Page',
+                        status: p.status || 'completed',
+                        balance_before: p.balance_before,
+                        balance_after: p.balance_after
+                    })),
+                    ...transCustomers.filter(t => t.total_paid > 0).map(t => ({
+                        date: new Date(t.transaction_date),
+                        amount: parseFloat(t.total_paid),
+                        currency: t.currency,
+                        type: 'Income',
+                        reference: t.invoice_number || t.id.substring(0, 8),
+                        description: `Customer payment from ${t.customer_code || 'customer'}`,
+                        accountId: null,
+                        accountName: t.bank_account || 'Unknown',
+                        source: 'Customer Transactions',
+                        status: 'completed'
+                    })),
+                    ...transSuppliers.filter(t => t.status === 'Paid' && t.amount > 0).map(t => ({
+                        date: new Date(t.transaction_date),
+                        amount: parseFloat(t.amount),
+                        currency: t.currency,
+                        type: 'Expense',
+                        reference: t.invoice_number || t.order_number || t.id.substring(0, 8),
+                        description: `Supplier payment to ${t.supplier_name || 'supplier'}`,
+                        accountId: null,
+                        accountName: t.bank_account || 'Unknown',
+                        source: 'Supplier Transactions',
+                        status: t.status.toLowerCase()
+                    }))
+                ];
+                
+                const payments = allPayments;
+                
+                // If accountId provided, filter by account
+                const filteredPayments = accountId ? 
+                    payments.filter(p => p.accountId === accountId || p.accountName === accounts.find(a => a.id === accountId)?.account_name) :
+                    payments;
+                
+                // Sort by date (newest first)
+                filteredPayments.sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date));
+                
+                // Build modal HTML
+                const account = accountId ? accounts.find(a => a.id === accountId) : null;
+                const title = account ? 
+                    `Payment History - ${account.account_name}` :
+                    'All Supplier Payments';
+                
+                const modalHTML = `
+                    <div id="paymentHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 z-50">
+                        <div class="flex items-center justify-center min-h-screen p-4">
+                            <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                                <div class="p-6 border-b">
+                                    <div class="flex justify-between items-center">
+                                        <h3 class="text-2xl font-bold text-gray-900">
+                                            <i class="fas fa-history text-blue-600 mr-2"></i>
+                                            ${title}
+                                        </h3>
+                                        <button onclick="closePaymentHistory()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <p class="text-sm text-gray-500 mt-2">
+                                        Total Payments: ${filteredPayments.length} • 
+                                        Income: ${filteredPayments.filter(p => p.type === 'Income').length} • 
+                                        Expenses: ${filteredPayments.filter(p => p.type === 'Expense').length}
+                                    </p>
+                                </div>
+                                
+                                <div class="flex-1 overflow-y-auto p-6">
+                                    ${filteredPayments.length === 0 ? `
+                                        <div class="text-center py-12 text-gray-400">
+                                            <i class="fas fa-receipt text-6xl mb-4"></i>
+                                            <p>No payment records found</p>
+                                        </div>
+                                    ` : `
+                                        <div class="space-y-3">
+                                            ${filteredPayments.map(payment => {
+                                                const statusColors = {
+                                                    'completed': 'bg-green-100 text-green-800 border-green-500',
+                                                    'pending': 'bg-yellow-100 text-yellow-800 border-yellow-500',
+                                                    'failed': 'bg-red-100 text-red-800 border-red-500',
+                                                    'cancelled': 'bg-gray-100 text-gray-800 border-gray-500',
+                                                    'paid': 'bg-green-100 text-green-800 border-green-500'
+                                                };
+                                                const statusClass = statusColors[payment.status.toLowerCase()] || statusColors['pending'];
+                                                const typeColor = payment.type === 'Income' ? 'text-green-600' : 'text-red-600';
+                                                const typeIcon = payment.type === 'Income' ? 'arrow-down' : 'arrow-up';
+                                                
+                                                return `
+                                                    <div class="bg-white border-2 ${statusClass} rounded-lg p-4 hover:shadow-md transition-shadow">
+                                                        <div class="flex justify-between items-start mb-2">
+                                                            <div class="flex-1">
+                                                                <div class="flex items-center gap-3 mb-1">
+                                                                    <h4 class="font-semibold ${typeColor}">
+                                                                        <i class="fas fa-${typeIcon} mr-1"></i>
+                                                                        ${formatCurrency(payment.amount, payment.currency)}
+                                                                    </h4>
+                                                                    <span class="text-xs px-2 py-1 rounded ${statusClass}">${payment.type}</span>
+                                                                    <span class="text-xs px-2 py-1 rounded bg-gray-200 text-gray-700">${payment.source}</span>
+                                                                </div>
+                                                                <p class="text-sm text-gray-600">${payment.description}</p>
+                                                                <p class="text-xs text-gray-500 mt-1">
+                                                                    <i class="fas fa-calendar mr-1"></i>${payment.date.toLocaleDateString()}
+                                                                    <i class="fas fa-university ml-3 mr-1"></i>${payment.accountName}
+                                                                </p>
+                                                                ${payment.reference ? `<p class="text-xs text-gray-500 mt-1"><i class="fas fa-hashtag mr-1"></i>${payment.reference}</p>` : ''}
+                                                                ${payment.balance_before !== undefined ? `
+                                                                    <p class="text-xs text-gray-600 mt-2">
+                                                                        <span class="font-medium">Balance:</span> 
+                                                                        ${formatCurrency(payment.balance_before, payment.currency)} → 
+                                                                        ${formatCurrency(payment.balance_after, payment.currency)}
+                                                                        <span class="${payment.type === 'Income' ? 'text-green-600' : 'text-red-600'} font-medium ml-2">
+                                                                            (${payment.type === 'Income' ? '+' : '−'}${formatCurrency(Math.abs(payment.balance_after - payment.balance_before), payment.currency)})
+                                                                        </span>
+                                                                    </p>
+                                                                ` : ''}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    `}
+                                </div>
+                                
+                                <div class="p-4 border-t bg-gray-50">
+                                    <button onclick="closePaymentHistory()" class="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Remove existing modal if any
+                const existing = document.getElementById('paymentHistoryModal');
+                if (existing) existing.remove();
+                
+                // Add modal to page
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+                
+            } catch (error) {
+                console.error('Error loading payment history:', error);
+                alert('Error loading payment history. Please try again.');
+            }
+        }
+        
+        function closePaymentHistory() {
+            const modal = document.getElementById('paymentHistoryModal');
+            if (modal) modal.remove();
+        }
+
+        // ✅ ACCOUNT LEDGER: Show chronological balance changes
+        async function showAccountLedger(accountId) {
+            try {
+                const account = accounts.find(a => a.id === accountId);
+                if (!account) {
+                    alert('❌ Account not found');
+                    return;
+                }
+                
+                console.log(`📚 Loading ledger for account: ${account.account_name}`);
+                
+                // Load payment_transactions for this account (has balance_before/after)
+                const response = await fetch(`tables/payment_transactions?limit=1000`);
+                if (!response.ok) throw new Error('Failed to load ledger');
+                
+                const data = await response.json();
+                const allTxns = data.data || [];
+                
+                // Filter by account and sort by date
+                const ledgerEntries = allTxns
+                    .filter(t => t.account_id === accountId || t.account_name === account.account_name)
+                    .sort((a, b) => new Date(b.transaction_date) - new Date(a.transaction_date));
+                
+                console.log(`📚 Found ${ledgerEntries.length} ledger entries`);
+                
+                // Build modal HTML
+                const modalHTML = `
+                    <div id="ledgerModal" class="fixed inset-0 bg-black bg-opacity-50 z-50">
+                        <div class="flex items-center justify-center min-h-screen p-4">
+                            <div class="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                                <div class="p-6 border-b bg-gradient-to-r from-purple-500 to-indigo-500 text-white">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <h3 class="text-2xl font-bold">
+                                                <i class="fas fa-book mr-2"></i>
+                                                Account Ledger: ${account.account_name}
+                                            </h3>
+                                            <p class="text-sm opacity-90 mt-1">
+                                                ${account.bank_name} • ${account.currency} • ${account.account_type}
+                                            </p>
+                                        </div>
+                                        <button onclick="closeLedger()" class="text-white hover:text-gray-200 text-2xl">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div class="mt-4 flex items-center gap-4">
+                                        <div class="bg-white bg-opacity-20 rounded-lg px-4 py-2">
+                                            <div class="text-xs opacity-75">Current Balance</div>
+                                            <div class="text-2xl font-bold">${formatCurrency(account.balance, account.currency)}</div>
+                                        </div>
+                                        <div class="bg-white bg-opacity-20 rounded-lg px-4 py-2">
+                                            <div class="text-xs opacity-75">Total Entries</div>
+                                            <div class="text-2xl font-bold">${ledgerEntries.length}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
+                                    ${ledgerEntries.length === 0 ? `
+                                        <div class="text-center py-12 text-gray-400">
+                                            <i class="fas fa-book-open text-6xl mb-4"></i>
+                                            <p>No ledger entries found</p>
+                                            <p class="text-sm mt-2">Transactions will appear here once recorded</p>
+                                        </div>
+                                    ` : `
+                                        <div class="space-y-3">
+                                            ${ledgerEntries.map((entry, index) => {
+                                                const isIncome = entry.transaction_type === 'income';
+                                                const change = entry.balance_after - entry.balance_before;
+                                                const changeColor = change >= 0 ? 'text-green-600' : 'text-red-600';
+                                                const bgColor = isIncome ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200';
+                                                
+                                                return `
+                                                    <div class="bg-white border-2 ${bgColor} rounded-lg p-4 hover:shadow-md transition-shadow">
+                                                        <div class="flex justify-between items-start">
+                                                            <div class="flex-1">
+                                                                <div class="flex items-center gap-3 mb-2">
+                                                                    <span class="text-xs px-2 py-1 rounded ${isIncome ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                                                        ${isIncome ? 'INCOME' : 'EXPENSE'}
+                                                                    </span>
+                                                                    <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
+                                                                        #${entry.transaction_number}
+                                                                    </span>
+                                                                    <span class="text-xs text-gray-500">
+                                                                        <i class="fas fa-calendar mr-1"></i>
+                                                                        ${new Date(entry.transaction_date).toLocaleString()}
+                                                                    </span>
+                                                                </div>
+                                                                
+                                                                <p class="text-sm text-gray-700 mb-2">
+                                                                    ${entry.description || entry.related_ref || 'No description'}
+                                                                </p>
+                                                                
+                                                                <div class="grid grid-cols-3 gap-4 mt-3 text-sm">
+                                                                    <div class="bg-gray-100 rounded p-2">
+                                                                        <div class="text-xs text-gray-500">Balance Before</div>
+                                                                        <div class="font-semibold text-gray-700">${formatCurrency(entry.balance_before, entry.currency)}</div>
+                                                                    </div>
+                                                                    <div class="bg-purple-100 rounded p-2">
+                                                                        <div class="text-xs text-gray-500">Change</div>
+                                                                        <div class="font-bold ${changeColor}">
+                                                                            ${change >= 0 ? '+' : ''}${formatCurrency(change, entry.currency)}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="bg-gray-100 rounded p-2">
+                                                                        <div class="text-xs text-gray-500">Balance After</div>
+                                                                        <div class="font-semibold text-gray-700">${formatCurrency(entry.balance_after, entry.currency)}</div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    `}
+                                </div>
+                                
+                                <div class="p-4 border-t bg-white flex justify-between items-center">
+                                    <button onclick="exportLedgerToCSV('${accountId}')" class="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition">
+                                        <i class="fas fa-download mr-2"></i>Export to CSV
+                                    </button>
+                                    <button onclick="closeLedger()" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Remove existing modal if any
+                const existing = document.getElementById('ledgerModal');
+                if (existing) existing.remove();
+                
+                // Add modal to page
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+                
+            } catch (error) {
+                console.error('❌ Error loading ledger:', error);
+                alert('❌ Error loading account ledger. Please try again.');
+            }
+        }
+        
+        function closeLedger() {
+            const modal = document.getElementById('ledgerModal');
+            if (modal) modal.remove();
+        }
+        
+        function exportLedgerToCSV(accountId) {
+            alert('📥 CSV export feature coming soon!');
+            // TODO: Implement CSV export
+        }
+
+        // ========== TRANSFER FUNCTIONS ==========
+        
+        function showTransferModal() {
+            document.getElementById('transferModal').classList.remove('hidden');
+            document.getElementById('transferDate').valueAsDate = new Date();
+            
+            // Populate account dropdowns
+            const fromSelect = document.getElementById('fromAccountSelect');
+            const toSelect = document.getElementById('toAccountSelect');
+            
+            const optionsHTML = '<option value="">Select account...</option>' +
+                accounts.filter(a => a.active).map(acc => 
+                    `<option value="${acc.id}" data-currency="${acc.currency}" data-balance="${acc.balance}">${acc.account_name} (${acc.currency}) - ${formatCurrency(acc.balance, acc.currency)}</option>`
+                ).join('');
+            
+            fromSelect.innerHTML = optionsHTML;
+            toSelect.innerHTML = optionsHTML;
+        }
+
+        function closeTransferModal() {
+            document.getElementById('transferModal').classList.add('hidden');
+            document.getElementById('transferForm').reset();
+            document.getElementById('fromCurrency').value = '';
+            document.getElementById('toCurrency').value = '';
+            document.getElementById('fromBalance').textContent = '-';
+            document.getElementById('toBalance').textContent = '-';
+            document.getElementById('transferSummary').textContent = 'Fill in amounts to see summary';
+        }
+
+        function updateFromCurrency() {
+            const select = document.getElementById('fromAccountSelect');
+            const option = select.options[select.selectedIndex];
+            
+            if (option.value) {
+                const currency = option.getAttribute('data-currency');
+                const balance = parseFloat(option.getAttribute('data-balance'));
+                
+                document.getElementById('fromCurrency').value = currency;
+                document.getElementById('fromBalance').textContent = formatCurrency(balance, currency);
+                
+                calculateToAmount();
+            } else {
+                document.getElementById('fromCurrency').value = '';
+                document.getElementById('fromBalance').textContent = '-';
+            }
+        }
+
+        function updateToCurrency() {
+            const select = document.getElementById('toAccountSelect');
+            const option = select.options[select.selectedIndex];
+            
+            if (option.value) {
+                const currency = option.getAttribute('data-currency');
+                const balance = parseFloat(option.getAttribute('data-balance'));
+                
+                document.getElementById('toCurrency').value = currency;
+                document.getElementById('toBalance').textContent = formatCurrency(balance, currency);
+                
+                calculateToAmount();
+            } else {
+                document.getElementById('toCurrency').value = '';
+                document.getElementById('toBalance').textContent = '-';
+            }
+        }
+
+        function calculateToAmount() {
+            const fromAmount = parseFloat(document.getElementById('fromAmount').value);
+            const fxRate = parseFloat(document.getElementById('fxRate').value);
+            
+            if (fromAmount && fxRate) {
+                const toAmount = fromAmount * fxRate;
+                document.getElementById('toAmount').value = toAmount.toFixed(2);
+                updateTransferSummary();
+            }
+        }
+
+        function calculateFXRate() {
+            const fromAmount = parseFloat(document.getElementById('fromAmount').value);
+            const toAmount = parseFloat(document.getElementById('toAmount').value);
+            
+            if (fromAmount && toAmount) {
+                const fxRate = toAmount / fromAmount;
+                document.getElementById('fxRate').value = fxRate.toFixed(4);
+                updateTransferSummary();
+            }
+        }
+
+        function updateTransferSummary() {
+            const fromCurrency = document.getElementById('fromCurrency').value;
+            const toCurrency = document.getElementById('toCurrency').value;
+            const fromAmount = parseFloat(document.getElementById('fromAmount').value);
+            const toAmount = parseFloat(document.getElementById('toAmount').value);
+            const fxRate = parseFloat(document.getElementById('fxRate').value);
+            
+            if (fromCurrency && toCurrency && fromAmount && toAmount && fxRate) {
+                const summary = `${formatCurrency(fromAmount, fromCurrency)} → ${formatCurrency(toAmount, toCurrency)} @ ${fxRate.toFixed(4)}`;
+                document.getElementById('transferSummary').textContent = summary;
+            }
+        }
+
+        // Handle transfer form submission
+        document.addEventListener('DOMContentLoaded', () => {
+            const transferForm = document.getElementById('transferForm');
+            if (transferForm) {
+                transferForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(e.target);
+                    const fromAccountId = formData.get('from_account_id');
+                    const toAccountId = formData.get('to_account_id');
+                    
+                    if (fromAccountId === toAccountId) {
+                        alert('Cannot transfer to the same account!');
+                        return;
+                    }
+                    
+                    const fromAccount = accounts.find(a => a.id === fromAccountId);
+                    const toAccount = accounts.find(a => a.id === toAccountId);
+                    const fromAmount = parseFloat(formData.get('from_amount'));
+                    
+                    if (fromAccount.balance < fromAmount) {
+                        alert(`Insufficient balance! Current balance: ${formatCurrency(fromAccount.balance, fromAccount.currency)}`);
+                        return;
+                    }
+                    
+                    // Generate transfer number
+                    const transferNumber = `TR-${new Date().getFullYear()}-${String(transfers.length + 1).padStart(3, '0')}`;
+                    
+                    const transferData = {
+                        transfer_number: transferNumber,
+                        transfer_date: formData.get('transfer_date'),
+                        from_account_id: fromAccountId,
+                        from_account_name: fromAccount.account_name,
+                        from_currency: fromAccount.currency,
+                        from_amount: fromAmount,
+                        to_account_id: toAccountId,
+                        to_account_name: toAccount.account_name,
+                        to_currency: toAccount.currency,
+                        to_amount: parseFloat(formData.get('to_amount')),
+                        fx_rate: parseFloat(formData.get('fx_rate')),
+                        fx_rate_editable: true,
+                        notes: formData.get('notes'),
+                        created_by: 'current_user',
+                        status: 'completed'
+                    };
+                    
+                    try {
+                        // Save transfer record
+                        const transferResponse = await fetch('tables/account_transfers', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(transferData)
+                        });
+                        
+                        if (!transferResponse.ok) {
+                            throw new Error('Failed to save transfer');
+                        }
+                        
+                        // Update FROM account (debit)
+                        const newFromBalance = fromAccount.balance - transferData.from_amount;
+                        await fetch(`tables/financial_accounts/${fromAccountId}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ balance: newFromBalance })
+                        });
+                        
+                        // Update TO account (credit)
+                        const newToBalance = toAccount.balance + transferData.to_amount;
+                        await fetch(`tables/financial_accounts/${toAccountId}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ balance: newToBalance })
+                        });
+                        
+                        alert(`✅ Transfer completed successfully!\n\n${transferNumber}\n${formatCurrency(transferData.from_amount, transferData.from_currency)} → ${formatCurrency(transferData.to_amount, transferData.to_currency)}\n\nFX Rate: ${transferData.fx_rate.toFixed(4)}`);
+                        
+                        closeTransferModal();
+                        loadAccounts(); // Reload to show updated balances
+                        
+                    } catch (error) {
+                        console.error('Error executing transfer:', error);
+                        alert('Error executing transfer. Please try again.');
+                    }
+                });
+            }
+        });
+
+        async function showTransferHistory() {
+            document.getElementById('transferHistoryModal').classList.remove('hidden');
+            
+            try {
+                const response = await fetch('tables/account_transfers');
+                const data = await response.json();
+                transfers = data.data || [];
+                
+                // Sort by date descending
+                transfers.sort((a, b) => new Date(b.transfer_date) - new Date(a.transfer_date));
+                
+                const container = document.getElementById('transferHistoryContent');
+                
+                if (transfers.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-12 text-gray-400">
+                            <i class="fas fa-inbox text-5xl mb-3"></i>
+                            <p>No transfers recorded yet</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = transfers.map(transfer => `
+                    <div class="bg-white border rounded-lg p-4 hover:shadow-md transition">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <div class="font-bold text-lg text-purple-600">${transfer.transfer_number}</div>
+                                <div class="text-sm text-gray-500">${new Date(transfer.transfer_date).toLocaleDateString()}</div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="editTransferFXRate('${transfer.id}')" class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 text-sm">
+                                    <i class="fas fa-edit mr-1"></i>Edit FX Rate
+                                </button>
+                                <span class="px-3 py-1 bg-green-100 text-green-700 rounded text-sm font-medium">${transfer.status}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                            <div class="bg-red-50 p-3 rounded">
+                                <div class="text-xs text-gray-600 mb-1">From Account</div>
+                                <div class="font-semibold text-sm">${transfer.from_account_name}</div>
+                                <div class="text-lg font-bold text-red-600">-${formatCurrency(transfer.from_amount, transfer.from_currency)}</div>
+                            </div>
+                            
+                            <div class="bg-yellow-50 p-3 rounded flex items-center justify-center">
+                                <div class="text-center">
+                                    <i class="fas fa-exchange-alt text-yellow-600 text-2xl mb-2"></i>
+                                    <div class="text-xs text-gray-600">FX Rate</div>
+                                    <div class="font-bold text-yellow-700">${transfer.fx_rate.toFixed(4)}</div>
+                                    <div class="text-xs text-gray-500">1 ${transfer.from_currency} = ${transfer.fx_rate.toFixed(4)} ${transfer.to_currency}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-green-50 p-3 rounded">
+                                <div class="text-xs text-gray-600 mb-1">To Account</div>
+                                <div class="font-semibold text-sm">${transfer.to_account_name}</div>
+                                <div class="text-lg font-bold text-green-600">+${formatCurrency(transfer.to_amount, transfer.to_currency)}</div>
+                            </div>
+                        </div>
+                        
+                        ${transfer.notes ? `<div class="text-sm text-gray-600 border-t pt-2"><strong>Notes:</strong> ${transfer.notes}</div>` : ''}
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading transfer history:', error);
+            }
+        }
+
+        function closeTransferHistory() {
+            document.getElementById('transferHistoryModal').classList.add('hidden');
+        }
+
+        async function editTransferFXRate(transferId) {
+            const transfer = transfers.find(t => t.id === transferId);
+            if (!transfer) return;
+            
+            const newRate = prompt(
+                `Edit FX Rate for ${transfer.transfer_number}\n\n` +
+                `Current: 1 ${transfer.from_currency} = ${transfer.fx_rate.toFixed(4)} ${transfer.to_currency}\n\n` +
+                `Enter new FX rate:`,
+                transfer.fx_rate
+            );
+            
+            if (newRate === null || newRate === '') return;
+            
+            const newRateFloat = parseFloat(newRate);
+            if (isNaN(newRateFloat) || newRateFloat <= 0) {
+                alert('Invalid FX rate!');
+                return;
+            }
+            
+            // Recalculate to_amount based on new rate
+            const newToAmount = transfer.from_amount * newRateFloat;
+            
+            const confirmMsg = `Update FX Rate?\n\n` +
+                `Old: ${formatCurrency(transfer.from_amount, transfer.from_currency)} @ ${transfer.fx_rate.toFixed(4)} = ${formatCurrency(transfer.to_amount, transfer.to_currency)}\n\n` +
+                `New: ${formatCurrency(transfer.from_amount, transfer.from_currency)} @ ${newRateFloat.toFixed(4)} = ${formatCurrency(newToAmount, transfer.to_currency)}\n\n` +
+                `This will update the destination account balance!`;
+            
+            if (!confirm(confirmMsg)) return;
+            
+            try {
+                // Calculate balance adjustment
+                const balanceDiff = newToAmount - transfer.to_amount;
+                
+                // Update transfer record
+                await fetch(`tables/account_transfers/${transferId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fx_rate: newRateFloat,
+                        to_amount: newToAmount
+                    })
+                });
+                
+                // Update destination account balance
+                const toAccount = accounts.find(a => a.id === transfer.to_account_id);
+                if (toAccount) {
+                    const newBalance = toAccount.balance + balanceDiff;
+                    await fetch(`tables/financial_accounts/${transfer.to_account_id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ balance: newBalance })
+                    });
+                }
+                
+                alert('✅ FX Rate updated successfully!');
+                showTransferHistory(); // Reload
+                loadAccounts(); // Reload accounts with updated balances
+                
+            } catch (error) {
+                console.error('Error updating FX rate:', error);
+                alert('Error updating FX rate');
+            }
+        }
+
+        // Initialize
+        loadAccounts();
+        
+        // ✅ ATTACH PAYMENT FORM SUBMISSION HANDLER
+        document.getElementById('addPaymentForm').addEventListener('submit', handlePaymentFormSubmit);
+    </script>
+
+    <!-- Edit Bank Account Modal -->
+    <div id="editBankAccountModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-2xl w-full p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">
+                        <i class="fas fa-university text-blue-600 mr-2"></i>
+                        Edit Bank Account
+                    </h3>
+                    <button onclick="closeEditBankAccountModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                
+                <form id="editBankAccountForm" onsubmit="saveEditBankAccount(event)" class="space-y-4">
+                    <input type="hidden" id="editAccountId">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-tag text-gray-400 mr-1"></i>
+                            Account Name
+                        </label>
+                        <input type="text" id="editAccountName" required 
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-building text-gray-400 mr-1"></i>
+                            Bank Name
+                        </label>
+                        <input type="text" id="editBankName" required
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-coins text-gray-400 mr-1"></i>
+                                Currency
+                            </label>
+                            <select id="editCurrency" required
+                                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="CNY">CNY (¥)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="USD">USD ($)</option>
+                                <option value="HKD">HKD (HK$)</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-wallet text-gray-400 mr-1"></i>
+                                Balance
+                            </label>
+                            <input type="number" id="editBalance" step="0.01" required
+                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-list text-gray-400 mr-1"></i>
+                            Account Type
+                        </label>
+                        <select id="editAccountType" required
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="Current Account">Current Account</option>
+                            <option value="Savings">Savings</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Payment Platform">Payment Platform</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex gap-3 pt-4">
+                        <button type="submit" 
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition">
+                            <i class="fas fa-save mr-2"></i>Save Changes
+                        </button>
+                        <button type="button" onclick="closeEditBankAccountModal()"
+                                class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 rounded-lg transition">
+                            <i class="fas fa-times mr-2"></i>Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-initialize data on first load -->
+    <script src="auto-initialize.js"></script>
+</body>
+</html>

@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dashboard - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600">
+        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <i class="fas fa-user-circle text-6xl text-blue-600 mb-4"></i>
+                <h1 class="text-2xl font-bold text-gray-800">My Dashboard Login</h1>
+                <p class="text-sm text-gray-600 mt-2">I Trusty Ltd - Staff Portal</p>
+            </div>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-envelope mr-1"></i> Email / Username
+                    </label>
+                    <input type="text" id="loginEmail" required 
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                           placeholder="your.email@itrusty.com">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-lock mr-1"></i> Password
+                    </label>
+                    <input type="password" id="loginPassword" required 
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                           placeholder="••••••••">
+                </div>
+                
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition">
+                    <i class="fas fa-sign-in-alt mr-2"></i> Login
+                </button>
+            </form>
+            
+            <div class="mt-6 pt-6 border-t">
+                <p class="text-xs text-gray-500 text-center mb-3">Demo Mode - Quick Login:</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="quickLogin('lily')" class="text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-2 rounded border border-purple-200">
+                        Login as Lily
+                    </button>
+                    <button onclick="quickLogin('ruby')" class="text-xs bg-pink-50 hover:bg-pink-100 text-pink-700 px-3 py-2 rounded border border-pink-200">
+                        Login as Ruby
+                    </button>
+                    <button onclick="quickLogin('nikos')" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded border border-blue-200">
+                        Login as Nikos
+                    </button>
+                    <button onclick="quickLogin('peng')" class="text-xs bg-green-50 hover:bg-green-100 text-green-700 px-3 py-2 rounded border border-green-200">
+                        Login as Peng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard (Hidden until login) -->
+    <div id="mainDashboard" class="hidden">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-md">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-xl font-bold text-gray-800">
+                            <i class="fas fa-user-circle text-blue-600 mr-2"></i>
+                            <span id="welcomeName">My Dashboard</span>
+                        </h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-600" id="officeLabel"></span>
+                        <button onclick="logout()" class="text-red-600 hover:text-red-800">
+                            <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            
+            <!-- Performance Summary -->
+            <div class="bg-gradient-to-r from-blue-600 to-purple-700 rounded-xl shadow-lg p-8 mb-8 text-white">
+                <h2 class="text-2xl font-bold mb-4">
+                    <i class="fas fa-chart-line mr-2"></i>
+                    My Performance This Month
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                    <div>
+                        <div class="text-sm opacity-90">Tasks Completed</div>
+                        <div class="text-3xl font-bold mt-1" id="myCompletedTasks">0</div>
+                    </div>
+                    <div>
+                        <div class="text-sm opacity-90">Total Hours</div>
+                        <div class="text-3xl font-bold mt-1" id="myTotalHours">0h</div>
+                    </div>
+                    <div>
+                        <div class="text-sm opacity-90">Cost to Company</div>
+                        <div class="text-3xl font-bold mt-1" id="myCost">¥0</div>
+                    </div>
+                    <div>
+                        <div class="text-sm opacity-90">Revenue Generated</div>
+                        <div class="text-3xl font-bold mt-1" id="myRevenue">¥0</div>
+                    </div>
+                    <div>
+                        <div class="text-sm opacity-90">Productivity</div>
+                        <div class="text-3xl font-bold mt-1" id="myProductivity">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROI Message -->
+            <div id="roiMessage" class="hidden bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                <div class="flex items-center">
+                    <i class="fas fa-trophy text-yellow-500 text-2xl mr-3"></i>
+                    <div>
+                        <p class="font-semibold text-green-900">Excellent Performance!</p>
+                        <p class="text-sm text-green-700" id="roiText"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- My Tasks -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-gray-800">
+                        <i class="fas fa-tasks text-blue-600 mr-2"></i>
+                        My Tasks This Month
+                    </h3>
+                    <div class="flex gap-2">
+                        <button onclick="filterTasks('all')" id="btnAll" class="px-3 py-1 text-sm rounded bg-blue-600 text-white">
+                            All
+                        </button>
+                        <button onclick="filterTasks('completed')" id="btnCompleted" class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700">
+                            Completed
+                        </button>
+                        <button onclick="filterTasks('in_progress')" id="btnInProgress" class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700">
+                            In Progress
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="tasksContainer" class="space-y-3">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Hours Modal -->
+    <div id="logHoursModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">
+                <i class="fas fa-clock text-blue-600 mr-2"></i>
+                Log Hours
+            </h3>
+            
+            <form id="logHoursForm" onsubmit="saveHours(event)" class="space-y-4">
+                <input type="hidden" id="logTaskId">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Task</label>
+                    <p id="logTaskTitle" class="text-sm text-gray-600 bg-gray-50 p-2 rounded"></p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Hours Worked</label>
+                    <input type="number" id="logHoursInput" step="0.5" min="0" required
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div class="text-xs text-blue-600 mb-1">Cost Calculation</div>
+                    <div class="text-sm text-blue-900">
+                        <span id="logHourlyRate">¥0</span> per hour × <span id="logHoursCalc">0</span> hours = 
+                        <span class="font-bold" id="logTotalCost">¥0</span>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg">
+                        <i class="fas fa-save mr-2"></i> Save Hours
+                    </button>
+                    <button type="button" onclick="closeLogHoursModal()" class="px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let currentStaff = null;
+        let allTasks = [];
+        let currentFilter = 'all';
+
+        // Handle login
+        async function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value.toLowerCase();
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                // Search for user
+                const response = await fetch(`tables/users?limit=100`);
+                const data = await response.json();
+                const user = (data.data || []).find(u => 
+                    (u.email && u.email.toLowerCase() === email) || 
+                    (u.username && u.username.toLowerCase() === email)
+                );
+                
+                if (user && user.password_hash === password) {
+                    await loginUser(user);
+                } else {
+                    alert('❌ Invalid email/username or password');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('❌ Login failed. Please try again.');
+            }
+        }
+
+        // Quick login (demo mode)
+        async function quickLogin(name) {
+            try {
+                const response = await fetch(`tables/staff_members?limit=100`);
+                const data = await response.json();
+                const staff = (data.data || []).find(s => 
+                    s.name.toLowerCase().includes(name.toLowerCase())
+                );
+                
+                if (staff) {
+                    // Create mock user object
+                    const mockUser = {
+                        id: staff.id,
+                        username: name,
+                        full_name: staff.name,
+                        role: 'staff',
+                        office: staff.office_location,
+                        staff_member_id: staff.id
+                    };
+                    await loginUser(mockUser);
+                } else {
+                    alert('❌ Staff member not found');
+                }
+            } catch (error) {
+                console.error('Quick login error:', error);
+            }
+        }
+
+        // Login user
+        async function loginUser(user) {
+            currentUser = user;
+            
+            // Get staff details
+            const staffResponse = await fetch(`tables/staff_members/${user.staff_member_id || user.id}`);
+            if (staffResponse.ok) {
+                currentStaff = await staffResponse.json();
+            }
+            
+            // Show dashboard
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainDashboard').classList.remove('hidden');
+            
+            // Update welcome
+            document.getElementById('welcomeName').textContent = `Welcome, ${currentStaff ? currentStaff.name : user.full_name}!`;
+            document.getElementById('officeLabel').textContent = `${currentStaff ? currentStaff.office_location : user.office} Office`;
+            
+            // Load dashboard data
+            await loadDashboardData();
+        }
+
+        // Logout
+        function logout() {
+            currentUser = null;
+            currentStaff = null;
+            document.getElementById('mainDashboard').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+        }
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            if (!currentStaff) return;
+            
+            try {
+                // Get current month
+                const now = new Date();
+                const currentMonth = now.toISOString().slice(0, 7);
+                
+                // Get my tasks
+                const tasksResponse = await fetch(`tables/tasks?limit=1000`);
+                const tasksData = await tasksResponse.json();
+                allTasks = (tasksData.data || []).filter(t => 
+                    t.assigned_to_id === currentStaff.id &&
+                    t.start_date &&
+                    t.start_date.startsWith(currentMonth)
+                );
+                
+                // Get orders for revenue linking
+                const ordersResponse = await fetch(`tables/orders?limit=1000`);
+                const ordersData = await ordersResponse.json();
+                const allOrders = ordersData.data || [];
+                
+                // Calculate stats
+                const hourlyRate = currentStaff.monthly_salary_rmb / 176;
+                let totalHours = 0;
+                let productiveHours = 0;
+                let totalCost = 0;
+                let linkedRevenue = 0;
+                let completedTasks = 0;
+                
+                allTasks.forEach(task => {
+                    const hours = task.actual_hours || 0;
+                    totalHours += hours;
+                    totalCost += hours * hourlyRate;
+                    
+                    if (task.status === 'Completed') {
+                        completedTasks++;
+                    }
+                    
+                    if (task.linked_order_id) {
+                        productiveHours += hours;
+                        const order = allOrders.find(o => o.id === task.linked_order_id);
+                        if (order) {
+                            linkedRevenue += order.revenue_amount || order.total_value || 0;
+                        }
+                    }
+                });
+                
+                const productivity = totalHours > 0 ? (productiveHours / totalHours) * 100 : 0;
+                const roi = totalCost > 0 && linkedRevenue > 0 ? linkedRevenue / totalCost : 0;
+                
+                // Update stats
+                document.getElementById('myCompletedTasks').textContent = completedTasks;
+                document.getElementById('myTotalHours').textContent = Math.round(totalHours) + 'h';
+                document.getElementById('myCost').textContent = formatCurrency(totalCost, 'RMB');
+                document.getElementById('myRevenue').textContent = formatCurrency(linkedRevenue, 'RMB');
+                document.getElementById('myProductivity').textContent = productivity.toFixed(1) + '%';
+                
+                // Show ROI message
+                if (roi > 100) {
+                    document.getElementById('roiMessage').classList.remove('hidden');
+                    document.getElementById('roiText').textContent = 
+                        `You're generating ${roi.toFixed(0)}× return on your salary. Your ${totalHours.toFixed(1)} hours of work generated ${formatCurrency(linkedRevenue, 'RMB')} in revenue. Keep it up! 🎉`;
+                }
+                
+                // Render tasks
+                renderTasks();
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Filter tasks
+        function filterTasks(filter) {
+            currentFilter = filter;
+            
+            // Update button styles
+            document.querySelectorAll('#btnAll, #btnCompleted, #btnInProgress').forEach(btn => {
+                btn.className = 'px-3 py-1 text-sm rounded bg-gray-200 text-gray-700';
+            });
+            
+            if (filter === 'all') document.getElementById('btnAll').className = 'px-3 py-1 text-sm rounded bg-blue-600 text-white';
+            else if (filter === 'completed') document.getElementById('btnCompleted').className = 'px-3 py-1 text-sm rounded bg-blue-600 text-white';
+            else if (filter === 'in_progress') document.getElementById('btnInProgress').className = 'px-3 py-1 text-sm rounded bg-blue-600 text-white';
+            
+            renderTasks();
+        }
+
+        // Render tasks
+        function renderTasks() {
+            const container = document.getElementById('tasksContainer');
+            
+            let filtered = allTasks;
+            if (currentFilter === 'completed') {
+                filtered = allTasks.filter(t => t.status === 'Completed');
+            } else if (currentFilter === 'in_progress') {
+                filtered = allTasks.filter(t => t.status === 'In Progress');
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">No tasks found</p>';
+                return;
+            }
+            
+            const hourlyRate = currentStaff.monthly_salary_rmb / 176;
+            
+            container.innerHTML = filtered.map(task => {
+                const hours = task.actual_hours || 0;
+                const cost = hours * hourlyRate;
+                const statusColors = {
+                    'Completed': 'bg-green-100 text-green-800',
+                    'In Progress': 'bg-blue-100 text-blue-800',
+                    'Not Started': 'bg-gray-100 text-gray-800',
+                    'Blocked': 'bg-red-100 text-red-800'
+                };
+                
+                return `
+                    <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-gray-800">${task.title}</h4>
+                                <p class="text-xs text-gray-600 mt-1">${task.description || 'No description'}</p>
+                            </div>
+                            <span class="px-2 py-1 text-xs font-semibold rounded ${statusColors[task.status] || 'bg-gray-100 text-gray-800'}">
+                                ${task.status}
+                            </span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center mt-3 pt-3 border-t">
+                            <div class="flex gap-4 text-sm">
+                                <span class="text-gray-600">
+                                    <i class="fas fa-clock text-blue-500 mr-1"></i>
+                                    ${hours.toFixed(1)}h
+                                </span>
+                                <span class="text-gray-600">
+                                    <i class="fas fa-dollar-sign text-green-500 mr-1"></i>
+                                    Cost: ${formatCurrency(cost, 'RMB')}
+                                </span>
+                            </div>
+                            <button onclick='openLogHoursModal(${JSON.stringify(task)})' 
+                                    class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded">
+                                <i class="fas fa-plus mr-1"></i> Log Hours
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Open log hours modal
+        function openLogHoursModal(task) {
+            document.getElementById('logTaskId').value = task.id;
+            document.getElementById('logTaskTitle').textContent = task.title;
+            
+            const hourlyRate = currentStaff.monthly_salary_rmb / 176;
+            document.getElementById('logHourlyRate').textContent = formatCurrency(hourlyRate, 'RMB');
+            
+            // Reset input
+            document.getElementById('logHoursInput').value = '';
+            document.getElementById('logHoursCalc').textContent = '0';
+            document.getElementById('logTotalCost').textContent = formatCurrency(0, 'RMB');
+            
+            // Update calculation on input
+            document.getElementById('logHoursInput').addEventListener('input', (e) => {
+                const hours = parseFloat(e.target.value) || 0;
+                const cost = hours * hourlyRate;
+                document.getElementById('logHoursCalc').textContent = hours.toFixed(1);
+                document.getElementById('logTotalCost').textContent = formatCurrency(cost, 'RMB');
+            });
+            
+            document.getElementById('logHoursModal').classList.remove('hidden');
+        }
+
+        // Close log hours modal
+        function closeLogHoursModal() {
+            document.getElementById('logHoursModal').classList.add('hidden');
+        }
+
+        // Save hours
+        async function saveHours(event) {
+            event.preventDefault();
+            
+            const taskId = document.getElementById('logTaskId').value;
+            const hours = parseFloat(document.getElementById('logHoursInput').value);
+            
+            if (!taskId || hours <= 0) return;
+            
+            try {
+                const task = allTasks.find(t => t.id === taskId);
+                const newTotalHours = (task.actual_hours || 0) + hours;
+                
+                const hourlyRate = currentStaff.monthly_salary_rmb / 176;
+                const taskCost = newTotalHours * hourlyRate;
+                
+                // Update task
+                await fetch(`tables/tasks/${taskId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        actual_hours: newTotalHours,
+                        hourly_cost: hourlyRate,
+                        task_total_cost: taskCost
+                    })
+                });
+                
+                closeLogHoursModal();
+                await loadDashboardData();
+                
+                alert(`✅ Hours logged successfully!\n\nTask: ${task.title}\nHours Added: ${hours}\nNew Total: ${newTotalHours.toFixed(1)}h\nCost: ${formatCurrency(taskCost, 'RMB')}`);
+            } catch (error) {
+                console.error('Error saving hours:', error);
+                alert('❌ Failed to save hours');
+            }
+        }
+
+        // Format currency
+        function formatCurrency(amount, currency) {
+            const symbols = { 'RMB': '¥', 'EUR': '€', 'USD': '$' };
+            return (symbols[currency] || '¥') + Math.round(amount).toLocaleString();
+        }
+    </script>
+</body>
+</html>

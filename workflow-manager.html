@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Manager - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="js/supabase-config.js"></script>
+    <style>
+        .workflow-step {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #3b82f6;
+            position: relative;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .workflow-step:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .workflow-step.completed {
+            border-left-color: #10b981;
+            opacity: 0.8;
+        }
+        
+        .workflow-step.in-progress {
+            border-left-color: #f59e0b;
+        }
+        
+        .workflow-step.blocked {
+            border-left-color: #ef4444;
+        }
+        
+        .substep {
+            margin-left: 40px;
+            padding: 12px;
+            background: #f8fafc;
+            border-left: 3px solid #cbd5e1;
+        }
+        
+        .step-connector {
+            position: absolute;
+            left: 20px;
+            top: 100%;
+            width: 2px;
+            height: 16px;
+            background: #cbd5e1;
+        }
+        
+        .editable {
+            position: relative;
+        }
+        
+        .editable:hover::after {
+            content: '✎';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #3b82f6;
+            font-size: 14px;
+        }
+        
+        .translation-box {
+            background: #f0f9ff;
+            border: 1px dashed #3b82f6;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        .cost-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .language-toggle {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 100;
+            background: white;
+            border-radius: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 8px;
+        }
+        
+        .lang-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .lang-btn.active {
+            background: #3b82f6;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Language Toggle -->
+    <div class="language-toggle">
+        <button class="lang-btn active" onclick="switchLanguage('en')" id="langBtnEn">
+            🇬🇧 English
+        </button>
+        <button class="lang-btn" onclick="switchLanguage('zh')" id="langBtnZh">
+            🇨🇳 中文
+        </button>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="bg-white border-b shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-6">
+                    <a href="index.html" class="flex items-center gap-2 text-blue-600 hover:text-blue-700">
+                        <i class="fas fa-arrow-left"></i>
+                        <span data-i18n="nav.back">Back to Dashboard</span>
+                    </a>
+                    <h1 class="text-xl font-semibold" data-i18n="nav.title">Workflow & Order Manager</h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="orderFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option value="" data-i18n="filter.allOrders">All Orders</option>
+                    </select>
+                    <button onclick="createNewWorkflow()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-plus"></i>
+                        <span data-i18n="btn.newWorkflow">New Workflow</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Workflow Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+            <div class="bg-white p-4 rounded-lg shadow-sm">
+                <div class="text-2xl font-bold text-blue-600" id="totalWorkflows">0</div>
+                <div class="text-sm text-gray-500" data-i18n="stats.activeWorkflows">Active Workflows</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm">
+                <div class="text-2xl font-bold text-orange-600" id="inProgressSteps">0</div>
+                <div class="text-sm text-gray-500" data-i18n="stats.inProgress">In Progress</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm">
+                <div class="text-2xl font-bold text-red-600" id="blockedSteps">0</div>
+                <div class="text-sm text-gray-500" data-i18n="stats.blocked">Blocked</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm">
+                <div class="text-2xl font-bold text-green-600" id="totalProjectCost">¥0</div>
+                <div class="text-sm text-gray-500" data-i18n="stats.totalCost">Total Cost</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm">
+                <div class="text-2xl font-bold text-purple-600" id="laborCost">¥0</div>
+                <div class="text-sm text-gray-500" data-i18n="stats.laborCost">Labor Cost</div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+            <!-- Workflow Steps -->
+            <div class="xl:col-span-3">
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold" data-i18n="section.workflowSteps">Workflow Steps</h2>
+                        <button onclick="addWorkflowStep()" class="text-blue-600 hover:text-blue-700 text-sm">
+                            <i class="fas fa-plus-circle"></i>
+                            <span data-i18n="btn.addStep">Add Step</span>
+                        </button>
+                    </div>
+                    <div id="workflowStepsList">
+                        <!-- Workflow steps will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Production Tracking -->
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                    <h2 class="text-lg font-semibold mb-4" data-i18n="section.production">Production Tracking</h2>
+                    <div id="productionTrackingList">
+                        <!-- Production tracking will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Shipping Tracking -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h2 class="text-lg font-semibold mb-4" data-i18n="section.shipping">Shipping & Export</h2>
+                    <div id="shippingTrackingList">
+                        <!-- Shipping tracking will be populated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-semibold mb-4" data-i18n="section.quickActions">Quick Actions</h3>
+                    <div class="space-y-2">
+                        <button onclick="quickAddStep('Quotation Prep')" class="w-full text-left px-4 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm">
+                            <i class="fas fa-file-invoice"></i>
+                            <span data-i18n="action.quotation">Prepare Quotation</span>
+                        </button>
+                        <button onclick="quickAddStep('Proforma Invoice')" class="w-full text-left px-4 py-2 bg-green-50 hover:bg-green-100 rounded-lg text-sm">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            <span data-i18n="action.proforma">Proforma Invoice</span>
+                        </button>
+                        <button onclick="quickAddStep('Production')" class="w-full text-left px-4 py-2 bg-orange-50 hover:bg-orange-100 rounded-lg text-sm">
+                            <i class="fas fa-industry"></i>
+                            <span data-i18n="action.production">Start Production</span>
+                        </button>
+                        <button onclick="quickAddStep('QC Inspection')" class="w-full text-left px-4 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg text-sm">
+                            <i class="fas fa-check-double"></i>
+                            <span data-i18n="action.qc">QC Inspection</span>
+                        </button>
+                        <button onclick="quickAddStep('Shipment')" class="w-full text-left px-4 py-2 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-sm">
+                            <i class="fas fa-shipping-fast"></i>
+                            <span data-i18n="action.shipment">Prepare Shipment</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Cost Breakdown -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-semibold mb-4" data-i18n="section.costBreakdown">Cost Breakdown</h3>
+                    <canvas id="costChart" style="height: 200px;"></canvas>
+                    <div id="costDetails" class="mt-4 space-y-2 text-sm">
+                        <!-- Cost details will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Staff Allocation -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-semibold mb-4" data-i18n="section.staffAllocation">Staff Allocation</h3>
+                    <div id="staffAllocation" class="space-y-2">
+                        <!-- Staff allocation will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Timeline Overview -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-semibold mb-4" data-i18n="section.timeline">Timeline</h3>
+                    <div id="timelineOverview">
+                        <!-- Timeline overview will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-3xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold" data-i18n="modal.editTitle">Edit Item</h3>
+                        <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="editModalContent">
+                        <!-- Dynamic edit form will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/translations.js"></script>
+    <script src="js/workflow-manager.js"></script>
+</body>
+</html>

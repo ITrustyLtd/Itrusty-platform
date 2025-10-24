@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        .login-card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        .demo-user-card {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .demo-user-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 min-h-screen flex items-center justify-center p-4">
+    
+    <div class="login-card max-w-6xl w-full rounded-2xl shadow-2xl p-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">I Trusty Ltd</h1>
+            <p class="text-gray-600" data-translate="login_subtitle">Enterprise Management System</p>
+            
+            <!-- Language Switcher -->
+            <div class="flex items-center justify-center gap-2 mt-4">
+                <button onclick="switchLanguage('en')" id="lang-en" class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 transition">
+                    🇬🇧 English
+                </button>
+                <button onclick="switchLanguage('zh-CN')" id="lang-zh" class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 transition">
+                    🇨🇳 中文
+                </button>
+            </div>
+        </div>
+        
+        <div class="grid md:grid-cols-2 gap-8">
+            <!-- Traditional Login Form -->
+            <div class="border-r pr-8">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-700" data-translate="login">Login</h2>
+                
+                <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="username">Username</label>
+                        <input type="text" id="username" required 
+                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="password">Password</label>
+                        <input type="password" id="password" required 
+                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold transition">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        <span data-translate="login_button">Login</span>
+                    </button>
+                </form>
+                
+                <div id="loginError" class="mt-4 hidden">
+                    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <span id="errorMessage"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Demo Login -->
+            <div class="pl-8">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-700" data-translate="quick_demo">Quick Demo Login</h2>
+                
+                <div class="space-y-3">
+                    <!-- Admin -->
+                    <div class="demo-user-card bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200 rounded-lg p-4" onclick="quickLogin('admin')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-full bg-red-200 flex items-center justify-center">
+                                    <i class="fas fa-crown text-red-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-red-900">Ιωάννης Βλαχόπουλος</div>
+                                    <div class="text-sm text-red-700" data-translate="administrator">Administrator</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-arrow-right text-red-600"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Manager: Lily -->
+                    <div class="demo-user-card bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-4" onclick="quickLogin('lily')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center">
+                                    <i class="fas fa-user-tie text-blue-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-blue-900">Lily Chen</div>
+                                    <div class="text-sm text-blue-700">经理 | Shenzhen</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-arrow-right text-blue-600"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Manager: Peng -->
+                    <div class="demo-user-card bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-4" onclick="quickLogin('peng')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center">
+                                    <i class="fas fa-user-tie text-blue-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-blue-900">Peng Wang</div>
+                                    <div class="text-sm text-blue-700">经理 | Yiwu</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-arrow-right text-blue-600"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Staff: Ruby -->
+                    <div class="demo-user-card bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-lg p-4" onclick="quickLogin('ruby')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center">
+                                    <i class="fas fa-user text-green-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-green-900">Ruby Liu</div>
+                                    <div class="text-sm text-green-700">员工 | Sourcing</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-arrow-right text-green-600"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Staff: Big Brother -->
+                    <div class="demo-user-card bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-lg p-4" onclick="quickLogin('bigbrother')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center">
+                                    <i class="fas fa-user text-green-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-green-900">Big Brother Zheng</div>
+                                    <div class="text-sm text-green-700">员工 | QC</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-arrow-right text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="text-xs text-gray-500 mt-4 text-center">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    <span data-translate="demo_note">Demo mode - instant access for testing</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="js/rbac-system.js"></script>
+    <script src="js/i18n-extended.js"></script>
+    
+    <script>
+        // Traditional login
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                // Try database lookup first
+                const response = await fetch(`tables/users?limit=100`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const users = data.data || [];
+                    
+                    const user = users.find(u => 
+                        u.username === username && u.password_hash === password && u.active
+                    );
+                    
+                    if (user) {
+                        await loginUser(user);
+                        return;
+                    }
+                }
+                
+                // Fallback to demo users
+                const demoUser = Object.values(window.RBAC.DEMO_USERS).find(u => 
+                    u.username === username && u.password_hash === password
+                );
+                
+                if (demoUser) {
+                    await loginUser(demoUser);
+                } else {
+                    showError(t('invalid_credentials'));
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError(t('login_error'));
+            }
+        }
+        
+        // Quick demo login
+        async function quickLogin(userKey) {
+            const user = window.RBAC.DEMO_USERS[userKey];
+            if (user) {
+                await loginUser(user);
+            } else {
+                showError('Demo user not found');
+            }
+        }
+        
+        // Login user and redirect
+        async function loginUser(user) {
+            // Update last login
+            user.last_login = new Date().toISOString();
+            
+            // Save to localStorage
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            localStorage.setItem('language_preference', user.language_preference || 'en');
+            
+            // Show success
+            showSuccess(t('login_success'));
+            
+            // Redirect to dashboard after 500ms
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 500);
+        }
+        
+        // Show error
+        function showError(message) {
+            const errorDiv = document.getElementById('loginError');
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorDiv.classList.remove('hidden');
+            
+            setTimeout(() => {
+                errorDiv.classList.add('hidden');
+            }, 5000);
+        }
+        
+        // Show success
+        function showSuccess(message) {
+            const form = document.getElementById('loginForm');
+            form.innerHTML = `
+                <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-center">
+                    <i class="fas fa-check-circle text-2xl mb-2"></i>
+                    <p class="font-semibold">${message}</p>
+                    <p class="text-sm mt-1">${t('redirecting')}</p>
+                </div>
+            `;
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Clear any existing login
+            localStorage.removeItem('currentUser');
+            
+            console.log('✅ Login page ready');
+        });
+    </script>
+</body>
+</html>

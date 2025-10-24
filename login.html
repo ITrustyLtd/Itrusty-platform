@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Trusty Ltd - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-shield-alt text-white text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900">I Trusty Ltd</h1>
+            <p class="text-gray-500 mt-2">Project Management System</p>
+        </div>
+
+        <form id="loginForm" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-envelope mr-2"></i>Email or Username
+                </label>
+                <input 
+                    type="text" 
+                    id="emailOrUsername"
+                    required 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                    placeholder="Enter your email or username"
+                >
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-lock mr-2"></i>Password
+                </label>
+                <input 
+                    type="password" 
+                    id="password"
+                    required 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                    placeholder="Enter your password"
+                >
+            </div>
+
+            <button 
+                type="submit" 
+                class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all transform hover:scale-105 shadow-lg"
+            >
+                <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+            </button>
+        </form>
+
+        <div class="mt-8 p-4 bg-gray-50 rounded-lg">
+            <p class="text-sm text-gray-600 font-semibold mb-2">Demo Accounts:</p>
+            <div class="space-y-1 text-xs text-gray-600">
+                <p><strong>Admin:</strong> johny / admin123</p>
+                <p><strong>Manager:</strong> peng, lily, nikos / [name]123</p>
+                <p><strong>QC Staff:</strong> zheng, linyi / [name]123</p>
+                <p><strong>Finance:</strong> james / james123</p>
+                <p><strong>Purchasing:</strong> ruby, xiaomin / [name]123</p>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="hidden mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            <span id="errorText"></span>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const emailOrUsername = document.getElementById('emailOrUsername').value.toLowerCase().trim();
+            const password = document.getElementById('password').value;
+            
+            try {
+                // Fetch all users from database
+                const response = await fetch(`tables/users?page=1&limit=100`);
+                const data = await response.json();
+                
+                // Find user by email OR username
+                const user = data.data?.find(u => 
+                    u.username === emailOrUsername || 
+                    u.email === emailOrUsername
+                );
+                
+                if (user && user.password_hash === password && user.active) {
+                    // Update last_login timestamp
+                    await updateLastLogin(user.id);
+                    
+                    // Log session to audit_log
+                    await logUserLogin(user);
+                    
+                    // Store user session with login timestamp
+                    sessionStorage.setItem('itrusty_user', JSON.stringify({
+                        id: user.id,
+                        username: user.username,
+                        email: user.email,
+                        full_name: user.full_name,
+                        role: user.role,
+                        office: user.office,
+                        can_see_prices: user.can_see_prices,
+                        can_edit_all: user.can_edit_all,
+                        can_edit_own: user.can_edit_own,
+                        login_time: new Date().toISOString(),
+                        session_id: generateSessionId()
+                    }));
+                    
+                    // Redirect to dashboard
+                    window.location.href = 'index.html';
+                } else {
+                    showError('Invalid username or password');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('Login system error. Please try again.');
+            }
+        });
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            errorText.textContent = message;
+            errorDiv.classList.remove('hidden');
+            
+            setTimeout(() => {
+                errorDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Update last login timestamp
+        async function updateLastLogin(userId) {
+            try {
+                await fetch(`tables/users/${userId}`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        last_login: new Date().toISOString()
+                    })
+                });
+            } catch (error) {
+                console.error('Failed to update last login:', error);
+            }
+        }
+        
+        // Log user login to audit_log
+        async function logUserLogin(user) {
+            try {
+                await fetch('tables/audit_log', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        user_id: user.id,
+                        user_name: user.full_name,
+                        action_type: 'login',
+                        resource_type: 'system',
+                        resource_id: 'login_page',
+                        resource_name: 'User Login',
+                        action_details: `User logged in from ${user.office}`,
+                        ip_address: 'browser_session',
+                        success: true,
+                        timestamp: new Date().toISOString(),
+                        session_id: generateSessionId()
+                    })
+                });
+            } catch (error) {
+                console.error('Failed to log user login:', error);
+            }
+        }
+        
+        // Generate unique session ID
+        function generateSessionId() {
+            return 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        // Check if already logged in
+        if (sessionStorage.getItem('itrusty_user')) {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

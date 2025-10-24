@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 System Data Initialization - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .progress-bar {
+            transition: width 0.5s ease;
+        }
+        .log-entry {
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-5xl font-bold text-white mb-4">
+                🎯 System Data Initialization
+            </h1>
+            <p class="text-xl text-white opacity-90">
+                Initialize I Trusty Ltd Database with Complete Business Data
+            </p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="card p-8 mb-6">
+            <!-- Overall Progress -->
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-2xl font-bold text-gray-800">Overall Progress</h2>
+                    <span id="overallPercent" class="text-2xl font-bold text-purple-600">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-6">
+                    <div id="overallProgress" class="progress-bar bg-gradient-to-r from-purple-500 to-blue-500 h-6 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Data Categories -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <!-- Staff Members -->
+                <div class="border-2 border-gray-200 rounded-lg p-4" id="card-staff">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-users text-3xl text-blue-500"></i>
+                            <div>
+                                <h3 class="font-bold text-lg">Staff Members</h3>
+                                <p class="text-sm text-gray-600">11 team members</p>
+                            </div>
+                        </div>
+                        <span class="status-badge px-3 py-1 rounded-full text-sm bg-gray-200">Pending</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="progress-bar bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Users -->
+                <div class="border-2 border-gray-200 rounded-lg p-4" id="card-users">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-user-lock text-3xl text-green-500"></i>
+                            <div>
+                                <h3 class="font-bold text-lg">User Accounts</h3>
+                                <p class="text-sm text-gray-600">Login credentials</p>
+                            </div>
+                        </div>
+                        <span class="status-badge px-3 py-1 rounded-full text-sm bg-gray-200">Pending</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="progress-bar bg-green-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Customers -->
+                <div class="border-2 border-gray-200 rounded-lg p-4" id="card-customers">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-building text-3xl text-yellow-500"></i>
+                            <div>
+                                <h3 class="font-bold text-lg">Customers</h3>
+                                <p class="text-sm text-gray-600">Client database</p>
+                            </div>
+                        </div>
+                        <span class="status-badge px-3 py-1 rounded-full text-sm bg-gray-200">Pending</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="progress-bar bg-yellow-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Bank Accounts -->
+                <div class="border-2 border-gray-200 rounded-lg p-4" id="card-banks">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-university text-3xl text-red-500"></i>
+                            <div>
+                                <h3 class="font-bold text-lg">Bank Accounts</h3>
+                                <p class="text-sm text-gray-600">Financial accounts</p>
+                            </div>
+                        </div>
+                        <span class="status-badge px-3 py-1 rounded-full text-sm bg-gray-200">Pending</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="progress-bar bg-red-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Products -->
+                <div class="border-2 border-gray-200 rounded-lg p-4" id="card-products">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-box text-3xl text-purple-500"></i>
+                            <div>
+                                <h3 class="font-bold text-lg">Products</h3>
+                                <p class="text-sm text-gray-600">Product catalog</p>
+                            </div>
+                        </div>
+                        <span class="status-badge px-3 py-1 rounded-full text-sm bg-gray-200">Pending</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="progress-bar bg-purple-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Company Expenses -->
+                <div class="border-2 border-gray-200 rounded-lg p-4" id="card-expenses">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-receipt text-3xl text-pink-500"></i>
+                            <div>
+                                <h3 class="font-bold text-lg">Expenses</h3>
+                                <p class="text-sm text-gray-600">Operating costs</p>
+                            </div>
+                        </div>
+                        <span class="status-badge px-3 py-1 rounded-full text-sm bg-gray-200">Pending</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="progress-bar bg-pink-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Invoices -->
+                <div class="border-2 border-gray-200 rounded-lg p-4" id="card-invoices">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-file-invoice text-3xl text-indigo-500"></i>
+                            <div>
+                                <h3 class="font-bold text-lg">Invoices</h3>
+                                <p class="text-sm text-gray-600">Sample documents</p>
+                            </div>
+                        </div>
+                        <span class="status-badge px-3 py-1 rounded-full text-sm bg-gray-200">Pending</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="progress-bar bg-indigo-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Orders -->
+                <div class="border-2 border-gray-200 rounded-lg p-4" id="card-orders">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-shopping-cart text-3xl text-orange-500"></i>
+                            <div>
+                                <h3 class="font-bold text-lg">Orders</h3>
+                                <p class="text-sm text-gray-600">Customer orders</p>
+                            </div>
+                        </div>
+                        <span class="status-badge px-3 py-1 rounded-full text-sm bg-gray-200">Pending</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="progress-bar bg-orange-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Sales Commissions -->
+                <div class="border-2 border-gray-200 rounded-lg p-4" id="card-commissions">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-percentage text-3xl text-teal-500"></i>
+                            <div>
+                                <h3 class="font-bold text-lg">Commissions</h3>
+                                <p class="text-sm text-gray-600">Sales commissions</p>
+                            </div>
+                        </div>
+                        <span class="status-badge px-3 py-1 rounded-full text-sm bg-gray-200">Pending</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="progress-bar bg-teal-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Buttons -->
+            <div class="flex gap-4 mb-6">
+                <button onclick="startInitialization()" id="startBtn" class="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white py-4 px-6 rounded-lg font-bold text-lg hover:shadow-xl transition-all">
+                    <i class="fas fa-rocket mr-2"></i> Start Initialization
+                </button>
+                <button onclick="clearAllData()" id="clearBtn" class="bg-red-500 text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-red-600 transition-all">
+                    <i class="fas fa-trash mr-2"></i> Clear All Data
+                </button>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="bg-gray-900 text-green-400 rounded-lg p-4 h-64 overflow-y-auto font-mono text-sm" id="activityLog">
+                <div class="text-gray-500">Waiting to start initialization...</div>
+            </div>
+        </div>
+
+        <!-- Info Card -->
+        <div class="card p-6">
+            <h3 class="text-xl font-bold mb-4 text-gray-800">📋 What Will Be Created:</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <p class="mb-2"><strong>👥 Staff Members (11):</strong></p>
+                    <ul class="list-disc list-inside ml-4 text-gray-600">
+                        <li>Yiwu: Peng, Big Brother, Lin Yi, James</li>
+                        <li>Shenzhen: Lily, Ruby, Xiao Min, Silent Artist</li>
+                        <li>Greece: Nikos, Chrysanthi</li>
+                        <li>CEO: Johny (You)</li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="mb-2"><strong>🏢 Customers (10):</strong></p>
+                    <ul class="list-disc list-inside ml-4 text-gray-600">
+                        <li>SRP, CTC, IRED, AMD (Ruby's clients)</li>
+                        <li>Global Sat, ARX, Mondsub</li>
+                        <li>Dimitriou Bros, Siluan Project</li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="mb-2"><strong>🏦 Bank Accounts (6):</strong></p>
+                    <ul class="list-disc list-inside ml-4 text-gray-600">
+                        <li>CCB Yiwu (RMB)</li>
+                        <li>HSBC Hong Kong (HKD, USD)</li>
+                        <li>Piraeus Greece (EUR)</li>
+                        <li>WeChat Pay, Alipay</li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="mb-2"><strong>📦 Products (15):</strong></p>
+                    <ul class="list-disc list-inside ml-4 text-gray-600">
+                        <li>Siluan Orthodox gifts</li>
+                        <li>Hotel supplies (SRP)</li>
+                        <li>Electronics (LED, USB)</li>
+                        <li>Ceramic items (CTC)</li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="mb-2"><strong>📄 Invoices (10):</strong></p>
+                    <ul class="list-disc list-inside ml-4 text-gray-600">
+                        <li>3 Quotations</li>
+                        <li>4 Pro Forma Invoices</li>
+                        <li>3 Commercial Invoices</li>
+                        <li>Realistic amounts & dates</li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="mb-2"><strong>📦 Orders (12):</strong></p>
+                    <ul class="list-disc list-inside ml-4 text-gray-600">
+                        <li>Various statuses</li>
+                        <li>Different customers</li>
+                        <li>Workflow tracking</li>
+                        <li>Product descriptions</li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="mb-2"><strong>💰 Commissions (6):</strong></p>
+                    <ul class="list-disc list-inside ml-4 text-gray-600">
+                        <li>Lily's sales (4)</li>
+                        <li>Ruby's sales (2)</li>
+                        <li>Linked to invoices</li>
+                        <li>Real profit calculations</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logEntries = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                'info': 'text-blue-400',
+                'success': 'text-green-400',
+                'error': 'text-red-400',
+                'warning': 'text-yellow-400'
+            };
+            
+            logEntries.push({
+                time: timestamp,
+                message: message,
+                color: colors[type] || colors.info
+            });
+
+            const logDiv = document.getElementById('activityLog');
+            logDiv.innerHTML = logEntries.map(entry => 
+                `<div class="log-entry"><span class="text-gray-500">[${entry.time}]</span> <span class="${entry.color}">${entry.message}</span></div>`
+            ).join('');
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateCardStatus(cardId, status, progress) {
+            const card = document.getElementById(`card-${cardId}`);
+            const badge = card.querySelector('.status-badge');
+            const progressBar = card.querySelector('.progress-bar');
+
+            const statuses = {
+                'pending': { text: 'Pending', bg: 'bg-gray-200', text: 'text-gray-700' },
+                'loading': { text: 'Loading...', bg: 'bg-blue-200', text: 'text-blue-700' },
+                'success': { text: 'Complete', bg: 'bg-green-200', text: 'text-green-700' },
+                'error': { text: 'Error', bg: 'bg-red-200', text: 'text-red-700' }
+            };
+
+            const statusConfig = statuses[status];
+            badge.className = `status-badge px-3 py-1 rounded-full text-sm ${statusConfig.bg} ${statusConfig.text}`;
+            badge.textContent = statusConfig.text;
+            progressBar.style.width = `${progress}%`;
+
+            if (status === 'loading') {
+                badge.classList.add('pulse');
+            } else {
+                badge.classList.remove('pulse');
+            }
+        }
+
+        function updateOverallProgress(percent) {
+            document.getElementById('overallProgress').style.width = `${percent}%`;
+            document.getElementById('overallPercent').textContent = `${Math.round(percent)}%`;
+        }
+
+        async function seedStaffMembers() {
+            updateCardStatus('staff', 'loading', 0);
+            log('Creating staff members...', 'info');
+
+            const staff = [
+                // Yiwu Office
+                { name: 'Peng Wang', role: 'Operations Manager', office_location: 'Yiwu', monthly_salary_rmb: 12000, monthly_salary_eur: 1538, skills: 'Operations, Logistics, Sourcing', capacity_hours_per_week: 40, hourly_rate_rmb: 115, productivity_rate: 1.2, active: true },
+                { name: 'Zheng (Big Brother)', role: 'Quality Control', office_location: 'Yiwu', monthly_salary_rmb: 6000, monthly_salary_eur: 769, skills: 'QC, Product Inspection', capacity_hours_per_week: 40, hourly_rate_rmb: 57, productivity_rate: 1.0, active: true },
+                { name: 'Lin Yi', role: 'Warehouse Manager', office_location: 'Yiwu', monthly_salary_rmb: 5500, monthly_salary_eur: 705, skills: 'Warehouse, Inventory', capacity_hours_per_week: 40, hourly_rate_rmb: 52, productivity_rate: 1.1, active: true },
+                { name: 'James Chen', role: 'Banking Coordinator', office_location: 'Yiwu', monthly_salary_rmb: 5000, monthly_salary_eur: 641, skills: 'Banking, Finance', capacity_hours_per_week: 40, hourly_rate_rmb: 48, productivity_rate: 1.0, active: true },
+                
+                // Shenzhen Office
+                { name: 'Lily Chen', role: 'Sales Manager', office_location: 'Shenzhen', monthly_salary_rmb: 18500, monthly_salary_eur: 2372, skills: 'Sales, Client Relations, Negotiation, English, Mandarin', capacity_hours_per_week: 40, hourly_rate_rmb: 177, productivity_rate: 1.5, active: true },
+                { name: 'Ruby Zhang', role: 'Sourcing Specialist', office_location: 'Shenzhen', monthly_salary_rmb: 7000, monthly_salary_eur: 897, skills: 'Sourcing, Suppliers', capacity_hours_per_week: 40, hourly_rate_rmb: 67, productivity_rate: 1.0, active: true },
+                { name: 'Xiao Min', role: 'Product Research', office_location: 'Shenzhen', monthly_salary_rmb: 6500, monthly_salary_eur: 833, skills: 'Research, Product Analysis', capacity_hours_per_week: 40, hourly_rate_rmb: 62, productivity_rate: 0.8, active: true },
+                { name: 'Silent Artist', role: 'Graphic Designer', office_location: 'Shenzhen', monthly_salary_rmb: 7000, monthly_salary_eur: 897, skills: 'Design, Graphics', capacity_hours_per_week: 40, hourly_rate_rmb: 67, productivity_rate: 1.0, active: true },
+                
+                // Greece Office
+                { name: 'Nikos Papadopoulos', role: 'Admin Assistant', office_location: 'Greece', monthly_salary_rmb: 9594, monthly_salary_eur: 1230, skills: 'Admin, Customer Service', capacity_hours_per_week: 40, hourly_rate_rmb: 92, productivity_rate: 1.0, active: true },
+                { name: 'Chrysanthi Dimitriou', role: 'Records Manager', office_location: 'Greece', monthly_salary_rmb: 5850, monthly_salary_eur: 750, skills: 'Records, Data Entry', capacity_hours_per_week: 40, hourly_rate_rmb: 56, productivity_rate: 1.0, active: true },
+                
+                // CEO
+                { name: 'Johny Vlachopoulos', role: 'CEO', office_location: 'Shenzhen', monthly_salary_rmb: 0, monthly_salary_eur: 0, skills: 'Leadership, Strategy, Business Development', capacity_hours_per_week: 60, hourly_rate_rmb: 0, productivity_rate: 2.0, active: true }
+            ];
+
+            let created = 0;
+            for (const member of staff) {
+                try {
+                    const response = await fetch('tables/staff_members', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(member)
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        staffIds[member.name] = data.id; // Store ID for later use
+                        created++;
+                        log(`✓ Created staff: ${member.name}`, 'success');
+                        updateCardStatus('staff', 'loading', (created / staff.length) * 100);
+                    }
+                } catch (error) {
+                    log(`✗ Error creating ${member.name}: ${error.message}`, 'error');
+                }
+            }
+
+            updateCardStatus('staff', 'success', 100);
+            log(`Staff members complete: ${created}/${staff.length}`, 'success');
+            return created;
+        }
+
+        async function seedUsers() {
+            updateCardStatus('users', 'loading', 0);
+            log('Creating user accounts...', 'info');
+
+            const users = [
+                { username: 'johny', password_hash: 'admin123', full_name: 'Johny Vlachopoulos', role: 'admin', office: 'Shenzhen', email: 'johny@itrusty.com', can_see_prices: true, can_edit_all: true, can_edit_own: true, language_preference: 'en', active: true },
+                { username: 'lily', password_hash: 'lily123', full_name: 'Lily Chen', role: 'manager', office: 'Shenzhen', email: 'lily@itrusty.com', can_see_prices: true, can_edit_all: true, can_edit_own: true, language_preference: 'zh', active: true },
+                { username: 'peng', password_hash: 'peng123', full_name: 'Peng Wang', role: 'manager', office: 'Yiwu', email: 'peng@itrusty.com', can_see_prices: true, can_edit_all: true, can_edit_own: true, language_preference: 'zh', active: true },
+                { username: 'ruby', password_hash: 'ruby123', full_name: 'Ruby Zhang', role: 'staff', office: 'Shenzhen', email: 'ruby@itrusty.com', can_see_prices: true, can_edit_all: false, can_edit_own: true, language_preference: 'zh', active: true },
+                { username: 'bigbrother', password_hash: 'bb123', full_name: 'Zheng', role: 'staff', office: 'Yiwu', email: 'zheng@itrusty.com', can_see_prices: false, can_edit_all: false, can_edit_own: true, language_preference: 'zh', active: true },
+                { username: 'nikos', password_hash: 'nikos123', full_name: 'Nikos Papadopoulos', role: 'readonly', office: 'Greece', email: 'nikos@itrusty.com', can_see_prices: false, can_edit_all: false, can_edit_own: false, language_preference: 'el', active: true },
+                { username: 'chrysanthi', password_hash: 'chrys123', full_name: 'Chrysanthi Dimitriou', role: 'readonly', office: 'Greece', email: 'chrysanthi@itrusty.com', can_see_prices: false, can_edit_all: false, can_edit_own: false, language_preference: 'el', active: true }
+            ];
+
+            let created = 0;
+            for (const user of users) {
+                try {
+                    const response = await fetch('tables/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(user)
+                    });
+                    
+                    if (response.ok) {
+                        created++;
+                        log(`✓ Created user: ${user.username}`, 'success');
+                        updateCardStatus('users', 'loading', (created / users.length) * 100);
+                    }
+                } catch (error) {
+                    log(`✗ Error creating user ${user.username}: ${error.message}`, 'error');
+                }
+            }
+
+            updateCardStatus('users', 'success', 100);
+            log(`User accounts complete: ${created}/${users.length}`, 'success');
+            return created;
+        }
+
+        async function seedCustomers() {
+            updateCardStatus('customers', 'loading', 0);
+            log('Creating customers...', 'info');
+
+            const customers = [
+                { customer_code: 'SRP', customer_name: 'SRP Hotel Supplies', company: 'SRP International Ltd', contact_person: 'Mr. Smith', email: 'smith@srp.com', phone: '+30 210 1234567', address: '123 Athens St', city: 'Athens', country: 'Greece', postal_code: '10678', vat_number: 'EL123456789', active: true, total_orders: 0, total_value_eur: 0 },
+                { customer_code: 'CTC', customer_name: 'CTC Ceramics', company: 'CTC Trading Co', contact_person: 'Mrs. Johnson', email: 'johnson@ctc.com', phone: '+44 20 7123 4567', address: '456 London Rd', city: 'London', country: 'UK', postal_code: 'SW1A 1AA', vat_number: 'GB987654321', active: true, total_orders: 0, total_value_eur: 0 },
+                { customer_code: 'IRED', customer_name: 'IRED Electronics', company: 'IRED Tech GmbH', contact_person: 'Mr. Müller', email: 'muller@ired.de', phone: '+49 30 1234567', address: '789 Berlin Ave', city: 'Berlin', country: 'Germany', postal_code: '10115', vat_number: 'DE111222333', active: true, total_orders: 0, total_value_eur: 0 },
+                { customer_code: 'AMD', customer_name: 'AMD Distributors', company: 'AMD LLC', contact_person: 'Mr. Anderson', email: 'anderson@amd.com', phone: '+1 212 555 1234', address: '321 NY Ave', city: 'New York', country: 'USA', postal_code: '10001', vat_number: 'US444555666', active: true, total_orders: 0, total_value_eur: 0 },
+                { customer_code: 'GLB', customer_name: 'Global Sat', company: 'Global Sat International', contact_person: 'Mr. Dimitriou', email: 'info@globalsat.gr', phone: '+30 210 9876543', address: '555 Syntagma Sq', city: 'Athens', country: 'Greece', postal_code: '10563', vat_number: 'EL999888777', active: true, total_orders: 0, total_value_eur: 0 },
+                { customer_code: 'ARX', customer_name: 'Archangelos Imports', company: 'ARX Trading', contact_person: 'Fr. Michael', email: 'michael@arx.com', phone: '+30 210 5551234', address: '777 Monastiraki', city: 'Athens', country: 'Greece', postal_code: '10555', vat_number: 'EL777666555', active: true, total_orders: 0, total_value_eur: 0 },
+                { customer_code: 'MON', customer_name: 'Mondsub', company: 'Mondsub GmbH', contact_person: 'Mr. Schmidt', email: 'schmidt@mondsub.de', phone: '+49 89 7654321', address: '888 Munich St', city: 'Munich', country: 'Germany', postal_code: '80331', vat_number: 'DE222333444', active: true, total_orders: 0, total_value_eur: 0 },
+                { customer_code: 'DIM', customer_name: 'Dimitriou Bros', company: 'Dimitriou Brothers Ltd', contact_person: 'Petros Dimitriou', email: 'petros@dimitriou.gr', phone: '+30 210 3334444', address: '999 Plaka St', city: 'Athens', country: 'Greece', postal_code: '10558', vat_number: 'EL555444333', active: true, total_orders: 0, total_value_eur: 0 },
+                { customer_code: 'SIL', customer_name: 'Siluan Project', company: 'Siluan Orthodox Gifts', contact_person: 'Johny Vlachopoulos', email: 'johny@siluan.com', phone: '+86 18757682724', address: 'Yiwu Market', city: 'Yiwu', country: 'China', postal_code: '322000', vat_number: 'CN123123123', active: true, total_orders: 0, total_value_eur: 0 },
+                { customer_code: 'TST', customer_name: 'Test Customer', company: 'Test Co Ltd', contact_person: 'John Doe', email: 'test@test.com', phone: '+1 555 0000', address: '000 Test St', city: 'TestCity', country: 'TestLand', postal_code: '00000', vat_number: 'XX000000000', active: true, total_orders: 0, total_value_eur: 0 }
+            ];
+
+            let created = 0;
+            for (const customer of customers) {
+                try {
+                    const response = await fetch('tables/customers', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(customer)
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        customerIds[customer.customer_code] = data.id; // Store ID for later use
+                        created++;
+                        log(`✓ Created customer: ${customer.customer_code}`, 'success');
+                        updateCardStatus('customers', 'loading', (created / customers.length) * 100);
+                    }
+                } catch (error) {
+                    log(`✗ Error creating ${customer.customer_code}: ${error.message}`, 'error');
+                }
+            }
+
+            updateCardStatus('customers', 'success', 100);
+            log(`Customers complete: ${created}/${customers.length}`, 'success');
+            return created;
+        }
+
+        async function seedBankAccounts() {
+            updateCardStatus('banks', 'loading', 0);
+            log('Creating bank accounts...', 'info');
+
+            const banks = [
+                { account_name: 'CCB Yiwu Main', account_number: '33101234567890123456', bank_name: 'China Construction Bank', currency: 'RMB', account_type: 'business', country: 'China', balance: 250000, office: 'Yiwu', active: true, swift_code: 'PCBCCNBJXXX', iban: '' },
+                { account_name: 'HSBC HK Corporate', account_number: '808-123456-838', bank_name: 'HSBC Hong Kong', currency: 'HKD', account_type: 'business', country: 'Hong Kong', balance: 150000, office: 'Hong Kong', active: true, swift_code: 'HSBCHKHHHKH', iban: '' },
+                { account_name: 'HSBC HK USD', account_number: '808-123456-001', bank_name: 'HSBC Hong Kong', currency: 'USD', account_type: 'business', country: 'Hong Kong', balance: 25000, office: 'Hong Kong', active: true, swift_code: 'HSBCHKHHHKH', iban: '' },
+                { account_name: 'Piraeus Bank Greece', account_number: 'GR1601101230000012345678901', bank_name: 'Piraeus Bank', currency: 'EUR', account_type: 'business', country: 'Greece', balance: 35000, office: 'Greece', active: true, swift_code: 'PIRBGRAA', iban: 'GR1601101230000012345678901' },
+                { account_name: 'WeChat Pay Business', account_number: '微信支付商户', bank_name: 'WeChat Pay', currency: 'RMB', account_type: 'digital', country: 'China', balance: 50000, office: 'Shenzhen', active: true, swift_code: '', iban: '' },
+                { account_name: 'Alipay Business', account_number: '支付宝商户', bank_name: 'Alipay', currency: 'RMB', account_type: 'digital', country: 'China', balance: 30000, office: 'Shenzhen', active: true, swift_code: '', iban: '' }
+            ];
+
+            let created = 0;
+            for (const bank of banks) {
+                try {
+                    const response = await fetch('tables/bank_accounts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(bank)
+                    });
+                    
+                    if (response.ok) {
+                        created++;
+                        log(`✓ Created bank: ${bank.account_name}`, 'success');
+                        updateCardStatus('banks', 'loading', (created / banks.length) * 100);
+                    }
+                } catch (error) {
+                    log(`✗ Error creating ${bank.account_name}: ${error.message}`, 'error');
+                }
+            }
+
+            updateCardStatus('banks', 'success', 100);
+            log(`Bank accounts complete: ${created}/${banks.length}`, 'success');
+            return created;
+        }
+
+        async function seedProducts() {
+            updateCardStatus('products', 'loading', 0);
+            log('Creating products...', 'info');
+
+            const products = [
+                // Siluan Orthodox Products
+                { sku: 'SKU-2025-00001', product_name: 'Byzantine Icon - St. George', category: 'Orthodox Gifts', unit_price_rmb: 120, unit_price_eur: 15.38, unit_price_usd: 17.14, default_markup_percent: 35, qty_per_box: 10, supplier_name: 'Yiwu Religious Art Factory', is_active: true, is_featured: true },
+                { sku: 'SKU-2025-00002', product_name: 'Orthodox Prayer Rope (50 knots)', category: 'Orthodox Gifts', unit_price_rmb: 25, unit_price_eur: 3.21, unit_price_usd: 3.57, default_markup_percent: 40, qty_per_box: 50, supplier_name: 'Yiwu Religious Art Factory', is_active: true, is_featured: true },
+                { sku: 'SKU-2025-00003', product_name: 'Ceramic Incense Burner', category: 'Orthodox Gifts', unit_price_rmb: 45, unit_price_eur: 5.77, unit_price_usd: 6.43, default_markup_percent: 35, qty_per_box: 20, supplier_name: 'Foshan Ceramics Ltd', is_active: true, is_featured: false },
+                { sku: 'SKU-2025-00004', product_name: 'Olive Wood Cross Pendant', category: 'Orthodox Gifts', unit_price_rmb: 18, unit_price_eur: 2.31, unit_price_usd: 2.57, default_markup_percent: 45, qty_per_box: 100, supplier_name: 'Yiwu Religious Art Factory', is_active: true, is_featured: true },
+                
+                // Hotel Supplies (SRP)
+                { sku: 'SKU-2025-00005', product_name: 'Hotel Towel Set (White)', category: 'Hotel Supplies', unit_price_rmb: 35, unit_price_eur: 4.49, unit_price_usd: 5.00, default_markup_percent: 30, qty_per_box: 30, supplier_name: 'Nantong Textiles Co', is_active: true, is_featured: false },
+                { sku: 'SKU-2025-00006', product_name: 'Bed Sheet Set (Queen)', category: 'Hotel Supplies', unit_price_rmb: 85, unit_price_eur: 10.90, unit_price_usd: 12.14, default_markup_percent: 28, qty_per_box: 10, supplier_name: 'Nantong Textiles Co', is_active: true, is_featured: false },
+                { sku: 'SKU-2025-00007', product_name: 'Hotel Slipper (Disposable)', category: 'Hotel Supplies', unit_price_rmb: 2.5, unit_price_eur: 0.32, unit_price_usd: 0.36, default_markup_percent: 50, qty_per_box: 500, supplier_name: 'Yangzhou Hotel Supplies', is_active: true, is_featured: false },
+                
+                // Electronics (IRED)
+                { sku: 'SKU-2025-00008', product_name: 'LED Bulb E27 12W', category: 'Electronics', unit_price_rmb: 8, unit_price_eur: 1.03, unit_price_usd: 1.14, default_markup_percent: 35, qty_per_box: 100, supplier_name: 'Foshan LED Factory', is_active: true, is_featured: true },
+                { sku: 'SKU-2025-00009', product_name: 'USB Cable Type-C (1m)', category: 'Electronics', unit_price_rmb: 3.5, unit_price_eur: 0.45, unit_price_usd: 0.50, default_markup_percent: 40, qty_per_box: 200, supplier_name: 'Shenzhen Cable Co', is_active: true, is_featured: false },
+                { sku: 'SKU-2025-00010', product_name: 'Power Bank 10000mAh', category: 'Electronics', unit_price_rmb: 28, unit_price_eur: 3.59, unit_price_usd: 4.00, default_markup_percent: 38, qty_per_box: 50, supplier_name: 'Shenzhen Electronics Ltd', is_active: true, is_featured: true },
+                
+                // Ceramics (CTC)
+                { sku: 'SKU-2025-00011', product_name: 'Ceramic Flower Vase (30cm)', category: 'Home Decor', unit_price_rmb: 45, unit_price_eur: 5.77, unit_price_usd: 6.43, default_markup_percent: 32, qty_per_box: 20, supplier_name: 'Foshan Ceramics Ltd', is_active: true, is_featured: false },
+                { sku: 'SKU-2025-00012', product_name: 'Porcelain Dinner Plate Set', category: 'Home Decor', unit_price_rmb: 120, unit_price_eur: 15.38, unit_price_usd: 17.14, default_markup_percent: 30, qty_per_box: 6, supplier_name: 'Foshan Ceramics Ltd', is_active: true, is_featured: false },
+                
+                // Miscellaneous
+                { sku: 'SKU-2025-00013', product_name: 'Bamboo Cutting Board', category: 'Kitchenware', unit_price_rmb: 15, unit_price_eur: 1.92, unit_price_usd: 2.14, default_markup_percent: 35, qty_per_box: 50, supplier_name: 'Anji Bamboo Products', is_active: true, is_featured: false },
+                { sku: 'SKU-2025-00014', product_name: 'Stainless Steel Water Bottle', category: 'Drinkware', unit_price_rmb: 22, unit_price_eur: 2.82, unit_price_usd: 3.14, default_markup_percent: 33, qty_per_box: 40, supplier_name: 'Yiwu Metal Products', is_active: true, is_featured: false },
+                { sku: 'SKU-2025-00015', product_name: 'Cotton Canvas Tote Bag', category: 'Accessories', unit_price_rmb: 8, unit_price_eur: 1.03, unit_price_usd: 1.14, default_markup_percent: 45, qty_per_box: 100, supplier_name: 'Yiwu Bag Factory', is_active: true, is_featured: false }
+            ];
+
+            let created = 0;
+            for (const product of products) {
+                try {
+                    const response = await fetch('tables/products', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(product)
+                    });
+                    
+                    if (response.ok) {
+                        created++;
+                        log(`✓ Created product: ${product.product_name}`, 'success');
+                        updateCardStatus('products', 'loading', (created / products.length) * 100);
+                    }
+                } catch (error) {
+                    log(`✗ Error creating ${product.product_name}: ${error.message}`, 'error');
+                }
+            }
+
+            updateCardStatus('products', 'success', 100);
+            log(`Products complete: ${created}/${products.length}`, 'success');
+            return created;
+        }
+
+        // Global variable to store customer IDs
+        let customerIds = {};
+        let staffIds = {};
+
+        async function seedCompanyExpenses() {
+            updateCardStatus('expenses', 'loading', 0);
+            log('Creating company expenses...', 'info');
+
+            const expenses = [
+                // Office Rents (Monthly)
+                { expense_category: 'Rent', subcategory: 'Office Space', expense_date: '2025-05-01', amount: 11000, currency: 'RMB', office: 'Shenzhen', payment_method: 'Bank Transfer', payee: 'Shenzhen Landlord', status: 'paid', recurring: true, recurring_frequency: 'monthly', recurring_day: 1 },
+                { expense_category: 'Rent', subcategory: 'Warehouse', expense_date: '2025-05-01', amount: 5833, currency: 'RMB', office: 'Yiwu', payment_method: 'Bank Transfer', payee: 'Yiwu Warehouse Owner', status: 'paid', recurring: true, recurring_frequency: 'monthly', recurring_day: 1 },
+                
+                // Utilities
+                { expense_category: 'Utilities', subcategory: 'Electricity', expense_date: '2025-05-15', amount: 2500, currency: 'RMB', office: 'Shenzhen', payment_method: 'Bank Transfer', payee: 'Shenzhen Power Company', status: 'paid', recurring: true, recurring_frequency: 'monthly', recurring_day: 15 },
+                { expense_category: 'Utilities', subcategory: 'Electricity', expense_date: '2025-05-15', amount: 1800, currency: 'RMB', office: 'Yiwu', payment_method: 'Bank Transfer', payee: 'Yiwu Power Company', status: 'paid', recurring: true, recurring_frequency: 'monthly', recurring_day: 15 },
+                { expense_category: 'Utilities', subcategory: 'Internet', expense_date: '2025-05-10', amount: 500, currency: 'RMB', office: 'Shenzhen', payment_method: 'Bank Transfer', payee: 'China Telecom', status: 'paid', recurring: true, recurring_frequency: 'monthly', recurring_day: 10 },
+                
+                // Transportation
+                { expense_category: 'Transportation', subcategory: 'Local Transport', expense_date: '2025-05-08', amount: 1200, currency: 'RMB', office: 'Yiwu', payment_method: 'Cash', payee: 'Various', status: 'paid', recurring: false },
+                { expense_category: 'Transportation', subcategory: 'Fuel', expense_date: '2025-05-12', amount: 800, currency: 'RMB', office: 'Shenzhen', payment_method: 'WeChat Pay', payee: 'Sinopec', status: 'paid', recurring: false }
+            ];
+
+            let created = 0;
+            for (const expense of expenses) {
+                try {
+                    const response = await fetch('tables/company_expenses', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(expense)
+                    });
+                    
+                    if (response.ok) {
+                        created++;
+                        log(`✓ Created expense: ${expense.expense_category}`, 'success');
+                        updateCardStatus('expenses', 'loading', (created / expenses.length) * 100);
+                    }
+                } catch (error) {
+                    log(`✗ Error creating expense: ${error.message}`, 'error');
+                }
+            }
+
+            updateCardStatus('expenses', 'success', 100);
+            log(`Company expenses complete: ${created}/${expenses.length}`, 'success');
+            return created;
+        }
+
+        async function seedInvoices() {
+            updateCardStatus('invoices', 'loading', 0);
+            log('Creating sample invoices...', 'info');
+
+            const invoices = [
+                // Quotations
+                {
+                    invoice_number: 'QUO-20250501-SRP-001',
+                    invoice_type: 'quotation',
+                    customer_id: customerIds['SRP'],
+                    customer_code: 'SRP',
+                    customer_name: 'SRP Hotel Supplies',
+                    invoice_date: '2025-05-01',
+                    currency: 'EUR',
+                    exchange_rate_eur_cny: 7.8,
+                    items: [
+                        { item_number: 1, name: 'Hotel Towel Set', description: 'White, 100% cotton', ctn: 20, qty_per_ctn: 30, total_qty: 600, unit_price: 5.85, total_price: 3510 }
+                    ],
+                    subtotal_products: 3510,
+                    grand_total: 3510,
+                    status: 'sent',
+                    created_by: 'Lily Chen'
+                },
+                {
+                    invoice_number: 'QUO-20250503-CTC-001',
+                    invoice_type: 'quotation',
+                    customer_id: customerIds['CTC'],
+                    customer_code: 'CTC',
+                    customer_name: 'CTC Ceramics',
+                    invoice_date: '2025-05-03',
+                    currency: 'EUR',
+                    exchange_rate_eur_cny: 7.8,
+                    items: [
+                        { item_number: 1, name: 'Ceramic Flower Vase', description: '30cm height', ctn: 10, qty_per_ctn: 20, total_qty: 200, unit_price: 7.62, total_price: 1524 }
+                    ],
+                    subtotal_products: 1524,
+                    grand_total: 1524,
+                    status: 'sent',
+                    created_by: 'Ruby Zhang'
+                },
+                {
+                    invoice_number: 'QUO-20250505-SIL-001',
+                    invoice_type: 'quotation',
+                    customer_id: customerIds['SIL'],
+                    customer_code: 'SIL',
+                    customer_name: 'Siluan Project',
+                    invoice_date: '2025-05-05',
+                    currency: 'EUR',
+                    exchange_rate_eur_cny: 7.8,
+                    items: [
+                        { item_number: 1, name: 'Byzantine Icon - St. George', description: 'Handpainted', ctn: 5, qty_per_ctn: 10, total_qty: 50, unit_price: 20.77, total_price: 1038.50 }
+                    ],
+                    subtotal_products: 1038.50,
+                    grand_total: 1038.50,
+                    status: 'accepted',
+                    created_by: 'Lily Chen'
+                },
+
+                // Pro Forma Invoices
+                {
+                    invoice_number: 'PFI-20250506-SRP-002',
+                    invoice_type: 'proforma',
+                    customer_id: customerIds['SRP'],
+                    customer_code: 'SRP',
+                    customer_name: 'SRP Hotel Supplies',
+                    invoice_date: '2025-05-06',
+                    currency: 'EUR',
+                    exchange_rate_eur_cny: 7.8,
+                    items: [
+                        { item_number: 1, name: 'Hotel Towel Set', description: 'White, 100% cotton', ctn: 20, qty_per_ctn: 30, total_qty: 600, unit_price: 5.85, total_price: 3510 }
+                    ],
+                    subtotal_products: 3510,
+                    freight: 250,
+                    grand_total: 3760,
+                    status: 'sent',
+                    created_by: 'Lily Chen'
+                },
+                {
+                    invoice_number: 'PFI-20250508-IRED-001',
+                    invoice_type: 'proforma',
+                    customer_id: customerIds['IRED'],
+                    customer_code: 'IRED',
+                    customer_name: 'IRED Electronics',
+                    invoice_date: '2025-05-08',
+                    currency: 'EUR',
+                    exchange_rate_eur_cny: 7.8,
+                    items: [
+                        { item_number: 1, name: 'LED Bulb E27 12W', description: '220V, warm white', ctn: 50, qty_per_ctn: 100, total_qty: 5000, unit_price: 1.39, total_price: 6950 }
+                    ],
+                    subtotal_products: 6950,
+                    freight: 350,
+                    grand_total: 7300,
+                    status: 'sent',
+                    created_by: 'Ruby Zhang'
+                },
+                {
+                    invoice_number: 'PFI-20250510-AMD-001',
+                    invoice_type: 'proforma',
+                    customer_id: customerIds['AMD'],
+                    customer_code: 'AMD',
+                    customer_name: 'AMD Distributors',
+                    invoice_date: '2025-05-10',
+                    currency: 'EUR',
+                    exchange_rate_eur_cny: 7.8,
+                    items: [
+                        { item_number: 1, name: 'Power Bank 10000mAh', description: 'Fast charging', ctn: 30, qty_per_ctn: 50, total_qty: 1500, unit_price: 4.96, total_price: 7440 }
+                    ],
+                    subtotal_products: 7440,
+                    freight: 280,
+                    grand_total: 7720,
+                    status: 'accepted',
+                    created_by: 'Lily Chen'
+                },
+                {
+                    invoice_number: 'PFI-20250512-GLB-001',
+                    invoice_type: 'proforma',
+                    customer_id: customerIds['GLB'],
+                    customer_code: 'GLB',
+                    customer_name: 'Global Sat',
+                    invoice_date: '2025-05-12',
+                    currency: 'EUR',
+                    exchange_rate_eur_cny: 7.8,
+                    items: [
+                        { item_number: 1, name: 'USB Cable Type-C', description: '1 meter', ctn: 100, qty_per_ctn: 200, total_qty: 20000, unit_price: 0.63, total_price: 12600 }
+                    ],
+                    subtotal_products: 12600,
+                    freight: 450,
+                    grand_total: 13050,
+                    status: 'sent',
+                    created_by: 'Lily Chen'
+                },
+
+                // Commercial Invoices
+                {
+                    invoice_number: 'CIV-20250514-SRP-003',
+                    invoice_type: 'commercial',
+                    customer_id: customerIds['SRP'],
+                    customer_code: 'SRP',
+                    customer_name: 'SRP Hotel Supplies',
+                    invoice_date: '2025-05-14',
+                    currency: 'EUR',
+                    exchange_rate_eur_cny: 7.8,
+                    items: [
+                        { item_number: 1, name: 'Hotel Towel Set', description: 'White, 100% cotton', ctn: 20, qty_per_ctn: 30, total_qty: 600, unit_price: 5.85, total_price: 3510 },
+                        { item_number: 2, name: 'Bed Sheet Set', description: 'Queen size', ctn: 15, qty_per_ctn: 10, total_qty: 150, unit_price: 13.95, total_price: 2092.50 }
+                    ],
+                    subtotal_products: 5602.50,
+                    freight: 250,
+                    grand_total: 5852.50,
+                    status: 'invoiced',
+                    creates_transaction: true,
+                    created_by: 'Lily Chen'
+                },
+                {
+                    invoice_number: 'CIV-20250515-IRED-002',
+                    invoice_type: 'commercial',
+                    customer_id: customerIds['IRED'],
+                    customer_code: 'IRED',
+                    customer_name: 'IRED Electronics',
+                    invoice_date: '2025-05-15',
+                    currency: 'EUR',
+                    exchange_rate_eur_cny: 7.8,
+                    items: [
+                        { item_number: 1, name: 'LED Bulb E27 12W', description: '220V, warm white', ctn: 50, qty_per_ctn: 100, total_qty: 5000, unit_price: 1.39, total_price: 6950 }
+                    ],
+                    subtotal_products: 6950,
+                    freight: 350,
+                    grand_total: 7300,
+                    status: 'invoiced',
+                    creates_transaction: true,
+                    created_by: 'Ruby Zhang'
+                },
+                {
+                    invoice_number: 'CIV-20250516-AMD-002',
+                    invoice_type: 'commercial',
+                    customer_id: customerIds['AMD'],
+                    customer_code: 'AMD',
+                    customer_name: 'AMD Distributors',
+                    invoice_date: '2025-05-16',
+                    currency: 'EUR',
+                    exchange_rate_eur_cny: 7.8,
+                    items: [
+                        { item_number: 1, name: 'Power Bank 10000mAh', description: 'Fast charging', ctn: 30, qty_per_ctn: 50, total_qty: 1500, unit_price: 4.96, total_price: 7440 }
+                    ],
+                    subtotal_products: 7440,
+                    freight: 280,
+                    grand_total: 7720,
+                    status: 'invoiced',
+                    creates_transaction: true,
+                    created_by: 'Lily Chen'
+                }
+            ];
+
+            let created = 0;
+            for (const invoice of invoices) {
+                try {
+                    const response = await fetch('tables/invoices', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(invoice)
+                    });
+                    
+                    if (response.ok) {
+                        created++;
+                        log(`✓ Created invoice: ${invoice.invoice_number}`, 'success');
+                        updateCardStatus('invoices', 'loading', (created / invoices.length) * 100);
+                    }
+                } catch (error) {
+                    log(`✗ Error creating ${invoice.invoice_number}: ${error.message}`, 'error');
+                }
+            }
+
+            updateCardStatus('invoices', 'success', 100);
+            log(`Invoices complete: ${created}/${invoices.length}`, 'success');
+            return created;
+        }
+
+        async function seedOrders() {
+            updateCardStatus('orders', 'loading', 0);
+            log('Creating sample orders...', 'info');
+
+            const orders = [
+                { order_number: 'ORD-2025-001', customer_code: 'SRP', client_name: 'SRP Hotel Supplies', product_description: 'Hotel Towel Set (600 pcs)', quantity: 600, unit_price: 5.85, total_value: 3510, currency: 'EUR', order_date: '2025-05-01', delivery_date: '2025-06-01', status: 'in_production', assigned_office: 'Shenzhen', workflow_enabled: true, current_workflow_step: 3 },
+                { order_number: 'ORD-2025-002', customer_code: 'CTC', client_name: 'CTC Ceramics', product_description: 'Ceramic Flower Vase (200 pcs)', quantity: 200, unit_price: 7.62, total_value: 1524, currency: 'EUR', order_date: '2025-05-03', delivery_date: '2025-06-10', status: 'pending_approval', assigned_office: 'Yiwu', workflow_enabled: true, current_workflow_step: 1 },
+                { order_number: 'ORD-2025-003', customer_code: 'IRED', client_name: 'IRED Electronics', product_description: 'LED Bulb E27 12W (5000 pcs)', quantity: 5000, unit_price: 1.39, total_value: 6950, currency: 'EUR', order_date: '2025-05-08', delivery_date: '2025-06-15', status: 'shipped', assigned_office: 'Shenzhen', workflow_enabled: true, current_workflow_step: 8 },
+                { order_number: 'ORD-2025-004', customer_code: 'AMD', client_name: 'AMD Distributors', product_description: 'Power Bank 10000mAh (1500 pcs)', quantity: 1500, unit_price: 4.96, total_value: 7440, currency: 'EUR', order_date: '2025-05-10', delivery_date: '2025-06-20', status: 'completed', assigned_office: 'Shenzhen', workflow_enabled: true, current_workflow_step: 10 },
+                { order_number: 'ORD-2025-005', customer_code: 'GLB', client_name: 'Global Sat', product_description: 'USB Cable Type-C (20000 pcs)', quantity: 20000, unit_price: 0.63, total_value: 12600, currency: 'EUR', order_date: '2025-05-12', delivery_date: '2025-06-25', status: 'in_transit', assigned_office: 'Shenzhen', workflow_enabled: true, current_workflow_step: 7 },
+                { order_number: 'ORD-2025-006', customer_code: 'SIL', client_name: 'Siluan Project', product_description: 'Byzantine Icons (50 pcs)', quantity: 50, unit_price: 20.77, total_value: 1038.50, currency: 'EUR', order_date: '2025-05-05', delivery_date: '2025-06-05', status: 'in_production', assigned_office: 'Yiwu', workflow_enabled: true, current_workflow_step: 4 },
+                { order_number: 'ORD-2025-007', customer_code: 'ARX', client_name: 'Archangelos Imports', product_description: 'Orthodox Prayer Rope (500 pcs)', quantity: 500, unit_price: 4.49, total_value: 2245, currency: 'EUR', order_date: '2025-05-07', delivery_date: '2025-06-12', status: 'pending_approval', assigned_office: 'Yiwu', workflow_enabled: true, current_workflow_step: 1 },
+                { order_number: 'ORD-2025-008', customer_code: 'MON', client_name: 'Mondsub', product_description: 'Bamboo Cutting Board (1000 pcs)', quantity: 1000, unit_price: 2.59, total_value: 2590, currency: 'EUR', order_date: '2025-05-09', delivery_date: '2025-06-18', status: 'in_production', assigned_office: 'Yiwu', workflow_enabled: true, current_workflow_step: 5 },
+                { order_number: 'ORD-2025-009', customer_code: 'DIM', client_name: 'Dimitriou Bros', product_description: 'Ceramic Flower Vase (300 pcs)', quantity: 300, unit_price: 45, total_value: 3420, currency: 'EUR', order_date: '2025-05-11', delivery_date: '2025-06-22', status: 'quality_check', assigned_office: 'Yiwu', workflow_enabled: true, current_workflow_step: 6 },
+                { order_number: 'ORD-2025-010', customer_code: 'SRP', client_name: 'SRP Hotel Supplies', product_description: 'Bed Sheet Set (150 pcs)', quantity: 150, unit_price: 13.95, total_value: 2092.50, currency: 'EUR', order_date: '2025-05-13', delivery_date: '2025-06-28', status: 'completed', assigned_office: 'Shenzhen', workflow_enabled: true, current_workflow_step: 10 },
+                { order_number: 'ORD-2025-011', customer_code: 'CTC', client_name: 'CTC Ceramics', product_description: 'Porcelain Dinner Plate Set (120 pcs)', quantity: 120, unit_price: 20, total_value: 1846, currency: 'EUR', order_date: '2025-05-14', delivery_date: '2025-07-01', status: 'pending_approval', assigned_office: 'Yiwu', workflow_enabled: true, current_workflow_step: 1 },
+                { order_number: 'ORD-2025-012', customer_code: 'IRED', client_name: 'IRED Electronics', product_description: 'USB Cable Type-C (10000 pcs)', quantity: 10000, unit_price: 0.63, total_value: 6300, currency: 'EUR', order_date: '2025-05-15', delivery_date: '2025-07-05', status: 'in_production', assigned_office: 'Shenzhen', workflow_enabled: true, current_workflow_step: 3 }
+            ];
+
+            let created = 0;
+            for (const order of orders) {
+                try {
+                    const response = await fetch('tables/orders', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(order)
+                    });
+                    
+                    if (response.ok) {
+                        created++;
+                        log(`✓ Created order: ${order.order_number}`, 'success');
+                        updateCardStatus('orders', 'loading', (created / orders.length) * 100);
+                    }
+                } catch (error) {
+                    log(`✗ Error creating ${order.order_number}: ${error.message}`, 'error');
+                }
+            }
+
+            updateCardStatus('orders', 'success', 100);
+            log(`Orders complete: ${created}/${orders.length}`, 'success');
+            return created;
+        }
+
+        async function seedSalesCommissions() {
+            updateCardStatus('commissions', 'loading', 0);
+            log('Creating sales commissions...', 'info');
+
+            const commissions = [
+                { order_number: 'ORD-2025-001', invoice_number: 'CIV-20250514-SRP-003', invoice_date: '2025-05-14', salesperson_name: 'Lily Chen', total_order_amount: 5852.50, product_cost_amount: 4500, company_profit_percentage: 23.1, company_profit_amount: 1352.50, net_supplier_cost: 4100, salesperson_commission_percentage: 5, salesperson_commission_amount: 292.63, company_net_profit: 1059.87, status: 'paid' },
+                { order_number: 'ORD-2025-003', invoice_number: 'CIV-20250515-IRED-002', invoice_date: '2025-05-15', salesperson_name: 'Ruby Zhang', total_order_amount: 7300, product_cost_amount: 5500, company_profit_percentage: 24.7, company_profit_amount: 1800, net_supplier_cost: 5100, salesperson_commission_percentage: 4, salesperson_commission_amount: 292, company_net_profit: 1508, status: 'paid' },
+                { order_number: 'ORD-2025-004', invoice_number: 'CIV-20250516-AMD-002', invoice_date: '2025-05-16', salesperson_name: 'Lily Chen', total_order_amount: 7720, product_cost_amount: 5800, company_profit_percentage: 24.9, company_profit_amount: 1920, net_supplier_cost: 5400, salesperson_commission_percentage: 5, salesperson_commission_amount: 386, company_net_profit: 1534, status: 'pending' },
+                { order_number: 'ORD-2025-005', invoice_number: 'PFI-20250512-GLB-001', invoice_date: '2025-05-12', salesperson_name: 'Lily Chen', total_order_amount: 13050, product_cost_amount: 10000, company_profit_percentage: 23.4, company_profit_amount: 3050, net_supplier_cost: 9500, salesperson_commission_percentage: 5, salesperson_commission_amount: 652.50, company_net_profit: 2397.50, status: 'pending' },
+                { order_number: 'ORD-2025-006', invoice_number: 'QUO-20250505-SIL-001', invoice_date: '2025-05-05', salesperson_name: 'Lily Chen', total_order_amount: 1038.50, product_cost_amount: 750, company_profit_percentage: 27.8, company_profit_amount: 288.50, net_supplier_cost: 700, salesperson_commission_percentage: 5, salesperson_commission_amount: 51.93, company_net_profit: 236.57, status: 'pending' },
+                { order_number: 'ORD-2025-002', invoice_number: 'QUO-20250503-CTC-001', invoice_date: '2025-05-03', salesperson_name: 'Ruby Zhang', total_order_amount: 1524, product_cost_amount: 1100, company_profit_percentage: 27.8, company_profit_amount: 424, net_supplier_cost: 1050, salesperson_commission_percentage: 4, salesperson_commission_amount: 60.96, company_net_profit: 363.04, status: 'pending' }
+            ];
+
+            let created = 0;
+            for (const commission of commissions) {
+                try {
+                    const response = await fetch('tables/sales_commissions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(commission)
+                    });
+                    
+                    if (response.ok) {
+                        created++;
+                        log(`✓ Created commission: ${commission.invoice_number}`, 'success');
+                        updateCardStatus('commissions', 'loading', (created / commissions.length) * 100);
+                    }
+                } catch (error) {
+                    log(`✗ Error creating commission: ${error.message}`, 'error');
+                }
+            }
+
+            updateCardStatus('commissions', 'success', 100);
+            log(`Sales commissions complete: ${created}/${commissions.length}`, 'success');
+            return created;
+        }
+
+        async function startInitialization() {
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('clearBtn').disabled = true;
+            
+            logEntries = [];
+            log('🚀 Starting system initialization...', 'info');
+            log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+
+            const steps = [
+                { name: 'Staff Members', func: seedStaffMembers, weight: 12 },
+                { name: 'Users', func: seedUsers, weight: 10 },
+                { name: 'Customers', func: seedCustomers, weight: 12 },
+                { name: 'Bank Accounts', func: seedBankAccounts, weight: 10 },
+                { name: 'Products', func: seedProducts, weight: 12 },
+                { name: 'Expenses', func: seedCompanyExpenses, weight: 8 },
+                { name: 'Invoices', func: seedInvoices, weight: 15 },
+                { name: 'Orders', func: seedOrders, weight: 13 },
+                { name: 'Commissions', func: seedSalesCommissions, weight: 8 }
+            ];
+
+            let totalProgress = 0;
+            const totalWeight = steps.reduce((sum, step) => sum + step.weight, 0);
+
+            for (const step of steps) {
+                log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info');
+                log(`📦 Processing: ${step.name}`, 'info');
+                
+                await step.func();
+                
+                totalProgress += step.weight;
+                updateOverallProgress((totalProgress / totalWeight) * 100);
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+            log('✅ INITIALIZATION COMPLETE!', 'success');
+            log('🎉 All data has been successfully created!', 'success');
+            log('💡 Refresh any page to see the new data.', 'info');
+
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('clearBtn').disabled = false;
+        }
+
+        async function clearAllData() {
+            if (!confirm('⚠️ Are you sure you want to DELETE ALL DATA?\n\nThis cannot be undone!')) {
+                return;
+            }
+
+            if (!confirm('🔴 FINAL WARNING: This will permanently delete all records!\n\nAre you absolutely sure?')) {
+                return;
+            }
+
+            log('🗑️ Starting data cleanup...', 'warning');
+            
+            // Note: This would need actual implementation with table clearing
+            log('⚠️ Clear function not yet implemented', 'warning');
+            log('Please use database admin tools to clear tables', 'info');
+        }
+    </script>
+</body>
+</html>

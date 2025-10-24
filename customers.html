@@ -5,39 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>I Trusty - Customers Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="js/supabase-config.js"></script>
     <script src="js/page-protection.js"></script>
     <script src="js/global-navigation.js"></script>
 </head>
-<body>
+<body class="bg-gray-50">
     <main class="container mx-auto px-6 py-8">
-        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-            <button onclick="openAddCustomerModal()" class="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg">
-                <i class="fas fa-plus-circle"></i> Add Customer
+        <h1 class="text-3xl font-bold mb-6">Customers Management</h1>
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <button onclick="loadHybridData()" class="px-4 py-2 bg-blue-600 text-white rounded">
+                Load Data
             </button>
-            <button onclick="loadHybridData()" class="px-6 py-2 bg-green-600 text-white rounded-lg">
-                <i class="fas fa-sync"></i> Reload
+            <button onclick="alert('Add customer coming soon')" class="px-4 py-2 bg-green-600 text-white rounded ml-2">
+                Add Customer
             </button>
         </div>
-        <div id="customersContainer"></div>
+        <div id="status" class="mb-4"></div>
+        <div id="customers" class="grid grid-cols-3 gap-4"></div>
     </main>
-    
     <script>
         let allCustomers = [];
         
         async function loadHybridData() {
-            console.log('Loading hybrid data...');
-            allCustomers = [];
-            alert('Data loaded! (This is a simplified version for testing)');
+            const status = document.getElementById('status');
+            status.innerHTML = 'Loading...';
+            
+            try {
+                const response = await fetch('tables/customers?limit=100');
+                if (response.ok) {
+                    const result = await response.json();
+                    allCustomers = result.data || [];
+                    status.innerHTML = `✅ Loaded ${allCustomers.length} customers from Supabase`;
+                    renderCustomers();
+                } else {
+                    status.innerHTML = '⚠️ No customers in Supabase yet';
+                }
+            } catch (error) {
+                console.error(error);
+                status.innerHTML = '❌ Error: ' + error.message;
+            }
         }
         
-        function openAddCustomerModal() {
-            alert('Add customer modal - To be implemented');
+        function renderCustomers() {
+            const container = document.getElementById('customers');
+            container.innerHTML = allCustomers.map(c => `
+                <div class="bg-white p-4 rounded shadow">
+                    <h3 class="font-bold">${c.customer_name || 'N/A'}</h3>
+                    <p class="text-sm text-gray-600">${c.customer_code || 'N/A'}</p>
+                    <p class="text-sm">${c.country || 'N/A'}</p>
+                </div>
+            `).join('');
         }
         
         document.addEventListener('DOMContentLoaded', loadHybridData);

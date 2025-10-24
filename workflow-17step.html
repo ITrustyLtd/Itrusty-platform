@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>17-Step Workflow System - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-project-diagram text-indigo-600 mr-2"></i>
+                        17-Step Workflow Management
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="orders-enhanced.html" class="text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-arrow-left mr-1"></i> Back to Orders
+                    </a>
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-home mr-1"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Order Selection -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">
+                <i class="fas fa-list text-indigo-600 mr-2"></i>
+                Select Order to View Workflow
+            </h2>
+            <div class="flex gap-4">
+                <select id="orderSelect" onchange="loadOrderWorkflow()" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500">
+                    <option value="">Select an order...</option>
+                </select>
+                <button onclick="enableWorkflowForOrder()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-semibold">
+                    <i class="fas fa-plus mr-2"></i> Enable 17-Step Workflow
+                </button>
+            </div>
+        </div>
+
+        <!-- Order Info (shown when order selected) -->
+        <div id="orderInfoPanel" class="hidden bg-gradient-to-r from-indigo-600 to-purple-700 rounded-xl shadow-lg p-8 mb-8 text-white">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h2 class="text-2xl font-bold mb-2" id="orderTitle">Order #12345</h2>
+                    <p class="text-sm opacity-90" id="orderDetails">Loading...</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-4xl font-bold" id="orderProgress">0%</div>
+                    <div class="text-sm opacity-90">Complete</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View Selector -->
+        <div id="viewSelector" class="hidden flex gap-2 mb-6">
+            <button onclick="switchView('progress')" id="btnProgress" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-semibold">
+                <i class="fas fa-chart-line mr-2"></i> Progress Bar
+            </button>
+            <button onclick="switchView('timeline')" id="btnTimeline" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold">
+                <i class="fas fa-stream mr-2"></i> Timeline
+            </button>
+            <button onclick="switchView('table')" id="btnTable" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold">
+                <i class="fas fa-table mr-2"></i> Table View
+            </button>
+        </div>
+
+        <!-- Progress Bar View -->
+        <div id="progressView" class="hidden bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Workflow Progress</h3>
+            <div class="relative">
+                <div class="h-8 bg-gray-200 rounded-full overflow-hidden">
+                    <div id="progressBar" class="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between text-xs text-gray-600 mt-2">
+                    <span>0 of 17 steps</span>
+                    <span id="progressText">0% Complete</span>
+                </div>
+            </div>
+            <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 class="font-semibold text-blue-900 mb-2">
+                    <i class="fas fa-arrow-circle-right text-blue-600 mr-2"></i>
+                    Current Step
+                </h4>
+                <div id="currentStepInfo" class="text-sm text-blue-800">
+                    No active step
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline View -->
+        <div id="timelineView" class="hidden bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Workflow Timeline</h3>
+            <div id="timelineContainer" class="space-y-3">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+
+        <!-- Table View -->
+        <div id="tableView" class="hidden bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Workflow Steps Table</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-100 border-b">
+                        <tr>
+                            <th class="text-left p-3 text-sm font-semibold text-gray-700">#</th>
+                            <th class="text-left p-3 text-sm font-semibold text-gray-700">Step Name</th>
+                            <th class="text-left p-3 text-sm font-semibold text-gray-700">Assigned</th>
+                            <th class="text-left p-3 text-sm font-semibold text-gray-700">Status</th>
+                            <th class="text-left p-3 text-sm font-semibold text-gray-700">Duration</th>
+                            <th class="text-left p-3 text-sm font-semibold text-gray-700">Files</th>
+                            <th class="text-left p-3 text-sm font-semibold text-gray-700">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step Detail Modal -->
+    <div id="stepModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-6 rounded-t-xl">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-2xl font-bold" id="stepModalTitle">Step Details</h3>
+                        <p class="text-sm opacity-90 mt-1" id="stepModalSubtitle">Step information</p>
+                    </div>
+                    <button onclick="closeStepModal()" class="text-white hover:text-gray-200">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <input type="hidden" id="currentStepId">
+
+                <!-- Status & Assignment -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="stepStatus" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500">
+                            <option value="pending">⏳ Pending</option>
+                            <option value="in_progress">🔄 In Progress</option>
+                            <option value="completed">✅ Completed</option>
+                            <option value="blocked">🚫 Blocked</option>
+                            <option value="skipped">⏭️ Skipped</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                        <select id="stepAssigned" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Unassigned</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Dates -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                        <input type="date" id="stepStartDate" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Completed Date</label>
+                        <input type="date" id="stepCompletedDate" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes & Updates</label>
+                    <textarea id="stepNotes" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500" placeholder="Add notes about this step..."></textarea>
+                </div>
+
+                <!-- File Upload -->
+                <div class="border-t pt-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-paperclip mr-1"></i>
+                        Attachments (Max 20MB per file)
+                    </label>
+                    <div class="flex items-center gap-3 mb-3">
+                        <label class="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg border border-indigo-300 transition flex items-center gap-2">
+                            <i class="fas fa-upload"></i>
+                            <span>Choose Files</span>
+                            <input type="file" id="stepFileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" class="hidden" onchange="handleStepFiles(this.files)">
+                        </label>
+                        <span class="text-xs text-gray-500">Images, PDF, Word, Excel, Text</span>
+                    </div>
+                    <div id="stepFilesList" class="space-y-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3 pt-4 border-t">
+                    <button onclick="saveStepChanges()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg">
+                        <i class="fas fa-save mr-2"></i> Save Changes
+                    </button>
+                    <button onclick="closeStepModal()" class="px-6 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DEFAULT ASSIGNMENTS (Ιωάννη, these are temporary - you can change them)
+        const DEFAULT_WORKFLOW_ASSIGNMENTS = {
+            1: 'Nikos',      // Request (Greece - client comm)
+            2: 'Lily',       // Sourcing (Shenzhen manager)
+            3: 'Lily',       // Quotation Prep (Shenzhen manager)
+            4: 'Nikos',      // Customer Approval (Greece - client comm)
+            5: 'Chrysanthi', // Proforma Invoice (Greece - accounting)
+            6: 'James',      // Deposit Payment (Yiwu - banking)
+            7: 'Ruby',       // Purchase Order (Shenzhen - orders)
+            8: 'Xiao Min',   // Production (Shenzhen - follow-up)
+            9: 'Big Brother',// QC Inspection (Yiwu - QC)
+            10: 'James',     // Balance Payment (Yiwu - banking)
+            11: 'Lin Yi',    // Packing (Yiwu - warehouse)
+            12: 'Peng',      // Customs Declaration (Yiwu - manager)
+            13: 'Peng',      // Shipping Booked (Yiwu - logistics)
+            14: 'Peng',      // In Transit (Yiwu - tracking)
+            15: 'Nikos',     // Customs Clearance (Greece - import)
+            16: 'Nikos',     // Delivery (Greece - logistics)
+            17: 'Chrysanthi' // Completed (Greece - archiving)
+        };
+
+        let currentView = 'progress';
+        let selectedOrder = null;
+        let workflowSteps = [];
+        let staffMembers = [];
+        let workflowTemplate = [];
+        let stepFiles = {};
+
+        // Initialize
+        async function init() {
+            await loadOrders();
+            await loadStaffMembers();
+            await loadWorkflowTemplate();
+        }
+
+        // Load orders
+        async function loadOrders() {
+            try {
+                const response = await fetch('tables/orders?limit=100&sort=-order_date');
+                if (response.ok) {
+                    const data = await response.json();
+                    const orders = data.data || [];
+                    
+                    const select = document.getElementById('orderSelect');
+                    select.innerHTML = '<option value="">Select an order...</option>';
+                    
+                    orders.forEach(order => {
+                        const option = document.createElement('option');
+                        option.value = order.id;
+                        option.textContent = `${order.order_number || 'N/A'} - ${order.client_name || 'Unknown'} (${order.status || 'N/A'})`;
+                        option.dataset.orderData = JSON.stringify(order);
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading orders:', error);
+            }
+        }
+
+        // Load staff members
+        async function loadStaffMembers() {
+            try {
+                const response = await fetch('tables/staff_members?limit=100');
+                if (response.ok) {
+                    const data = await response.json();
+                    staffMembers = (data.data || []).filter(s => s.active);
+                }
+            } catch (error) {
+                console.error('Error loading staff:', error);
+            }
+        }
+
+        // Load workflow template
+        async function loadWorkflowTemplate() {
+            try {
+                const response = await fetch('tables/workflow_template_steps?limit=17&sort=step_number');
+                if (response.ok) {
+                    const data = await response.json();
+                    workflowTemplate = data.data || [];
+                }
+            } catch (error) {
+                console.error('Error loading template:', error);
+            }
+        }
+
+        // Load order workflow
+        async function loadOrderWorkflow() {
+            const select = document.getElementById('orderSelect');
+            const selectedOption = select.options[select.selectedIndex];
+            
+            if (!selectedOption || !selectedOption.value) {
+                hideAllViews();
+                return;
+            }
+            
+            selectedOrder = JSON.parse(selectedOption.dataset.orderData);
+            
+            // Load workflow steps for this order
+            try {
+                const response = await fetch(`tables/order_workflow_steps?search=order_id:${selectedOrder.id}&limit=17&sort=step_number`);
+                if (response.ok) {
+                    const data = await response.json();
+                    workflowSteps = data.data || [];
+                    
+                    if (workflowSteps.length === 0) {
+                        alert('⚠️ This order does not have a 17-step workflow enabled.\n\nClick "Enable 17-Step Workflow" to create it.');
+                        hideAllViews();
+                        return;
+                    }
+                    
+                    showOrderInfo();
+                    showViewSelector();
+                    renderCurrentView();
+                } else {
+                    alert('❌ Failed to load workflow steps');
+                }
+            } catch (error) {
+                console.error('Error loading workflow:', error);
+                alert('❌ Error loading workflow');
+            }
+        }
+
+        // Enable workflow for order
+        async function enableWorkflowForOrder() {
+            if (!selectedOrder) {
+                alert('⚠️ Please select an order first');
+                return;
+            }
+            
+            if (workflowTemplate.length === 0) {
+                alert('❌ Workflow template not loaded. Please refresh the page.');
+                return;
+            }
+            
+            if (confirm(`Create 17-step workflow for order ${selectedOrder.order_number || 'N/A'}?`)) {
+                try {
+                    // Create all 17 steps
+                    for (const template of workflowTemplate) {
+                        const stepData = {
+                            order_id: selectedOrder.id,
+                            step_number: template.step_number,
+                            step_name: template.step_name,
+                            assigned_to: DEFAULT_WORKFLOW_ASSIGNMENTS[template.step_number] || 'Unassigned',
+                            status: template.step_number === 1 ? 'in_progress' : 'pending',
+                            start_date: template.step_number === 1 ? new Date().toISOString() : null,
+                            completed_date: null,
+                            duration_days: template.default_duration_days,
+                            notes: '',
+                            attachments: [],
+                            is_custom: false
+                        };
+                        
+                        await fetch('tables/order_workflow_steps', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(stepData)
+                        });
+                    }
+                    
+                    // Update order to mark workflow enabled
+                    await fetch(`tables/orders/${selectedOrder.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            workflow_enabled: true,
+                            current_workflow_step: 1,
+                            workflow_progress_percent: 0
+                        })
+                    });
+                    
+                    alert('✅ 17-step workflow created successfully!');
+                    await loadOrderWorkflow();
+                } catch (error) {
+                    console.error('Error creating workflow:', error);
+                    alert('❌ Failed to create workflow');
+                }
+            }
+        }
+
+        // Show order info
+        function showOrderInfo() {
+            document.getElementById('orderInfoPanel').classList.remove('hidden');
+            document.getElementById('orderTitle').textContent = `Order ${selectedOrder.order_number || 'N/A'}`;
+            document.getElementById('orderDetails').textContent = `${selectedOrder.client_name || 'Unknown Client'} • ${selectedOrder.product_description || 'No description'} • ${selectedOrder.currency || 'RMB'} ${selectedOrder.total_value || 0}`;
+            
+            const completedSteps = workflowSteps.filter(s => s.status === 'completed').length;
+            const progress = workflowSteps.length > 0 ? (completedSteps / workflowSteps.length) * 100 : 0;
+            document.getElementById('orderProgress').textContent = progress.toFixed(0) + '%';
+        }
+
+        // Show view selector
+        function showViewSelector() {
+            document.getElementById('viewSelector').classList.remove('hidden');
+        }
+
+        // Hide all views
+        function hideAllViews() {
+            document.getElementById('orderInfoPanel').classList.add('hidden');
+            document.getElementById('viewSelector').classList.add('hidden');
+            document.getElementById('progressView').classList.add('hidden');
+            document.getElementById('timelineView').classList.add('hidden');
+            document.getElementById('tableView').classList.add('hidden');
+        }
+
+        // Switch view
+        function switchView(view) {
+            currentView = view;
+            
+            // Update buttons
+            document.querySelectorAll('#btnProgress, #btnTimeline, #btnTable').forEach(btn => {
+                btn.className = 'flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold';
+            });
+            
+            if (view === 'progress') document.getElementById('btnProgress').className = 'flex-1 bg-indigo-600 text-white py-2 rounded-lg font-semibold';
+            else if (view === 'timeline') document.getElementById('btnTimeline').className = 'flex-1 bg-indigo-600 text-white py-2 rounded-lg font-semibold';
+            else if (view === 'table') document.getElementById('btnTable').className = 'flex-1 bg-indigo-600 text-white py-2 rounded-lg font-semibold';
+            
+            renderCurrentView();
+        }
+
+        // Render current view
+        function renderCurrentView() {
+            document.getElementById('progressView').classList.add('hidden');
+            document.getElementById('timelineView').classList.add('hidden');
+            document.getElementById('tableView').classList.add('hidden');
+            
+            if (currentView === 'progress') {
+                document.getElementById('progressView').classList.remove('hidden');
+                renderProgressView();
+            } else if (currentView === 'timeline') {
+                document.getElementById('timelineView').classList.remove('hidden');
+                renderTimelineView();
+            } else if (currentView === 'table') {
+                document.getElementById('tableView').classList.remove('hidden');
+                renderTableView();
+            }
+        }
+
+        // Render progress view
+        function renderProgressView() {
+            const completedSteps = workflowSteps.filter(s => s.status === 'completed').length;
+            const progress = workflowSteps.length > 0 ? (completedSteps / workflowSteps.length) * 100 : 0;
+            
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent = `${progress.toFixed(0)}% Complete`;
+            
+            const currentStep = workflowSteps.find(s => s.status === 'in_progress') || 
+                              workflowSteps.find(s => s.status === 'pending');
+            
+            if (currentStep) {
+                document.getElementById('currentStepInfo').innerHTML = `
+                    <div class="font-semibold text-lg mb-1">Step ${currentStep.step_number}: ${currentStep.step_name}</div>
+                    <div class="text-sm">Assigned to: ${currentStep.assigned_to || 'Unassigned'}</div>
+                    <div class="text-sm">Status: ${getStatusBadge(currentStep.status)}</div>
+                `;
+            } else {
+                document.getElementById('currentStepInfo').textContent = 'All steps completed! 🎉';
+            }
+        }
+
+        // Render timeline view
+        function renderTimelineView() {
+            const container = document.getElementById('timelineContainer');
+            container.innerHTML = workflowSteps.map(step => {
+                const icon = getStatusIcon(step.status);
+                const color = getStatusColor(step.status);
+                
+                return `
+                    <div class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:border-${color}-300 hover:bg-${color}-50 transition cursor-pointer" onclick='openStepModal(${JSON.stringify(step)})'>
+                        <div class="text-2xl">${icon}</div>
+                        <div class="flex-1">
+                            <div class="font-semibold text-gray-800">Step ${step.step_number}: ${step.step_name}</div>
+                            <div class="text-sm text-gray-600 mt-1">
+                                <span class="mr-3">👤 ${step.assigned_to || 'Unassigned'}</span>
+                                <span class="mr-3">⏱️ ${step.duration_days || 0} days</span>
+                                <span>📎 ${(step.attachments || []).length} files</span>
+                            </div>
+                            ${step.notes ? `<div class="text-xs text-gray-500 mt-1">${step.notes}</div>` : ''}
+                        </div>
+                        <div>${getStatusBadge(step.status)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render table view
+        function renderTableView() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = workflowSteps.map(step => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-3 text-sm">${step.step_number}</td>
+                    <td class="p-3 text-sm font-medium">${step.step_name}</td>
+                    <td class="p-3 text-sm">${step.assigned_to || 'Unassigned'}</td>
+                    <td class="p-3 text-sm">${getStatusBadge(step.status)}</td>
+                    <td class="p-3 text-sm">${step.duration_days || 0} days</td>
+                    <td class="p-3 text-sm">📎 ${(step.attachments || []).length}</td>
+                    <td class="p-3 text-sm">
+                        <button onclick='openStepModal(${JSON.stringify(step)})' class="text-indigo-600 hover:text-indigo-800 font-medium">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Get status icon
+        function getStatusIcon(status) {
+            const icons = {
+                'completed': '✅',
+                'in_progress': '🔄',
+                'pending': '⏳',
+                'blocked': '🚫',
+                'skipped': '⏭️'
+            };
+            return icons[status] || '⏳';
+        }
+
+        // Get status color
+        function getStatusColor(status) {
+            const colors = {
+                'completed': 'green',
+                'in_progress': 'blue',
+                'pending': 'gray',
+                'blocked': 'red',
+                'skipped': 'yellow'
+            };
+            return colors[status] || 'gray';
+        }
+
+        // Get status badge
+        function getStatusBadge(status) {
+            const badges = {
+                'completed': '<span class="px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">✅ Completed</span>',
+                'in_progress': '<span class="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">🔄 In Progress</span>',
+                'pending': '<span class="px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-800">⏳ Pending</span>',
+                'blocked': '<span class="px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-800">🚫 Blocked</span>',
+                'skipped': '<span class="px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-800">⏭️ Skipped</span>'
+            };
+            return badges[status] || badges['pending'];
+        }
+
+        // Open step modal
+        function openStepModal(step) {
+            document.getElementById('currentStepId').value = step.id;
+            document.getElementById('stepModalTitle').textContent = `Step ${step.step_number}: ${step.step_name}`;
+            document.getElementById('stepModalSubtitle').textContent = `Order: ${selectedOrder.order_number || 'N/A'}`;
+            
+            document.getElementById('stepStatus').value = step.status || 'pending';
+            document.getElementById('stepAssigned').innerHTML = '<option value="">Unassigned</option>' +
+                staffMembers.map(s => `<option value="${s.name}" ${s.name === step.assigned_to ? 'selected' : ''}>${s.name} (${s.office_location})</option>`).join('');
+            
+            document.getElementById('stepStartDate').value = step.start_date ? step.start_date.split('T')[0] : '';
+            document.getElementById('stepCompletedDate').value = step.completed_date ? step.completed_date.split('T')[0] : '';
+            document.getElementById('stepNotes').value = step.notes || '';
+            
+            // Load existing files
+            renderStepFiles(step.attachments || []);
+            stepFiles = { existing: step.attachments || [], new: [] };
+            
+            document.getElementById('stepModal').classList.remove('hidden');
+        }
+
+        // Close step modal
+        function closeStepModal() {
+            document.getElementById('stepModal').classList.add('hidden');
+            stepFiles = {};
+        }
+
+        // Handle step files
+        async function handleStepFiles(files) {
+            const MAX_SIZE = 20 * 1024 * 1024; // 20MB
+            
+            for (let file of files) {
+                if (file.size > MAX_SIZE) {
+                    alert(`File "${file.name}" exceeds 20MB limit.`);
+                    continue;
+                }
+                
+                try {
+                    const base64 = await fileToBase64(file);
+                    const fileObj = {
+                        filename: file.name,
+                        filesize: file.size,
+                        filetype: file.type,
+                        data: base64,
+                        uploaded_at: new Date().toISOString()
+                    };
+                    
+                    if (!stepFiles.new) stepFiles.new = [];
+                    stepFiles.new.push(fileObj);
+                    renderStepFiles([...stepFiles.existing, ...stepFiles.new]);
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                }
+            }
+        }
+
+        // File to base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Render step files
+        function renderStepFiles(files) {
+            const container = document.getElementById('stepFilesList');
+            if (files.length === 0) {
+                container.innerHTML = '<p class="text-xs text-gray-500 italic">No files uploaded yet</p>';
+                return;
+            }
+            
+            container.innerHTML = files.map((file, index) => `
+                <div class="flex items-center justify-between bg-gray-50 rounded p-2 text-sm">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-file text-blue-600"></i>
+                        <span class="font-medium">${file.filename}</span>
+                        <span class="text-xs text-gray-500">(${formatFileSize(file.filesize)})</span>
+                    </div>
+                    <button onclick="deleteStepFile(${index})" class="text-red-600 hover:text-red-800 text-xs">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        // Delete step file
+        function deleteStepFile(index) {
+            const allFiles = [...stepFiles.existing, ...stepFiles.new];
+            allFiles.splice(index, 1);
+            
+            // Recalculate existing vs new
+            stepFiles.existing = allFiles.slice(0, (stepFiles.existing || []).length);
+            stepFiles.new = allFiles.slice((stepFiles.existing || []).length);
+            
+            renderStepFiles(allFiles);
+        }
+
+        // Save step changes
+        async function saveStepChanges() {
+            const stepId = document.getElementById('currentStepId').value;
+            if (!stepId) return;
+            
+            const allFiles = [...stepFiles.existing, ...stepFiles.new];
+            
+            const stepData = {
+                status: document.getElementById('stepStatus').value,
+                assigned_to: document.getElementById('stepAssigned').value || null,
+                start_date: document.getElementById('stepStartDate').value || null,
+                completed_date: document.getElementById('stepCompletedDate').value || null,
+                notes: document.getElementById('stepNotes').value || '',
+                attachments: allFiles
+            };
+            
+            try {
+                const response = await fetch(`tables/order_workflow_steps/${stepId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(stepData)
+                });
+                
+                if (response.ok) {
+                    alert('✅ Step updated successfully!');
+                    closeStepModal();
+                    await loadOrderWorkflow();
+                } else {
+                    alert('❌ Failed to update step');
+                }
+            } catch (error) {
+                console.error('Error saving step:', error);
+                alert('❌ Error saving step');
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

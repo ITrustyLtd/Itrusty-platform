@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Messaging & Notifications - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="js/supabase-config.js"></script>
+    <script src="js/i18n-system.js"></script>
+    <script src="js/global-navigation.js"></script>
+    <style>
+        /* ========== ORIGINAL THEME (DEFAULT) ========== */
+        body {
+            background: #F9FAFB;
+        }
+        
+        /* ========== THEME SELECTOR STYLES ========== */
+        .theme-selector {
+            display: flex;
+            gap: 8px;
+            background: white;
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid #E5E7EB;
+        }
+        
+        .theme-btn {
+            padding: 6px 16px;
+            border: none;
+            background: transparent;
+            color: #6B7280;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        
+        .theme-btn:hover {
+            background: #F3F4F6;
+            color: #374151;
+        }
+        
+        .theme-btn.active {
+            background: #374151;
+            color: white;
+        }
+        
+        /* ========== MUJI MINIMAL THEME ========== */
+        body[data-theme="muji"] {
+            background: #FAFAF8 !important;
+        }
+        
+        /* MUJI: Navigation */
+        body[data-theme="muji"] nav {
+            background: #F5F5DC !important;
+            border-bottom: 1px solid #D4C5B9 !important;
+            box-shadow: none !important;
+        }
+        
+        body[data-theme="muji"] nav h1 {
+            color: #4A4A4A !important;
+            font-weight: 500 !important;
+        }
+        
+        body[data-theme="muji"] nav i {
+            color: #A08F80 !important;
+        }
+        
+        /* MUJI: Buttons - Flat minimal design */
+        body[data-theme="muji"] button:not(.theme-btn),
+        body[data-theme="muji"] .bg-blue-600 {
+            background: #A08F80 !important;
+            border-radius: 2px !important;
+            font-weight: 400 !important;
+            border: 1px solid #8B7A6B !important;
+        }
+        
+        body[data-theme="muji"] button:hover:not(.theme-btn),
+        body[data-theme="muji"] .bg-blue-600:hover {
+            background: #8B7A6B !important;
+        }
+        
+        body[data-theme="muji"] .border-gray-300 {
+            border-color: #D4C5B9 !important;
+            background: white !important;
+            color: #4A4A4A !important;
+        }
+        
+        /* MUJI: Cards and containers */
+        body[data-theme="muji"] .bg-white {
+            background: white !important;
+            border: 1px solid #E8E8E8 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+        }
+        
+        body[data-theme="muji"] .shadow-sm {
+            box-shadow: none !important;
+        }
+        
+        body[data-theme="muji"] .rounded-lg {
+            border-radius: 0 !important;
+        }
+        
+        /* MUJI: Message threads */
+        body[data-theme="muji"] .message-thread:hover {
+            background-color: #F5F5DC !important;
+            transform: none !important;
+            border-left: 3px solid #A08F80 !important;
+        }
+        
+        body[data-theme="muji"] .message-thread.unread {
+            background-color: #F5F5DC !important;
+            border-left: 3px solid #A08F80 !important;
+        }
+        
+        /* MUJI: Message bubbles */
+        body[data-theme="muji"] .message-bubble {
+            border-radius: 2px !important;
+        }
+        
+        body[data-theme="muji"] .bg-blue-500,
+        body[data-theme="muji"] .bg-blue-100 {
+            background: #E8E8E8 !important;
+            color: #4A4A4A !important;
+        }
+        
+        /* MUJI: Tabs */
+        body[data-theme="muji"] .border-blue-600 {
+            border-color: #A08F80 !important;
+            color: #4A4A4A !important;
+        }
+        
+        body[data-theme="muji"] .text-blue-600 {
+            color: #4A4A4A !important;
+        }
+        
+        /* MUJI: Staff cards */
+        body[data-theme="muji"] .staff-card:hover {
+            transform: none !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+            border-color: #A08F80 !important;
+        }
+        
+        /* MUJI: Inputs */
+        body[data-theme="muji"] input,
+        body[data-theme="muji"] textarea {
+            border: 1px solid #D4C5B9 !important;
+            border-radius: 0 !important;
+        }
+        
+        body[data-theme="muji"] input:focus,
+        body[data-theme="muji"] textarea:focus {
+            border-color: #A08F80 !important;
+            outline: none !important;
+            box-shadow: 0 0 0 2px rgba(160, 143, 128, 0.1) !important;
+        }
+        
+        /* ========== MODERN THEME ========== */
+        body[data-theme="modern"] {
+            background: #F9FAFB !important;
+        }
+        
+        body[data-theme="modern"] .bg-blue-600 {
+            background: #6366F1 !important;
+        }
+        
+        body[data-theme="modern"] .bg-blue-600:hover {
+            background: #4F46E5 !important;
+        }
+        
+        body[data-theme="modern"] .border-blue-600 {
+            border-color: #6366F1 !important;
+            color: #6366F1 !important;
+        }
+        
+        body[data-theme="modern"] .text-blue-600 {
+            color: #6366F1 !important;
+        }
+        
+        /* ========== SEARCH BAR STYLES ========== */
+        .search-container {
+            padding: 12px 16px;
+            border-bottom: 1px solid #E5E7EB;
+            background: #F9FAFB;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 28px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9CA3AF;
+            pointer-events: none;
+        }
+        
+        body[data-theme="muji"] .search-container {
+            background: #F5F5DC !important;
+            border-bottom: 1px solid #D4C5B9 !important;
+        }
+        
+        body[data-theme="muji"] .search-input {
+            border: 1px solid #D4C5B9 !important;
+            border-radius: 0 !important;
+        }
+        
+        body[data-theme="muji"] .search-input:focus {
+            border-color: #A08F80 !important;
+            box-shadow: 0 0 0 2px rgba(160, 143, 128, 0.1) !important;
+        }
+        
+        .search-result-highlight {
+            background-color: #FEF3C7;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        
+        /* Hide old navigation when global navigation is present */
+        body:has(#globalNavigation) > nav {
+            display: none !important;
+        }
+        
+        /* Adjust page padding when global navigation is present */
+        body:has(#globalNavigation) .max-w-7xl:first-of-type {
+            padding-top: 20px;
+        }
+        
+        .message-thread {
+            transition: all 0.2s;
+        }
+        .message-thread:hover {
+            background-color: #f9fafb;
+            transform: translateX(4px);
+        }
+        .message-thread.unread {
+            background-color: #eff6ff;
+            border-left: 3px solid #3b82f6;
+        }
+        .message-bubble {
+            max-width: 70%;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .notification-badge {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .staff-card {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .staff-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .compose-modal {
+            backdrop-filter: blur(4px);
+        }
+        
+        /* Translation Modal Styles */
+        .translate-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            z-index: 9999;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .translate-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 9998;
+            backdrop-filter: blur(2px);
+        }
+        
+        .translate-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            background: #F3F4F6;
+            color: #6B7280;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid #E5E7EB;
+        }
+        
+        .translate-btn:hover {
+            background: #E5E7EB;
+            color: #374151;
+        }
+    </style>
+</head>
+<body class="bg-gray-50" style="background-color: var(--body-bg);">
+    <!-- Navigation -->
+    <nav class="bg-white border-b shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-6">
+                    <a href="index.html" class="flex items-center gap-2 text-blue-600 hover:text-blue-700">
+                        <i class="fas fa-arrow-left"></i>
+                        <span data-i18n="navigation.dashboard">Dashboard</span>
+                    </a>
+                    <h1 class="text-xl font-semibold flex items-center gap-2">
+                        <i class="fas fa-comments text-blue-600"></i>
+                        <span data-i18n="messaging.title">Team Messaging</span>
+                    </h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    <!-- Theme Selector -->
+                    <div class="theme-selector">
+                        <button class="theme-btn" onclick="setTheme('muji')" data-theme="muji">
+                            MUJI
+                        </button>
+                        <button class="theme-btn active" onclick="setTheme('modern')" data-theme="modern">
+                            Modern
+                        </button>
+                        <button class="theme-btn" onclick="setTheme('original')" data-theme="original">
+                            Original
+                        </button>
+                    </div>
+                    
+                    <!-- Language Toggle -->
+                    <button id="langToggle" onclick="window.i18n.toggleLanguage()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-colors hover:bg-gray-50">
+                        中文
+                    </button>
+                    
+                    <button onclick="window.messagingSystem.loadData(); window.messagingSystem.renderMessageThreads()" class="text-gray-600 hover:text-gray-800" title="Refresh">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <div class="relative">
+                        <button onclick="toggleNotifications()" class="text-gray-600 hover:text-gray-800 relative">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span id="notificationBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center notification-badge">0</span>
+                        </button>
+                    </div>
+                    <button onclick="openComposeModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                        <i class="fas fa-pen"></i>
+                        <span data-i18n="messaging.newMessage">New Message</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Left Sidebar - Inbox/Conversations -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-sm">
+                    <!-- Search Bar -->
+                    <div class="search-container relative">
+                        <i class="fas fa-search search-icon"></i>
+                        <input 
+                            type="text" 
+                            id="messageSearchInput" 
+                            class="search-input" 
+                            placeholder="Search messages, users, subjects... (English, Ελληνικά, 中文)"
+                            oninput="searchMessages()"
+                        />
+                    </div>
+                    
+                    <!-- Filter Tabs -->
+                    <div class="border-b">
+                        <div class="flex">
+                            <button onclick="filterMessages('all')" id="filterAll" class="flex-1 px-4 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600">
+                                <span data-i18n="messaging.allMessages">All</span> <span id="countAll" class="ml-1 text-xs">(0)</span>
+                            </button>
+                            <button onclick="filterMessages('unread')" id="filterUnread" class="flex-1 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-800">
+                                <span data-i18n="messaging.unread">Unread</span> <span id="countUnread" class="ml-1 text-xs">(0)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Message Threads List -->
+                    <div id="messageThreads" class="divide-y max-h-[600px] overflow-y-auto">
+                        <!-- Threads will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-lg shadow-sm mt-4 p-4">
+                    <h3 class="font-semibold mb-3 text-sm text-gray-700" data-i18n="messaging.quickActions">Quick Actions</h3>
+                    <div class="space-y-2">
+                        <button onclick="openStaffDirectory()" class="w-full text-left px-3 py-2 text-sm bg-gray-50 rounded hover:bg-gray-100 flex items-center gap-2">
+                            <i class="fas fa-users text-blue-600"></i>
+                            <span data-i18n="messaging.staffDirectory">Staff Directory</span>
+                        </button>
+                        <button onclick="openBroadcast()" class="w-full text-left px-3 py-2 text-sm bg-gray-50 rounded hover:bg-gray-100 flex items-center gap-2">
+                            <i class="fas fa-bullhorn text-green-600"></i>
+                            <span data-i18n="messaging.broadcast">Broadcast Message</span>
+                        </button>
+                        <button onclick="openTemplates()" class="w-full text-left px-3 py-2 text-sm bg-gray-50 rounded hover:bg-gray-100 flex items-center gap-2">
+                            <i class="fas fa-file-alt text-purple-600"></i>
+                            <span data-i18n="messaging.messageTemplates">Message Templates</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content - Message View -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-sm" style="height: 700px; display: flex; flex-direction: column;">
+                    <!-- Message Header -->
+                    <div id="messageHeader" class="border-b p-4">
+                        <div class="text-center text-gray-500 py-8">
+                            <i class="fas fa-envelope-open-text text-4xl mb-3"></i>
+                            <p data-i18n="messaging.selectConversation">Select a conversation to view messages</p>
+                        </div>
+                    </div>
+
+                    <!-- Messages Container -->
+                    <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
+                        <!-- Messages will be populated here -->
+                    </div>
+
+                    <!-- Message Input -->
+                    <div id="messageInputArea" class="hidden border-t p-4">
+                        <form id="quickReplyForm" class="flex gap-2">
+                            <input type="text" id="quickReplyInput" data-i18n-placeholder="messaging.typeYourMessage" placeholder="Type your message..." class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                                <i class="fas fa-paper-plane"></i>
+                                <span data-i18n="common.send">Send</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar - Notifications & Info -->
+            <div class="lg:col-span-1">
+                <!-- Active Conversation Info -->
+                <div id="conversationInfo" class="bg-white rounded-lg shadow-sm p-4 mb-4 hidden">
+                    <h3 class="font-semibold mb-3 text-sm text-gray-700" data-i18n="messaging.participants">Participants</h3>
+                    <div id="participantsList" class="space-y-2">
+                        <!-- Participants will be shown here -->
+                    </div>
+                </div>
+
+                <!-- Notifications Panel -->
+                <div class="bg-white rounded-lg shadow-sm">
+                    <div class="p-4 border-b flex justify-between items-center">
+                        <h3 class="font-semibold text-sm text-gray-700" data-i18n="messaging.recentNotifications">Recent Notifications</h3>
+                        <button onclick="markAllAsRead()" class="text-xs text-blue-600 hover:text-blue-700" data-i18n="messaging.markAllRead">Mark all read</button>
+                    </div>
+                    <div id="notificationsPanel" class="divide-y max-h-[500px] overflow-y-auto">
+                        <!-- Notifications will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compose Message Modal -->
+    <div id="composeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 compose-modal">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-semibold" data-i18n="messaging.compose">Compose Message</h3>
+                        <button onclick="closeComposeModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+
+                    <form id="composeForm" class="space-y-4">
+                        <!-- Recipient Selection -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="messaging.recipients">Recipients *</label>
+                            <div id="recipientSelection" class="border border-gray-300 rounded-lg p-3 max-h-40 overflow-y-auto">
+                                <!-- Staff checkboxes will be populated here -->
+                            </div>
+                            <div id="selectedRecipients" class="flex flex-wrap gap-2 mt-2">
+                                <!-- Selected recipients chips will appear here -->
+                            </div>
+                        </div>
+
+                        <!-- Message Type -->
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="messaging.messageType">Message Type *</label>
+                                <select id="messageType" name="message_type" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="internal" data-i18n="messaging.types.internal">Internal Only</option>
+                                    <option value="email" data-i18n="messaging.types.email">Email Notification</option>
+                                    <option value="wechat" data-i18n="messaging.types.wechat">WeChat Notification</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="messaging.priority">Priority</label>
+                                <select id="messagePriority" name="priority" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="normal" data-i18n="messaging.priorities.normal">Normal</option>
+                                    <option value="high" data-i18n="messaging.priorities.high">High</option>
+                                    <option value="urgent" data-i18n="messaging.priorities.urgent">Urgent</option>
+                                    <option value="low" data-i18n="messaging.priorities.low">Low</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="messaging.category">Category</label>
+                                <select id="messageCategory" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="general" data-i18n="messaging.categories.general">General</option>
+                                    <option value="order" data-i18n="messaging.categories.order">Order Related</option>
+                                    <option value="customer" data-i18n="messaging.categories.customer">Customer Related</option>
+                                    <option value="urgent" data-i18n="messaging.categories.urgent">Urgent</option>
+                                    <option value="announcement" data-i18n="messaging.categories.announcement">Announcement</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Subject -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="messaging.subject">Subject *</label>
+                            <input type="text" id="messageSubject" name="subject" required class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Enter message subject">
+                        </div>
+
+                        <!-- Message Body -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="messaging.message">Message *</label>
+                            <textarea id="messageBody" name="message_body" required rows="8" class="w-full border border-gray-300 rounded-lg px-3 py-2" data-i18n-placeholder="messaging.typeYourMessage" placeholder="Type your message here..."></textarea>
+                        </div>
+
+                        <!-- Additional Options -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="messaging.relatedOrder">Related Order (Optional)</label>
+                                <input type="text" id="relatedOrder" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Order ID or reference">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="messaging.relatedCustomer">Related Customer (Optional)</label>
+                                <input type="text" id="relatedCustomer" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Customer name">
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex justify-between items-center pt-4 border-t">
+                            <div class="flex gap-2">
+                                <button type="button" onclick="attachFile()" class="text-gray-600 hover:text-gray-800">
+                                    <i class="fas fa-paperclip"></i>
+                                    <span data-i18n="messaging.attachFile">Attach File</span>
+                                </button>
+                                <button type="button" onclick="insertTemplate()" class="text-gray-600 hover:text-gray-800">
+                                    <i class="fas fa-file-alt"></i>
+                                    <span data-i18n="messaging.useTemplate">Use Template</span>
+                                </button>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="saveAsDraft()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                                    <span data-i18n="messaging.saveDraft">Save Draft</span>
+                                </button>
+                                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                    <i class="fas fa-paper-plane mr-2"></i>
+                                    <span data-i18n="messaging.sendMessage">Send Message</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Staff Directory Modal -->
+    <div id="staffDirectoryModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-semibold">Staff Directory</h3>
+                        <button onclick="closeStaffDirectory()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="mb-4">
+                        <div class="relative">
+                            <input type="text" id="staffSearch" placeholder="Search staff by name or office..." class="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                    </div>
+
+                    <!-- Office Filter -->
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="filterStaffByOffice('all')" class="px-3 py-1 bg-blue-600 text-white rounded text-sm">All</button>
+                        <button onclick="filterStaffByOffice('Yiwu')" class="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">Yiwu</button>
+                        <button onclick="filterStaffByOffice('Shenzhen')" class="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">Shenzhen</button>
+                        <button onclick="filterStaffByOffice('Greece')" class="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">Greece</button>
+                    </div>
+
+                    <!-- Staff Cards Grid -->
+                    <div id="staffCardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Staff cards will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Translation Popup Modal -->
+    <div id="translationModal" class="hidden">
+        <div class="translate-overlay" onclick="closeTranslationModal()"></div>
+        <div class="translate-popup">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold flex items-center gap-2">
+                        <i class="fas fa-language text-blue-600"></i>
+                        <span>Translation</span>
+                    </h3>
+                    <button onclick="closeTranslationModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Original Text -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Original Message</label>
+                    <div id="originalText" class="p-3 bg-gray-50 rounded-lg border text-sm"></div>
+                </div>
+
+                <!-- Translation Controls -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Translate to:</label>
+                    <div class="flex gap-2 flex-wrap">
+                        <button onclick="translateMessage('en')" class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 flex items-center gap-2">
+                            <span>🇬🇧</span> English
+                        </button>
+                        <button onclick="translateMessage('zh')" class="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 flex items-center gap-2">
+                            <span>🇨🇳</span> 中文
+                        </button>
+                        <button onclick="translateMessage('el')" class="px-4 py-2 bg-cyan-100 text-cyan-700 rounded-lg hover:bg-cyan-200 flex items-center gap-2">
+                            <span>🇬🇷</span> Ελληνικά
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Translated Text -->
+                <div id="translatedTextContainer" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Translation</label>
+                    <div id="translatedText" class="p-3 bg-blue-50 rounded-lg border border-blue-200 text-sm"></div>
+                    <div id="translationLoading" class="hidden text-center py-4">
+                        <i class="fas fa-spinner fa-spin text-blue-600 text-2xl"></i>
+                        <p class="text-sm text-gray-600 mt-2">Translating...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Templates Modal -->
+    <div id="templatesModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-semibold flex items-center gap-2">
+                            <i class="fas fa-file-alt text-purple-600"></i>
+                            <span>Message Templates</span>
+                        </h3>
+                        <button onclick="closeTemplatesModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+
+                    <!-- Template Categories -->
+                    <div class="mb-4">
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="filterTemplates('all')" class="px-3 py-1 bg-purple-600 text-white rounded text-sm">All</button>
+                            <button onclick="filterTemplates('order')" class="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">Orders</button>
+                            <button onclick="filterTemplates('customer')" class="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">Customer Service</button>
+                            <button onclick="filterTemplates('general')" class="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">General</button>
+                        </div>
+                    </div>
+
+                    <!-- Templates List -->
+                    <div id="templatesList" class="space-y-3">
+                        <!-- Templates will be populated here -->
+                    </div>
+
+                    <!-- Create New Template Button -->
+                    <button onclick="showCreateTemplateForm()" class="mt-4 w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-purple-400 hover:text-purple-600 transition">
+                        <i class="fas fa-plus mr-2"></i>
+                        Create New Template
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/messaging.js"></script>
+    
+    <!-- Initialize Internationalization System and Messaging -->
+    <script>
+        // ==========================================
+        // MUJI THEME SYSTEM (Consistent with customers/suppliers pages)
+        // ==========================================
+        
+        function setTheme(themeName) {
+            // Set theme on body
+            document.body.setAttribute('data-theme', themeName);
+            
+            // Save to localStorage
+            localStorage.setItem('messaging-theme', themeName);
+            
+            // Update active button
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-theme') === themeName) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            console.log('✅ Theme changed to:', themeName);
+        }
+        
+        // ==========================================
+        // MESSAGE SEARCH SYSTEM
+        // ==========================================
+        
+        let allMessages = []; // Store all messages for searching
+        
+        function searchMessages() {
+            // Get search term - NO toLowerCase for multilingual support
+            const searchTerm = document.getElementById('messageSearchInput').value.trim();
+            const messageThreads = document.getElementById('messageThreads');
+            const threads = messageThreads.querySelectorAll('.message-thread');
+            
+            if (!searchTerm) {
+                // Show all threads if search is empty
+                threads.forEach(thread => {
+                    thread.style.display = '';
+                    // Remove highlights
+                    const highlighted = thread.querySelectorAll('.search-result-highlight');
+                    highlighted.forEach(el => {
+                        el.outerHTML = el.textContent;
+                    });
+                });
+                return;
+            }
+            
+            let visibleCount = 0;
+            
+            threads.forEach(thread => {
+                // Get thread data WITHOUT toLowerCase - keeps Greek, Chinese, English intact
+                const senderName = thread.querySelector('.font-medium')?.textContent || '';
+                const messageSubject = thread.querySelector('.text-sm:not(.text-gray-500)')?.textContent || '';
+                const messagePreview = thread.querySelector('.text-gray-500')?.textContent || '';
+                
+                // Multilingual case-insensitive search
+                // Works for: English, Greek (Ελληνικά), Chinese (中文)
+                const matches = containsTextMultilingual(senderName, searchTerm) || 
+                               containsTextMultilingual(messageSubject, searchTerm) || 
+                               containsTextMultilingual(messagePreview, searchTerm);
+                
+                if (matches) {
+                    thread.style.display = '';
+                    visibleCount++;
+                    
+                    // Highlight matching text (simple version)
+                    highlightText(thread, searchTerm);
+                } else {
+                    thread.style.display = 'none';
+                }
+            });
+            
+            console.log(`🔍 Search: "${searchTerm}" - ${visibleCount} results found`);
+        }
+        
+        // Multilingual case-insensitive search helper
+        function containsTextMultilingual(text, searchTerm) {
+            // Normalize both strings for comparison
+            // This works for English, Greek, Chinese, and other languages
+            const normalizedText = text.toLowerCase().normalize('NFD');
+            const normalizedSearch = searchTerm.toLowerCase().normalize('NFD');
+            
+            // Also try exact case-sensitive match for Chinese characters
+            return normalizedText.includes(normalizedSearch) || text.includes(searchTerm);
+        }
+        
+        function highlightText(element, searchTerm) {
+            // Multilingual highlight function - works with Greek, Chinese, English
+            const textNodes = getTextNodes(element);
+            textNodes.forEach(node => {
+                const text = node.textContent;
+                
+                // Check if text contains search term (case-insensitive for most, exact for Chinese)
+                if (containsTextMultilingual(text, searchTerm)) {
+                    try {
+                        // Escape special regex characters in search term
+                        const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        
+                        // Create case-insensitive regex (works for English, Greek)
+                        const regex = new RegExp(`(${escapedTerm})`, 'gi');
+                        
+                        // Replace with highlighted version
+                        const highlighted = text.replace(regex, '<span class="search-result-highlight">$1</span>');
+                        
+                        // If no replacement happened (e.g., Chinese case-sensitive), try exact match
+                        if (highlighted === text && text.includes(searchTerm)) {
+                            const exactHighlight = text.replace(searchTerm, `<span class="search-result-highlight">${searchTerm}</span>`);
+                            const span = document.createElement('span');
+                            span.innerHTML = exactHighlight;
+                            node.parentNode.replaceChild(span, node);
+                        } else if (highlighted !== text) {
+                            const span = document.createElement('span');
+                            span.innerHTML = highlighted;
+                            node.parentNode.replaceChild(span, node);
+                        }
+                    } catch (e) {
+                        // If regex fails, try simple exact match
+                        if (text.includes(searchTerm)) {
+                            const simpleHighlight = text.replace(searchTerm, `<span class="search-result-highlight">${searchTerm}</span>`);
+                            const span = document.createElement('span');
+                            span.innerHTML = simpleHighlight;
+                            node.parentNode.replaceChild(span, node);
+                        }
+                    }
+                }
+            });
+        }
+        
+        function getTextNodes(element) {
+            const textNodes = [];
+            const walker = document.createTreeWalker(
+                element,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+            
+            let node;
+            while (node = walker.nextNode()) {
+                if (node.textContent.trim()) {
+                    textNodes.push(node);
+                }
+            }
+            return textNodes;
+        }
+        
+        // Initialize systems on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Load saved theme
+            const savedTheme = localStorage.getItem('messaging-theme') || 'modern';
+            setTheme(savedTheme);
+            
+            // Initialize i18n
+            window.i18n = new I18nSystem();
+            window.i18n.translatePage();
+            
+            // Initialize messaging system
+            window.messagingSystem = new MessagingSystem();
+            console.log('✅ Messaging system initialized');
+        });
+    </script>
+</body>
+</html>

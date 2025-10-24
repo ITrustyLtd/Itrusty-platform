@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Day Planner - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .time-slot {
+            min-height: 60px;
+            border-bottom: 1px solid #e5e7eb;
+            transition: background 0.2s;
+        }
+        .time-slot:hover {
+            background: #f9fafb;
+        }
+        .activity-card {
+            cursor: move;
+            transition: all 0.2s;
+        }
+        .activity-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .activity-card.dragging {
+            opacity: 0.5;
+        }
+        .drop-zone {
+            border: 2px dashed #3b82f6;
+            background: #eff6ff;
+        }
+        
+        /* Activity Type Colors */
+        .activity-sourcing { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .activity-qc { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .activity-admin { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+        .activity-client { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .activity-meeting { background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); }
+        .activity-payment { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .activity-shipment { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .activity-inspection { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        .activity-other { background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); }
+        
+        .floating-actions {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-calendar-day text-blue-600 mr-2"></i>
+                        My Day Planner
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-600" id="currentDate"></span>
+                    <span class="text-sm font-medium text-blue-600" id="staffName">Staff Member</span>
+                    <a href="my-dashboard.html" class="text-gray-600 hover:text-gray-800">
+                        <i class="fas fa-home mr-1"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Date Navigation & Quick Stats -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <div class="flex justify-between items-center">
+                <!-- Date Navigation -->
+                <div class="flex items-center gap-4">
+                    <button onclick="changeDate(-1)" class="p-2 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <input type="date" id="selectedDate" onchange="loadDayActivities()" 
+                           class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <button onclick="changeDate(1)" class="p-2 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button onclick="goToToday()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-calendar-day mr-1"></i> Today
+                    </button>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="flex gap-6">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-600" id="totalActivities">0</div>
+                        <div class="text-xs text-gray-500">Activities</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-600" id="completedActivities">0</div>
+                        <div class="text-xs text-gray-500">Completed</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-orange-600" id="pendingActivities">0</div>
+                        <div class="text-xs text-gray-500">Pending</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Templates (Quick Add) -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">
+                <i class="fas fa-bolt text-yellow-500 mr-2"></i>
+                Quick Add Activity
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                <button onclick="quickAddActivity('sourcing')" class="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg border-2 border-orange-200 transition">
+                    <i class="fas fa-search text-orange-600 text-2xl mb-2"></i>
+                    <div class="text-xs font-medium text-orange-800">Sourcing</div>
+                </button>
+                <button onclick="quickAddActivity('qc_check')" class="p-4 bg-green-50 hover:bg-green-100 rounded-lg border-2 border-green-200 transition">
+                    <i class="fas fa-check-circle text-green-600 text-2xl mb-2"></i>
+                    <div class="text-xs font-medium text-green-800">QC Check</div>
+                </button>
+                <button onclick="quickAddActivity('meeting')" class="p-4 bg-cyan-50 hover:bg-cyan-100 rounded-lg border-2 border-cyan-200 transition">
+                    <i class="fas fa-users text-cyan-600 text-2xl mb-2"></i>
+                    <div class="text-xs font-medium text-cyan-800">Meeting</div>
+                </button>
+                <button onclick="quickAddActivity('client')" class="p-4 bg-red-50 hover:bg-red-100 rounded-lg border-2 border-red-200 transition">
+                    <i class="fas fa-handshake text-red-600 text-2xl mb-2"></i>
+                    <div class="text-xs font-medium text-red-800">Client Call</div>
+                </button>
+                <button onclick="quickAddActivity('payment')" class="p-4 bg-green-50 hover:bg-green-100 rounded-lg border-2 border-green-200 transition">
+                    <i class="fas fa-money-bill-wave text-green-600 text-2xl mb-2"></i>
+                    <div class="text-xs font-medium text-green-800">Payment</div>
+                </button>
+                <button onclick="quickAddActivity('shipment')" class="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg border-2 border-orange-200 transition">
+                    <i class="fas fa-shipping-fast text-orange-600 text-2xl mb-2"></i>
+                    <div class="text-xs font-medium text-orange-800">Shipment</div>
+                </button>
+                <button onclick="quickAddActivity('inspection')" class="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border-2 border-blue-200 transition">
+                    <i class="fas fa-clipboard-check text-blue-600 text-2xl mb-2"></i>
+                    <div class="text-xs font-medium text-blue-800">Inspection</div>
+                </button>
+                <button onclick="quickAddActivity('other')" class="p-4 bg-gray-50 hover:bg-gray-100 rounded-lg border-2 border-gray-200 transition">
+                    <i class="fas fa-plus-circle text-gray-600 text-2xl mb-2"></i>
+                    <div class="text-xs font-medium text-gray-800">Other</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Day Timeline -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="p-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                <h3 class="text-xl font-bold">
+                    <i class="fas fa-clock mr-2"></i>
+                    Today's Schedule
+                </h3>
+                <p class="text-sm opacity-90 mt-1">Drag activities to reschedule • Click to edit</p>
+            </div>
+            
+            <div id="timeline" class="divide-y divide-gray-200">
+                <!-- Time slots will be generated here -->
+            </div>
+        </div>
+
+        <!-- Unscheduled Activities -->
+        <div class="mt-6 bg-white rounded-xl shadow-md p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">
+                <i class="fas fa-list text-gray-600 mr-2"></i>
+                Unscheduled Activities
+                <span class="text-sm font-normal text-gray-500 ml-2">(Drag to timeline to schedule)</span>
+            </h3>
+            <div id="unscheduledActivities" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Unscheduled activities will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="floating-actions">
+        <button onclick="openAddActivityModal()" class="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition">
+            <i class="fas fa-plus text-xl"></i>
+        </button>
+    </div>
+
+    <!-- Add/Edit Activity Modal -->
+    <div id="activityModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b sticky top-0 bg-white">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-calendar-plus text-blue-600 mr-2"></i>
+                        <span id="modalTitle">Add Activity</span>
+                    </h3>
+                    <button onclick="closeActivityModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <form id="activityForm" onsubmit="saveActivity(event)" class="p-6 space-y-4">
+                <input type="hidden" id="activityId">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Type *
+                        </label>
+                        <select id="activityType" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                            <option value="sourcing">Sourcing</option>
+                            <option value="qc_check">QC Check</option>
+                            <option value="meeting">Meeting</option>
+                            <option value="client">Client Communication</option>
+                            <option value="payment">Payment Processing</option>
+                            <option value="shipment">Shipment</option>
+                            <option value="inspection">Inspection</option>
+                            <option value="new_request">New Request</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Priority *
+                        </label>
+                        <select id="activityPriority" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Title *
+                    </label>
+                    <input type="text" id="activityTitle" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" 
+                           placeholder="e.g., Source products for AGL order">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Description
+                    </label>
+                    <textarea id="activityDescription" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" 
+                              placeholder="Detailed description..."></textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Start Time (Optional)
+                        </label>
+                        <input type="time" id="activityStartTime" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            End Time (Optional)
+                        </label>
+                        <input type="time" id="activityEndTime" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Customer Code (Optional)
+                        </label>
+                        <input type="text" id="activityCustomer" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" 
+                               placeholder="e.g., AGL">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Related Order ID (Optional)
+                        </label>
+                        <input type="text" id="activityOrderId" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" 
+                               placeholder="e.g., ORD-2025-001">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Status
+                    </label>
+                    <select id="activityStatus" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                        <option value="pending" selected>Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                
+                <div class="flex gap-3 pt-4 border-t">
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition">
+                        <i class="fas fa-save mr-2"></i>
+                        Save Activity
+                    </button>
+                    <button type="button" onclick="closeActivityModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 rounded-lg transition">
+                        <i class="fas fa-times mr-2"></i>
+                        Cancel
+                    </button>
+                    <button type="button" onclick="deleteActivity()" id="deleteBtn" class="hidden px-4 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let activities = [];
+        let currentStaffId = null;
+        let currentStaffName = null;
+        let draggedActivity = null;
+
+        // Initialize
+        async function init() {
+            // Get staff info from localStorage
+            currentStaffId = localStorage.getItem('staff_id') || 'staff_1';
+            currentStaffName = localStorage.getItem('staff_name') || 'Staff Member';
+            document.getElementById('staffName').textContent = currentStaffName;
+            
+            // Set today's date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('selectedDate').value = today;
+            updateCurrentDate();
+            
+            // Generate timeline
+            generateTimeline();
+            
+            // Load activities
+            await loadDayActivities();
+        }
+
+        function updateCurrentDate() {
+            const dateInput = document.getElementById('selectedDate');
+            const date = new Date(dateInput.value);
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('currentDate').textContent = date.toLocaleDateString('en-US', options);
+        }
+
+        function generateTimeline() {
+            const timeline = document.getElementById('timeline');
+            const hours = [];
+            
+            // Generate 24 hours (7 AM to 9 PM for work day)
+            for (let i = 7; i <= 21; i++) {
+                const hour = i < 10 ? `0${i}:00` : `${i}:00`;
+                hours.push(hour);
+            }
+            
+            timeline.innerHTML = hours.map(hour => `
+                <div class="time-slot flex" data-time="${hour}" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
+                    <div class="w-24 flex-shrink-0 p-4 bg-gray-50 font-semibold text-gray-600 text-sm">
+                        ${hour}
+                    </div>
+                    <div class="flex-1 p-2 min-h-[60px]" id="slot-${hour.replace(':', '')}">
+                        <!-- Activities will be placed here -->
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadDayActivities() {
+            try {
+                const selectedDate = document.getElementById('selectedDate').value;
+                updateCurrentDate();
+                
+                console.log('📅 Loading activities for:', selectedDate);
+                
+                // Load activities from database
+                const response = await fetch(`tables/daily_activities?limit=1000`);
+                const data = await response.json();
+                
+                // Filter by date and staff
+                const dateObj = new Date(selectedDate);
+                activities = (data.data || []).filter(activity => {
+                    const activityDate = new Date(activity.activity_date);
+                    return activityDate.toDateString() === dateObj.toDateString() &&
+                           activity.assigned_to === currentStaffName;
+                });
+                
+                console.log('📊 Loaded activities:', activities.length);
+                
+                // Render activities
+                renderActivities();
+                updateStats();
+                
+            } catch (error) {
+                console.error('❌ Error loading activities:', error);
+                alert('Error loading activities. Please refresh the page.');
+            }
+        }
+
+        function renderActivities() {
+            // Clear timeline slots
+            const slots = document.querySelectorAll('[id^="slot-"]');
+            slots.forEach(slot => slot.innerHTML = '');
+            
+            // Clear unscheduled
+            document.getElementById('unscheduledActivities').innerHTML = '';
+            
+            activities.forEach(activity => {
+                const activityHTML = createActivityCard(activity);
+                
+                // Check if activity has start time
+                if (activity.notes && activity.notes.includes('start_time:')) {
+                    // Extract start time
+                    const match = activity.notes.match(/start_time:(\d{2}:\d{2})/);
+                    if (match) {
+                        const startTime = match[1].replace(':', '');
+                        const slot = document.getElementById(`slot-${startTime}`);
+                        if (slot) {
+                            slot.innerHTML += activityHTML;
+                        } else {
+                            // Add to unscheduled if slot not found
+                            document.getElementById('unscheduledActivities').innerHTML += activityHTML;
+                        }
+                    }
+                } else {
+                    // Add to unscheduled
+                    document.getElementById('unscheduledActivities').innerHTML += activityHTML;
+                }
+            });
+        }
+
+        function createActivityCard(activity) {
+            const typeClass = `activity-${activity.activity_type}`;
+            const priorityColors = {
+                'low': 'border-gray-300',
+                'medium': 'border-blue-300',
+                'high': 'border-orange-300',
+                'critical': 'border-red-500'
+            };
+            const priorityIcons = {
+                'low': 'fa-arrow-down',
+                'medium': 'fa-equals',
+                'high': 'fa-arrow-up',
+                'critical': 'fa-exclamation-triangle'
+            };
+            
+            const statusIcons = {
+                'pending': '<i class="fas fa-clock text-yellow-600"></i>',
+                'in_progress': '<i class="fas fa-spinner fa-spin text-blue-600"></i>',
+                'completed': '<i class="fas fa-check-circle text-green-600"></i>',
+                'cancelled': '<i class="fas fa-times-circle text-red-600"></i>'
+            };
+            
+            return `
+                <div class="activity-card ${typeClass} text-white rounded-lg p-3 mb-2 border-l-4 ${priorityColors[activity.priority] || 'border-gray-300'}" 
+                     draggable="true" 
+                     ondragstart="handleDragStart(event)" 
+                     ondragend="handleDragEnd(event)"
+                     onclick="editActivity('${activity.id}')"
+                     data-activity-id="${activity.id}">
+                    <div class="flex justify-between items-start mb-1">
+                        <div class="font-semibold text-sm">${activity.title}</div>
+                        <div class="flex items-center gap-2">
+                            ${statusIcons[activity.status] || ''}
+                            <i class="fas ${priorityIcons[activity.priority] || 'fa-equals'} text-xs"></i>
+                        </div>
+                    </div>
+                    ${activity.description ? `<div class="text-xs opacity-90 line-clamp-2">${activity.description}</div>` : ''}
+                    ${activity.customer_code ? `<div class="text-xs opacity-75 mt-1"><i class="fas fa-user mr-1"></i>${activity.customer_code}</div>` : ''}
+                </div>
+            `;
+        }
+
+        function updateStats() {
+            document.getElementById('totalActivities').textContent = activities.length;
+            document.getElementById('completedActivities').textContent = activities.filter(a => a.status === 'completed').length;
+            document.getElementById('pendingActivities').textContent = activities.filter(a => a.status === 'pending').length;
+        }
+
+        // Drag and Drop Handlers
+        function handleDragStart(event) {
+            const activityId = event.target.dataset.activityId;
+            draggedActivity = activities.find(a => a.id === activityId);
+            event.target.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(event) {
+            event.target.classList.remove('dragging');
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            event.currentTarget.classList.add('drop-zone');
+        }
+
+        async function handleDrop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('drop-zone');
+            
+            if (!draggedActivity) return;
+            
+            const timeSlot = event.currentTarget.dataset.time;
+            console.log(`📍 Dropped activity at ${timeSlot}`);
+            
+            // Update activity with new start time
+            try {
+                const updatedNotes = `start_time:${timeSlot}\n${draggedActivity.notes || ''}`;
+                
+                const response = await fetch(`tables/daily_activities/${draggedActivity.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notes: updatedNotes })
+                });
+                
+                if (response.ok) {
+                    console.log('✅ Activity rescheduled');
+                    await loadDayActivities(); // Reload to reflect changes
+                }
+            } catch (error) {
+                console.error('❌ Error rescheduling:', error);
+            }
+            
+            draggedActivity = null;
+        }
+
+        // Quick Add Activity
+        function quickAddActivity(type) {
+            document.getElementById('modalTitle').textContent = 'Add Activity';
+            document.getElementById('activityId').value = '';
+            document.getElementById('activityForm').reset();
+            document.getElementById('activityType').value = type;
+            document.getElementById('deleteBtn').classList.add('hidden');
+            document.getElementById('activityModal').classList.remove('hidden');
+        }
+
+        // Open Add/Edit Modal
+        function openAddActivityModal() {
+            document.getElementById('modalTitle').textContent = 'Add Activity';
+            document.getElementById('activityId').value = '';
+            document.getElementById('activityForm').reset();
+            document.getElementById('deleteBtn').classList.add('hidden');
+            document.getElementById('activityModal').classList.remove('hidden');
+        }
+
+        function closeActivityModal() {
+            document.getElementById('activityModal').classList.add('hidden');
+        }
+
+        // Edit Activity
+        function editActivity(activityId) {
+            const activity = activities.find(a => a.id === activityId);
+            if (!activity) return;
+            
+            document.getElementById('modalTitle').textContent = 'Edit Activity';
+            document.getElementById('activityId').value = activity.id;
+            document.getElementById('activityType').value = activity.activity_type;
+            document.getElementById('activityPriority').value = activity.priority;
+            document.getElementById('activityTitle').value = activity.title;
+            document.getElementById('activityDescription').value = activity.description || '';
+            document.getElementById('activityCustomer').value = activity.customer_code || '';
+            document.getElementById('activityOrderId').value = activity.related_order_id || '';
+            document.getElementById('activityStatus').value = activity.status;
+            
+            // Extract start/end time from notes if present
+            if (activity.notes) {
+                const startMatch = activity.notes.match(/start_time:(\d{2}:\d{2})/);
+                const endMatch = activity.notes.match(/end_time:(\d{2}:\d{2})/);
+                if (startMatch) document.getElementById('activityStartTime').value = startMatch[1];
+                if (endMatch) document.getElementById('activityEndTime').value = endMatch[1];
+            }
+            
+            document.getElementById('deleteBtn').classList.remove('hidden');
+            document.getElementById('activityModal').classList.remove('hidden');
+        }
+
+        // Save Activity
+        async function saveActivity(event) {
+            event.preventDefault();
+            
+            const activityId = document.getElementById('activityId').value;
+            const selectedDate = document.getElementById('selectedDate').value;
+            
+            const activityData = {
+                activity_type: document.getElementById('activityType').value,
+                title: document.getElementById('activityTitle').value,
+                description: document.getElementById('activityDescription').value,
+                priority: document.getElementById('activityPriority').value,
+                status: document.getElementById('activityStatus').value,
+                customer_code: document.getElementById('activityCustomer').value,
+                related_order_id: document.getElementById('activityOrderId').value,
+                assigned_to: currentStaffName,
+                office: localStorage.getItem('office') || 'Shenzhen',
+                activity_date: new Date(selectedDate).toISOString()
+            };
+            
+            // Add time information to notes
+            const startTime = document.getElementById('activityStartTime').value;
+            const endTime = document.getElementById('activityEndTime').value;
+            let notes = '';
+            if (startTime) notes += `start_time:${startTime}\n`;
+            if (endTime) notes += `end_time:${endTime}\n`;
+            activityData.notes = notes;
+            
+            try {
+                let response;
+                if (activityId) {
+                    // Update existing
+                    response = await fetch(`tables/daily_activities/${activityId}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(activityData)
+                    });
+                } else {
+                    // Create new
+                    response = await fetch('tables/daily_activities', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(activityData)
+                    });
+                }
+                
+                if (response.ok) {
+                    console.log('✅ Activity saved');
+                    closeActivityModal();
+                    await loadDayActivities();
+                } else {
+                    alert('❌ Failed to save activity');
+                }
+            } catch (error) {
+                console.error('❌ Error saving activity:', error);
+                alert('❌ Error saving activity');
+            }
+        }
+
+        // Delete Activity
+        async function deleteActivity() {
+            const activityId = document.getElementById('activityId').value;
+            if (!activityId) return;
+            
+            if (!confirm('⚠️ Are you sure you want to delete this activity?')) return;
+            
+            try {
+                const response = await fetch(`tables/daily_activities/${activityId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok || response.status === 204) {
+                    console.log('✅ Activity deleted');
+                    closeActivityModal();
+                    await loadDayActivities();
+                } else {
+                    alert('❌ Failed to delete activity');
+                }
+            } catch (error) {
+                console.error('❌ Error deleting activity:', error);
+                alert('❌ Error deleting activity');
+            }
+        }
+
+        // Date Navigation
+        function changeDate(days) {
+            const dateInput = document.getElementById('selectedDate');
+            const currentDate = new Date(dateInput.value);
+            currentDate.setDate(currentDate.getDate() + days);
+            dateInput.value = currentDate.toISOString().split('T')[0];
+            loadDayActivities();
+        }
+
+        function goToToday() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('selectedDate').value = today;
+            loadDayActivities();
+        }
+
+        // Initialize on page load
+        init();
+    </script>
+</body>
+</html>

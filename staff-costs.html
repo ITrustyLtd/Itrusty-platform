@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Productivity & Cost Analysis - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/i18n-system.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-users-cog text-purple-600 mr-2"></i>
+                        <span data-i18n="staff.title">Staff Productivity & Cost Analysis</span>
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- Language Toggle -->
+                    <button onclick="window.i18n.toggleLanguage()" class="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition flex items-center gap-2">
+                        <i class="fas fa-language"></i>
+                        <span id="languageLabel">中文</span>
+                    </button>
+                    
+                    <select id="monthSelector" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500">
+                        <!-- Populated dynamically -->
+                    </select>
+                    <select id="officeFilter" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500">
+                        <option value="" data-i18n="staff.allOffices">All Offices</option>
+                        <option value="Yiwu">Yiwu</option>
+                        <option value="Shenzhen">Shenzhen</option>
+                        <option value="Greece">Greece</option>
+                    </select>
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-home mr-1"></i> <span data-i18n="navigation.dashboard">Dashboard</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Team Summary -->
+        <div class="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-xl shadow-lg p-8 mb-8 text-white">
+            <h2 class="text-2xl font-bold mb-4">
+                <i class="fas fa-chart-line mr-2"></i>
+                <span data-i18n="staff.performanceSummary">Team Performance Summary</span>
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div>
+                    <div class="text-sm opacity-90" data-i18n="staff.totalStaff">Total Staff</div>
+                    <div class="text-3xl font-bold mt-1" id="totalStaff">11</div>
+                </div>
+                <div>
+                    <div class="text-sm opacity-90" data-i18n="staff.totalHours">Total Hours Logged</div>
+                    <div class="text-3xl font-bold mt-1" id="totalHours">0</div>
+                </div>
+                <div>
+                    <div class="text-sm opacity-90" data-i18n="staff.totalCost">Total Cost</div>
+                    <div class="text-3xl font-bold mt-1" id="totalCost">¥0</div>
+                </div>
+                <div>
+                    <div class="text-sm opacity-90" data-i18n="staff.avgProductivity">Avg Productivity</div>
+                    <div class="text-3xl font-bold mt-1" id="avgProductivity">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Staff Tasks Modal -->
+        <div id="staffTasksModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                <!-- Modal Header -->
+                <div class="bg-gradient-to-r from-purple-600 to-indigo-700 text-white p-6 flex-shrink-0">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 class="text-2xl font-bold mb-2" id="modalStaffName">Staff Member</h2>
+                            <p class="text-sm opacity-90" id="modalStaffRole">Role • Office</p>
+                        </div>
+                        <button onclick="closeStaffTasksModal()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Quick Stats -->
+                    <div class="grid grid-cols-4 gap-4 mt-4">
+                        <div class="bg-white bg-opacity-10 rounded-lg p-3">
+                            <div class="text-xs opacity-75">Total Tasks</div>
+                            <div class="text-2xl font-bold" id="modalTotalTasks">0</div>
+                        </div>
+                        <div class="bg-white bg-opacity-10 rounded-lg p-3">
+                            <div class="text-xs opacity-75">Completed</div>
+                            <div class="text-2xl font-bold" id="modalCompletedTasks">0</div>
+                        </div>
+                        <div class="bg-white bg-opacity-10 rounded-lg p-3">
+                            <div class="text-xs opacity-75">Total Hours</div>
+                            <div class="text-2xl font-bold" id="modalTotalHours">0h</div>
+                        </div>
+                        <div class="bg-white bg-opacity-10 rounded-lg p-3">
+                            <div class="text-xs opacity-75">Productivity</div>
+                            <div class="text-2xl font-bold" id="modalProductivity">0%</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Body -->
+                <div class="flex-1 overflow-y-auto p-6">
+                    <!-- Filters -->
+                    <div class="flex gap-3 mb-4">
+                        <select id="taskStatusFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm" onchange="filterModalTasks()">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="overdue">Overdue</option>
+                        </select>
+                        <select id="taskPriorityFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm" onchange="filterModalTasks()">
+                            <option value="">All Priorities</option>
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                        <input type="text" id="taskSearchInput" placeholder="Search tasks..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" oninput="filterModalTasks()">
+                    </div>
+                    
+                    <!-- Tasks List -->
+                    <div id="modalTasksList" class="space-y-3">
+                        <!-- Tasks will be populated here -->
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div id="modalEmptyState" class="hidden text-center py-12">
+                        <i class="fas fa-tasks text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">No tasks found</p>
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="border-t p-4 flex justify-between items-center flex-shrink-0">
+                    <div class="text-sm text-gray-600">
+                        Showing <span id="modalTaskCount">0</span> tasks
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="messageStaffMember(currentModalStaffId)" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium">
+                            <i class="fas fa-comment-alt mr-2"></i> Send Message
+                        </button>
+                        <button onclick="closeStaffTasksModal()" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 text-sm font-medium">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Container - Limited to 2/3 viewport height -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" style="max-height: 65vh;">
+            
+            <!-- Left Column: Productivity Chart -->
+            <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col" style="max-height: 65vh;">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex-shrink-0">
+                    <i class="fas fa-chart-bar text-purple-600 mr-2"></i>
+                    <span data-i18n="staff.productivityComparison">Staff Productivity Comparison</span>
+                </h3>
+                <div class="flex-1 min-h-0">
+                    <canvas id="productivityChart" style="max-height: 100%;"></canvas>
+                </div>
+            </div>
+
+            <!-- Right Column: Staff Details -->
+            <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col" style="max-height: 65vh;">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex-shrink-0">
+                    <i class="fas fa-users text-purple-600 mr-2"></i>
+                    <span data-i18n="staff.staffDetails">Staff Details</span>
+                </h3>
+                <div id="staffContainer" class="grid grid-cols-1 gap-3 overflow-y-auto flex-1 min-h-0 pr-2">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        let currentMonth = '';
+        let staffData = [];
+        let chart = null;
+
+        // Initialize
+        async function init() {
+            await populateMonthSelector();
+            await loadStaffData();
+            
+            // Add filter listener
+            document.getElementById('officeFilter').addEventListener('change', renderStaffCards);
+        }
+
+        // Populate month selector
+        function populateMonthSelector() {
+            const selector = document.getElementById('monthSelector');
+            const now = new Date();
+            
+            for (let i = 0; i < 12; i++) {
+                const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const month = date.toISOString().slice(0, 7);
+                const displayName = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+                
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = displayName;
+                if (i === 0) {
+                    option.selected = true;
+                    currentMonth = month;
+                }
+                selector.appendChild(option);
+            }
+            
+            selector.addEventListener('change', (e) => {
+                currentMonth = e.target.value;
+                loadStaffData();
+            });
+        }
+
+        // Load staff data
+        async function loadStaffData() {
+            try {
+                // Get all staff members
+                const staffResponse = await fetch('tables/staff_members?limit=100');
+                const staffResult = await staffResponse.json();
+                const allStaff = staffResult.data || [];
+                
+                // Get all tasks for current month
+                const tasksResponse = await fetch('tables/tasks?limit=1000');
+                const tasksResult = await tasksResponse.json();
+                const allTasks = tasksResult.data || [];
+                
+                // Get all orders for revenue linking
+                const ordersResponse = await fetch('tables/orders?limit=1000');
+                const ordersResult = await ordersResponse.json();
+                const allOrders = ordersResult.data || [];
+                
+                // Process each staff member
+                staffData = allStaff.filter(s => s.active).map(staff => {
+                    // Calculate hourly rate
+                    const hourlyRate = staff.monthly_salary_rmb / 176; // 22 days × 8 hours
+                    
+                    // Get staff tasks for this month
+                    const staffTasks = allTasks.filter(t => {
+                        if (t.assigned_to_id !== staff.id || !t.start_date) return false;
+                        
+                        // Convert start_date to string if it's not already
+                        const startDateStr = typeof t.start_date === 'string' 
+                            ? t.start_date 
+                            : new Date(t.start_date).toISOString();
+                        
+                        return startDateStr.startsWith(currentMonth);
+                    });
+                    
+                    // Calculate hours and costs
+                    let totalHours = 0;
+                    let productiveHours = 0;
+                    let totalCost = 0;
+                    let linkedRevenue = 0;
+                    
+                    staffTasks.forEach(task => {
+                        const hours = task.actual_hours || 0;
+                        totalHours += hours;
+                        totalCost += hours * hourlyRate;
+                        
+                        // Check if task linked to order
+                        if (task.linked_order_id) {
+                            productiveHours += hours;
+                            const order = allOrders.find(o => o.id === task.linked_order_id);
+                            if (order) {
+                                linkedRevenue += order.revenue_amount || order.total_value || 0;
+                            }
+                        }
+                    });
+                    
+                    const productivityRate = totalHours > 0 ? (productiveHours / totalHours) * 100 : 0;
+                    const roi = totalCost > 0 && linkedRevenue > 0 ? linkedRevenue / totalCost : 0;
+                    
+                    return {
+                        ...staff,
+                        hourly_rate: hourlyRate,
+                        tasks_count: staffTasks.length,
+                        completed_tasks: staffTasks.filter(t => t.status === 'Completed').length,
+                        total_hours: totalHours,
+                        productive_hours: productiveHours,
+                        total_cost: totalCost,
+                        linked_revenue: linkedRevenue,
+                        productivity_rate: productivityRate,
+                        roi: roi,
+                        tasks: staffTasks
+                    };
+                });
+                
+                // Sort by productivity
+                staffData.sort((a, b) => b.productivity_rate - a.productivity_rate);
+                
+                renderDashboard();
+            } catch (error) {
+                console.error('Error loading staff data:', error);
+            }
+        }
+
+        // Render dashboard
+        function renderDashboard() {
+            // Calculate totals
+            const totalStaff = staffData.length;
+            const totalHours = staffData.reduce((sum, s) => sum + s.total_hours, 0);
+            const totalCost = staffData.reduce((sum, s) => sum + s.total_cost, 0);
+            const avgProductivity = totalStaff > 0 
+                ? staffData.reduce((sum, s) => sum + s.productivity_rate, 0) / totalStaff 
+                : 0;
+            
+            // Update summary
+            document.getElementById('totalStaff').textContent = totalStaff;
+            document.getElementById('totalHours').textContent = Math.round(totalHours);
+            document.getElementById('totalCost').textContent = formatCurrency(totalCost, 'RMB');
+            document.getElementById('avgProductivity').textContent = avgProductivity.toFixed(1) + '%';
+            
+            // Render chart
+            renderChart();
+            
+            // Render staff cards
+            renderStaffCards();
+        }
+
+        // Render productivity chart
+        function renderChart() {
+            const ctx = document.getElementById('productivityChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+            
+            // Take top 10 staff by total hours
+            const topStaff = [...staffData].sort((a, b) => b.total_hours - a.total_hours).slice(0, 10);
+            
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: topStaff.map(s => s.name),
+                    datasets: [
+                        {
+                            label: 'Productive Hours',
+                            data: topStaff.map(s => s.productive_hours),
+                            backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                            borderColor: 'rgba(34, 197, 94, 1)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Admin Hours',
+                            data: topStaff.map(s => s.total_hours - s.productive_hours),
+                            backgroundColor: 'rgba(156, 163, 175, 0.8)',
+                            borderColor: 'rgba(156, 163, 175, 1)',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + 'h';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y + ' hours';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render staff cards
+        function renderStaffCards() {
+            const container = document.getElementById('staffContainer');
+            const officeFilter = document.getElementById('officeFilter').value;
+            
+            const filteredStaff = officeFilter 
+                ? staffData.filter(s => s.office_location === officeFilter)
+                : staffData;
+            
+            container.innerHTML = '';
+            
+            filteredStaff.forEach((staff, index) => {
+                const card = document.createElement('div');
+                card.className = 'bg-gray-50 rounded-lg border border-gray-200 p-4 hover:shadow-lg transition-all cursor-pointer hover:border-purple-300';
+                card.onclick = () => showStaffTasks(staff.id);
+                
+                // Productivity color
+                let productivityColor = 'text-red-600';
+                if (staff.productivity_rate >= 80) productivityColor = 'text-green-600';
+                else if (staff.productivity_rate >= 60) productivityColor = 'text-yellow-600';
+                
+                // ROI badge
+                let roiBadge = '';
+                if (staff.roi > 100) {
+                    roiBadge = `<span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">${staff.roi.toFixed(0)}× ROI</span>`;
+                } else if (staff.roi > 0) {
+                    roiBadge = `<span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">${staff.roi.toFixed(1)}× ROI</span>`;
+                }
+                
+                card.innerHTML = `
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-400 to-purple-600 flex items-center justify-center text-white font-bold text-sm mr-3">
+                                ${index + 1}
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-gray-800">${staff.name}</h3>
+                                <p class="text-xs text-gray-600">${staff.role} • ${staff.office_location}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xl font-bold ${productivityColor}">${staff.productivity_rate.toFixed(1)}%</div>
+                            <div class="text-xs text-gray-500">Productivity</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-2 mb-3">
+                        <div class="bg-blue-50 rounded p-2">
+                            <div class="text-xs text-blue-600">Tasks</div>
+                            <div class="text-sm font-bold text-blue-900">${staff.completed_tasks}/${staff.tasks_count}</div>
+                        </div>
+                        
+                        <div class="bg-green-50 rounded p-2">
+                            <div class="text-xs text-green-600">Hours</div>
+                            <div class="text-sm font-bold text-green-900">${Math.round(staff.productive_hours)}h</div>
+                        </div>
+                        
+                        <div class="bg-red-50 rounded p-2">
+                            <div class="text-xs text-red-600">Cost</div>
+                            <div class="text-sm font-bold text-red-900">${formatCurrency(staff.total_cost, 'RMB')}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t pt-2">
+                        <div class="flex justify-end gap-2">
+                            <button onclick="event.stopPropagation(); messageStaffMember('${staff.id}')" class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 font-medium" title="Send message">
+                                <i class="fas fa-comment-alt mr-1"></i> Message
+                            </button>
+                            <span class="text-xs text-gray-400 italic">Click card to view tasks</span>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Render recent tasks (top 3)
+        function renderRecentTasks(tasks) {
+            const recent = tasks.slice(0, 3);
+            if (recent.length === 0) {
+                return '<p class="text-xs text-gray-500 italic">No tasks logged this month</p>';
+            }
+            
+            return recent.map(task => `
+                <div class="text-xs text-gray-600 flex justify-between">
+                    <span class="truncate">${task.title}</span>
+                    <span class="font-medium ml-2">${task.actual_hours || 0}h</span>
+                </div>
+            `).join('');
+        }
+
+        // Global variable for current modal staff
+        let currentModalStaffId = null;
+        let currentModalStaff = null;
+        let allModalTasks = [];
+        let expandedTaskId = null; // Track which task is expanded
+
+        // Show all staff tasks in modal
+        async function showStaffTasks(staffId) {
+            const staff = staffData.find(s => s.id === staffId);
+            if (!staff) {
+                console.error('Staff not found:', staffId);
+                return;
+            }
+            
+            currentModalStaffId = staffId;
+            currentModalStaff = staff;
+            
+            // Show modal immediately with loading state
+            document.getElementById('staffTasksModal').classList.remove('hidden');
+            const tasksList = document.getElementById('modalTasksList');
+            tasksList.innerHTML = '<div class="flex items-center justify-center py-12"><i class="fas fa-spinner fa-spin text-4xl text-purple-600"></i><span class="ml-3 text-gray-600">Loading tasks...</span></div>';
+            
+            // Load ALL tasks for this staff (not just current month) for better view
+            try {
+                const response = await fetch(`tables/tasks?limit=1000`);
+                const result = await response.json();
+                const allTasks = result.data || [];
+                
+                // Filter tasks for this staff member
+                allModalTasks = allTasks.filter(t => t.assigned_to_id === staffId);
+                
+                console.log(`Loaded ${allModalTasks.length} tasks for ${staff.name}`);
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                allModalTasks = staff.tasks || [];
+            }
+            
+            // Populate modal header
+            document.getElementById('modalStaffName').textContent = staff.name || 'Unknown';
+            document.getElementById('modalStaffRole').textContent = `${staff.role || 'Staff'} • ${staff.office_location || 'Office'}`;
+            document.getElementById('modalTotalTasks').textContent = allModalTasks.length;
+            document.getElementById('modalCompletedTasks').textContent = allModalTasks.filter(t => t.status === 'Completed').length;
+            
+            // Calculate total hours from all tasks
+            const totalHours = allModalTasks.reduce((sum, t) => sum + (t.actual_hours || t.estimated_hours || 0), 0);
+            document.getElementById('modalTotalHours').textContent = `${Math.round(totalHours)}h`;
+            
+            // Calculate productivity
+            const productiveHours = allModalTasks.filter(t => t.linked_order_id).reduce((sum, t) => sum + (t.actual_hours || 0), 0);
+            const productivity = totalHours > 0 ? (productiveHours / totalHours * 100) : 0;
+            document.getElementById('modalProductivity').textContent = `${productivity.toFixed(1)}%`;
+            
+            // Reset filters
+            document.getElementById('taskStatusFilter').value = '';
+            document.getElementById('taskPriorityFilter').value = '';
+            document.getElementById('taskSearchInput').value = '';
+            
+            // Render tasks
+            renderModalTasks();
+        }
+        
+        // Close modal
+        function closeStaffTasksModal() {
+            document.getElementById('staffTasksModal').classList.add('hidden');
+            currentModalStaffId = null;
+            currentModalStaff = null;
+            allModalTasks = [];
+        }
+        
+        // Filter modal tasks
+        function filterModalTasks() {
+            renderModalTasks();
+        }
+        
+        // Render tasks in modal
+        function renderModalTasks() {
+            const statusFilter = document.getElementById('taskStatusFilter').value;
+            const priorityFilter = document.getElementById('taskPriorityFilter').value;
+            const searchQuery = document.getElementById('taskSearchInput').value.toLowerCase();
+            
+            let filteredTasks = [...allModalTasks]; // Create copy
+            
+            console.log('Total tasks:', allModalTasks.length);
+            
+            // Apply status filter
+            if (statusFilter) {
+                filteredTasks = filteredTasks.filter(task => {
+                    // Handle different status formats
+                    const taskStatus = task.status || task.task_status || '';
+                    return taskStatus.toLowerCase() === statusFilter.toLowerCase();
+                });
+            }
+            
+            // Apply priority filter
+            if (priorityFilter) {
+                filteredTasks = filteredTasks.filter(task => {
+                    const taskPriority = task.priority || '';
+                    return taskPriority === priorityFilter;
+                });
+            }
+            
+            // Apply search filter
+            if (searchQuery) {
+                filteredTasks = filteredTasks.filter(task => {
+                    const title = (task.title || '').toLowerCase();
+                    const description = (task.description || '').toLowerCase();
+                    return title.includes(searchQuery) || description.includes(searchQuery);
+                });
+            }
+            
+            console.log('Filtered tasks:', filteredTasks.length);
+            
+            const tasksList = document.getElementById('modalTasksList');
+            const emptyState = document.getElementById('modalEmptyState');
+            
+            if (filteredTasks.length === 0) {
+                tasksList.innerHTML = '';
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                
+                tasksList.innerHTML = filteredTasks.map(task => {
+                    // Normalize status (handle different formats)
+                    const taskStatus = (task.status || task.task_status || 'pending').toLowerCase().replace(/\s+/g, '_');
+                    
+                    // Status badge
+                    const statusMap = {
+                        'pending': { label: 'Pending', color: 'bg-yellow-100 text-yellow-800', icon: 'fa-clock' },
+                        'in_progress': { label: 'In Progress', color: 'bg-blue-100 text-blue-800', icon: 'fa-spinner' },
+                        'in progress': { label: 'In Progress', color: 'bg-blue-100 text-blue-800', icon: 'fa-spinner' },
+                        'completed': { label: 'Completed', color: 'bg-green-100 text-green-800', icon: 'fa-check-circle' },
+                        'overdue': { label: 'Overdue', color: 'bg-red-100 text-red-800', icon: 'fa-exclamation-circle' },
+                        'blocked': { label: 'Blocked', color: 'bg-orange-100 text-orange-800', icon: 'fa-ban' }
+                    };
+                    const statusInfo = statusMap[taskStatus] || { label: taskStatus, color: 'bg-gray-100 text-gray-800', icon: 'fa-question' };
+                    
+                    // Priority badge
+                    const priorityColors = {
+                        'Low': 'bg-gray-100 text-gray-600',
+                        'Medium': 'bg-blue-100 text-blue-700',
+                        'High': 'bg-orange-100 text-orange-700',
+                        'Critical': 'bg-red-100 text-red-700'
+                    };
+                    const taskPriority = task.priority || 'Medium';
+                    const priorityColor = priorityColors[taskPriority] || 'bg-gray-100 text-gray-600';
+                    
+                    // Due date
+                    let dueDate = 'No due date';
+                    let isOverdue = false;
+                    if (task.due_date) {
+                        try {
+                            const dueDateObj = new Date(task.due_date);
+                            dueDate = dueDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            isOverdue = dueDateObj < new Date() && taskStatus !== 'completed';
+                        } catch (e) {
+                            dueDate = task.due_date;
+                        }
+                    }
+                    
+                    // Project name
+                    const projectName = task.project_name || task.project_title || '';
+                    
+                    // Hours
+                    const hours = task.actual_hours || task.estimated_hours || 0;
+                    
+                    // Check if this task is expanded
+                    const isExpanded = expandedTaskId === task.id;
+                    
+                    return `
+                        <div class="bg-white border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition hover:shadow-sm ${isExpanded ? 'border-purple-400 shadow-md' : ''}">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-900 mb-1">${task.title || 'Untitled Task'}</h4>
+                                    ${!isExpanded && task.description ? `<p class="text-sm text-gray-600 mb-2 line-clamp-2">${task.description}</p>` : ''}
+                                </div>
+                                <div class="flex gap-2 ml-4 flex-shrink-0">
+                                    <button onclick="quickToggleStatus('${task.id}', event)" 
+                                            class="text-xs px-2 py-1 rounded-full ${statusInfo.color} font-medium whitespace-nowrap hover:opacity-80 transition cursor-pointer"
+                                            title="Click to change status">
+                                        <i class="fas ${statusInfo.icon} mr-1"></i>${statusInfo.label}
+                                    </button>
+                                    <span class="text-xs px-2 py-1 rounded-full ${priorityColor} font-medium whitespace-nowrap">
+                                        ${taskPriority}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            ${isExpanded ? `
+                                <div class="bg-gray-50 rounded-lg p-4 mb-3 border-l-4 border-purple-400">
+                                    <h5 class="font-semibold text-gray-700 mb-2"><i class="fas fa-info-circle text-purple-600 mr-2"></i>Full Description</h5>
+                                    <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">${task.description || 'No description provided.'}</p>
+                                    
+                                    <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
+                                        <div>
+                                            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Created</p>
+                                            <p class="text-sm font-medium">${task.created_at ? new Date(task.created_at).toLocaleDateString() : 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Updated</p>
+                                            <p class="text-sm font-medium">${task.updated_at ? new Date(task.updated_at).toLocaleDateString() : 'N/A'}</p>
+                                        </div>
+                                        ${task.linked_order_id ? `
+                                            <div class="col-span-2">
+                                                <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Linked Order</p>
+                                                <p class="text-sm font-medium text-purple-600">${task.linked_order_id}</p>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="flex items-center justify-between text-sm text-gray-600">
+                                <div class="flex items-center gap-4 flex-wrap">
+                                    ${projectName ? `
+                                        <span class="flex items-center">
+                                            <i class="fas fa-folder text-purple-500 mr-1"></i>
+                                            <span class="truncate max-w-[150px]">${projectName}</span>
+                                        </span>
+                                    ` : ''}
+                                    <span class="flex items-center ${isOverdue ? 'text-red-600 font-medium' : ''}">
+                                        <i class="fas fa-calendar mr-1"></i>
+                                        ${dueDate}
+                                        ${isOverdue ? ' ⚠️' : ''}
+                                    </span>
+                                    <span class="flex items-center">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        ${hours}h
+                                    </span>
+                                </div>
+                                <button onclick="viewTaskDetails('${task.id}')" class="text-purple-600 hover:text-purple-700 font-medium whitespace-nowrap">
+                                    ${isExpanded ? '<i class="fas fa-chevron-up mr-1"></i>Hide Details' : '<i class="fas fa-chevron-down mr-1"></i>View Details'}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // Update task count
+            document.getElementById('modalTaskCount').textContent = filteredTasks.length;
+        }
+
+        // View task details (expand/collapse task card)
+        function viewTaskDetails(taskId) {
+            if (expandedTaskId === taskId) {
+                // Collapse if already expanded
+                expandedTaskId = null;
+            } else {
+                // Expand this task
+                expandedTaskId = taskId;
+            }
+            renderModalTasks();
+        }
+        
+        // Quick status toggle - click status badge to cycle through states
+        async function quickToggleStatus(taskId, event) {
+            event.stopPropagation(); // Prevent card click
+            
+            const task = allModalTasks.find(t => t.id === taskId);
+            if (!task) return;
+            
+            // Status cycle: Pending → In Progress → Completed → Pending
+            const statusCycle = {
+                'pending': 'in_progress',
+                'Pending': 'in_progress',
+                'in_progress': 'completed',
+                'In Progress': 'completed',
+                'in progress': 'completed',
+                'completed': 'pending',
+                'Completed': 'pending'
+            };
+            
+            const currentStatus = task.status || 'pending';
+            const newStatus = statusCycle[currentStatus] || 'in_progress';
+            
+            // Update in database
+            try {
+                const response = await fetch(`tables/tasks/${taskId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                if (response.ok) {
+                    // Update local data
+                    task.status = newStatus;
+                    
+                    // Recalculate stats
+                    document.getElementById('modalCompletedTasks').textContent = 
+                        allModalTasks.filter(t => t.status === 'completed' || t.status === 'Completed').length;
+                    
+                    // Re-render
+                    renderModalTasks();
+                    
+                    console.log(`Task ${taskId} status updated to ${newStatus}`);
+                } else {
+                    console.error('Failed to update task status');
+                    alert('Failed to update task status. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error updating task status:', error);
+                alert('Error updating task status. Please check your connection.');
+            }
+        }
+        
+        // Message staff member - simple implementation
+        function messageStaffMember(staffId) {
+            const staff = staffData.find(s => s.id === staffId);
+            if (!staff) return;
+            
+            // Simple prompt-based messaging (can be upgraded to modal later)
+            const message = prompt(`Send message to ${staff.name}:`);
+            if (message && message.trim()) {
+                // In a real system, this would send to a messaging API
+                alert(`Message sent to ${staff.name}: "${message}"\n\n(This is a demo - integrate with your messaging system)`);
+                console.log(`Message to ${staff.name} (${staffId}): ${message}`);
+            }
+        }
+
+        // Format currency
+        function formatCurrency(amount, currency) {
+            const symbols = { 'RMB': '¥', 'EUR': '€', 'USD': '$' };
+            return (symbols[currency] || '¥') + Math.round(amount).toLocaleString();
+        }
+
+        // Close modal on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !document.getElementById('staffTasksModal').classList.contains('hidden')) {
+                closeStaffTasksModal();
+            }
+        });
+        
+        // Close modal on outside click
+        document.getElementById('staffTasksModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'staffTasksModal') {
+                closeStaffTasksModal();
+            }
+        });
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            // Initialize i18n first
+            window.i18n = new I18nSystem();
+            window.i18n.translatePage();
+            
+            // Update language label
+            const label = document.getElementById('languageLabel');
+            if (label) {
+                label.textContent = window.i18n.currentLanguage === 'en' ? '中文' : 'English';
+            }
+            
+            // Then initialize the page
+            init();
+        });
+    </script>
+</body>
+</html>

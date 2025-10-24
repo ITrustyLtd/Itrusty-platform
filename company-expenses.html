@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Expenses & Payroll - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        .category-payroll { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .category-rent { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .category-samples { background: linear-gradient(135deg, #10b981, #059669); }
+        .category-entertainment { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .category-other { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        
+        .status-paid { background-color: #d1fae5; color: #065f46; }
+        .status-pending { background-color: #fef3c7; color: #92400e; }
+        .status-scheduled { background-color: #dbeafe; color: #1e40af; }
+        .status-cancelled { background-color: #fee2e2; color: #991b1b; }
+        
+        .table-row:hover { background-color: #f9fafb; }
+        .cell-editable:hover { background-color: #fef3c7; cursor: pointer; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white border-b shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-receipt text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Company Expenses & Payroll</h1>
+                        <p class="text-sm text-gray-500">Track monthly salaries, rent, samples, entertainment & operational costs</p>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3">
+                    <a href="index.html" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </a>
+                    <a href="finance.html" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-university mr-2"></i>Financial Management
+                    </a>
+                    <button onclick="exportToExcel()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        <i class="fas fa-file-excel mr-2"></i>Export
+                    </button>
+                    <button onclick="openAddExpenseModal()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                        <i class="fas fa-plus mr-2"></i>Add Expense
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg">
+                <div class="text-sm opacity-90 mb-1">Total Payroll</div>
+                <div class="text-3xl font-bold" id="totalPayroll">¥0</div>
+                <div class="text-xs opacity-75 mt-2">Monthly recurring</div>
+            </div>
+            
+            <div class="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-6 rounded-lg shadow-lg">
+                <div class="text-sm opacity-90 mb-1">Office Rent</div>
+                <div class="text-3xl font-bold" id="totalRent">¥0</div>
+                <div class="text-xs opacity-75 mt-2">Annual total</div>
+            </div>
+            
+            <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-lg shadow-lg">
+                <div class="text-sm opacity-90 mb-1">Samples & R&D</div>
+                <div class="text-3xl font-bold" id="totalSamples">¥0</div>
+                <div class="text-xs opacity-75 mt-2">Non-billable</div>
+            </div>
+            
+            <div class="bg-gradient-to-br from-red-500 to-red-600 text-white p-6 rounded-lg shadow-lg">
+                <div class="text-sm opacity-90 mb-1">Entertainment</div>
+                <div class="text-3xl font-bold" id="totalEntertainment">¥0</div>
+                <div class="text-xs opacity-75 mt-2">Customer dinners</div>
+            </div>
+            
+            <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-lg shadow-lg">
+                <div class="text-sm opacity-90 mb-1">Other Expenses</div>
+                <div class="text-3xl font-bold" id="totalOther">¥0</div>
+                <div class="text-xs opacity-75 mt-2">Miscellaneous</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                    <select id="filterCategory" onchange="filterExpenses()" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="">All Categories</option>
+                        <option value="Payroll">Payroll</option>
+                        <option value="Office Rent">Office Rent</option>
+                        <option value="Samples">Samples</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Utilities">Utilities</option>
+                        <option value="Travel">Travel</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Office</label>
+                    <select id="filterOffice" onchange="filterExpenses()" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="">All Offices</option>
+                        <option value="Yiwu">Yiwu</option>
+                        <option value="Shenzhen">Shenzhen</option>
+                        <option value="Greece">Greece</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select id="filterStatus" onchange="filterExpenses()" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="">All Status</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Scheduled">Scheduled</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Month</label>
+                    <input type="month" id="filterMonth" onchange="filterExpenses()" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" id="searchTerm" oninput="filterExpenses()" placeholder="Search payee, notes..." class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                </div>
+            </div>
+        </div>
+
+        <!-- Expenses Table -->
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="overflow-x-auto" style="max-height: 600px;">
+                <table class="w-full">
+                    <thead class="bg-gray-100 sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">#</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Category</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Payee</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Date</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Amount</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Office</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Bank Account</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Recurring</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensesTableBody">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">Expenses by Category</h3>
+                <div style="height: 300px;">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">Expenses by Office</h3>
+                <div style="height: 300px;">
+                    <canvas id="officeChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Expense Modal -->
+    <div id="addExpenseModal" class="fixed inset-0 bg-black bg-opacity-50 z-[9999] hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white border-b p-6 z-10">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-2xl font-bold text-gray-900">
+                            <i class="fas fa-plus-circle text-purple-600 mr-2"></i>
+                            Add Company Expense
+                        </h3>
+                        <button onclick="closeAddExpenseModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <form id="addExpenseForm" class="space-y-6">
+                        <!-- Category & Date -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                                <select id="addCategory" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="">Select category...</option>
+                                    <option value="Payroll">Payroll</option>
+                                    <option value="Office Rent">Office Rent</option>
+                                    <option value="Samples">Samples</option>
+                                    <option value="Entertainment">Entertainment</option>
+                                    <option value="Utilities">Utilities</option>
+                                    <option value="Travel">Travel</option>
+                                    <option value="Marketing">Marketing</option>
+                                    <option value="Supplies">Supplies</option>
+                                    <option value="Professional Services">Professional Services</option>
+                                    <option value="Insurance">Insurance</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Subcategory</label>
+                                <input type="text" id="addSubcategory" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="e.g., Staff Salary, Manager">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Expense Date *</label>
+                                <input type="date" id="addExpenseDate" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                        </div>
+                        
+                        <!-- Payee & Office -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Payee *</label>
+                                <input type="text" id="addPayee" required class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Staff name, vendor, supplier...">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Office *</label>
+                                <select id="addOffice" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="">Select office...</option>
+                                    <option value="Yiwu">Yiwu</option>
+                                    <option value="Shenzhen">Shenzhen</option>
+                                    <option value="Greece">Greece</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Financial Details -->
+                        <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                            <h4 class="font-semibold text-gray-900 mb-3">Payment Details</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Amount *</label>
+                                    <input type="number" step="0.01" id="addAmount" required class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="0.00">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Currency *</label>
+                                    <select id="addCurrency" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                        <option value="RMB">RMB (¥)</option>
+                                        <option value="EUR">EUR (€)</option>
+                                        <option value="USD">USD ($)</option>
+                                        <option value="GBP">GBP (£)</option>
+                                        <option value="HKD">HKD (HK$)</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+                                    <select id="addStatus" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                        <option value="Scheduled">Scheduled</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Paid">Paid</option>
+                                        <option value="Cancelled">Cancelled</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Bank & Payment Method -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Bank Account (Paid From)</label>
+                                <select id="addBankAccount" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="">Select bank account...</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                                <select id="addPaymentMethod" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="Bank Transfer">Bank Transfer</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Alipay">Alipay</option>
+                                    <option value="WeChat Pay">WeChat Pay</option>
+                                    <option value="Credit Card">Credit Card</option>
+                                    <option value="Check">Check</option>
+                                    <option value="Wire Transfer">Wire Transfer</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Recurring Settings -->
+                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <input type="checkbox" id="addRecurring" onchange="toggleRecurringFields()" class="w-4 h-4">
+                                <span>Recurring Expense</span>
+                            </h4>
+                            <div id="recurringFields" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
+                                    <select id="addRecurringFrequency" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                        <option value="Monthly">Monthly</option>
+                                        <option value="Quarterly">Quarterly</option>
+                                        <option value="Yearly">Yearly</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Day of Month</label>
+                                    <input type="number" min="1" max="31" id="addRecurringDay" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="30">
+                                    <p class="text-xs text-gray-500 mt-1">For monthly payments (e.g., 23 for Ruby, 30 for others)</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notes & Invoice -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Invoice Number</label>
+                                <input type="text" id="addInvoiceNumber" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="EXP-2025-001">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                            <textarea id="addNotes" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Additional details..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="sticky bottom-0 bg-gray-50 border-t p-6 flex justify-end items-center gap-3">
+                    <button type="button" onclick="closeAddExpenseModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                    <button type="button" onclick="saveNewExpense()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2">
+                        <i class="fas fa-check"></i>
+                        Create Expense
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Expense Modal -->
+    <div id="editExpenseModal" class="fixed inset-0 bg-black bg-opacity-50 z-[9999] hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white border-b p-6 z-10">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-2xl font-bold text-gray-900">
+                            <i class="fas fa-edit text-blue-600 mr-2"></i>
+                            Edit Company Expense
+                        </h3>
+                        <button onclick="closeEditExpenseModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <form id="editExpenseForm" class="space-y-6">
+                        <input type="hidden" id="editExpenseId">
+                        
+                        <!-- Category & Date -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                                <select id="editCategory" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="">Select category...</option>
+                                    <option value="Payroll">Payroll</option>
+                                    <option value="Office Rent">Office Rent</option>
+                                    <option value="Samples">Samples</option>
+                                    <option value="Entertainment">Entertainment</option>
+                                    <option value="Utilities">Utilities</option>
+                                    <option value="Travel">Travel</option>
+                                    <option value="Marketing">Marketing</option>
+                                    <option value="Supplies">Supplies</option>
+                                    <option value="Professional Services">Professional Services</option>
+                                    <option value="Insurance">Insurance</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Subcategory</label>
+                                <input type="text" id="editSubcategory" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="e.g., Staff Salary, Manager">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Expense Date *</label>
+                                <input type="date" id="editExpenseDate" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                        </div>
+                        
+                        <!-- Payee & Office -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Payee *</label>
+                                <input type="text" id="editPayee" required class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Staff name, vendor, supplier...">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Office *</label>
+                                <select id="editOffice" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="">Select office...</option>
+                                    <option value="Yiwu">Yiwu</option>
+                                    <option value="Shenzhen">Shenzhen</option>
+                                    <option value="Greece">Greece</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Financial Details -->
+                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <h4 class="font-semibold text-gray-900 mb-3">Payment Details</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Amount *</label>
+                                    <input type="number" step="0.01" id="editAmount" required class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="0.00">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Currency *</label>
+                                    <select id="editCurrency" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                        <option value="RMB">RMB (¥)</option>
+                                        <option value="EUR">EUR (€)</option>
+                                        <option value="USD">USD ($)</option>
+                                        <option value="GBP">GBP (£)</option>
+                                        <option value="HKD">HKD (HK$)</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+                                    <select id="editStatus" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                        <option value="Scheduled">Scheduled</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Paid">Paid</option>
+                                        <option value="Cancelled">Cancelled</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Bank & Payment Method -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Bank Account (Paid From)</label>
+                                <select id="editBankAccount" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="">Select bank account...</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                                <select id="editPaymentMethod" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="Bank Transfer">Bank Transfer</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Alipay">Alipay</option>
+                                    <option value="WeChat Pay">WeChat Pay</option>
+                                    <option value="Credit Card">Credit Card</option>
+                                    <option value="Check">Check</option>
+                                    <option value="Wire Transfer">Wire Transfer</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Recurring Settings -->
+                        <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                            <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <input type="checkbox" id="editRecurring" onchange="toggleEditRecurringFields()" class="w-4 h-4">
+                                <span>Recurring Expense</span>
+                            </h4>
+                            <div id="editRecurringFields" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
+                                    <select id="editRecurringFrequency" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                        <option value="Monthly">Monthly</option>
+                                        <option value="Quarterly">Quarterly</option>
+                                        <option value="Yearly">Yearly</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Day of Month</label>
+                                    <input type="number" min="1" max="31" id="editRecurringDay" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="30">
+                                    <p class="text-xs text-gray-500 mt-1">For monthly payments (e.g., 23 for Ruby, 30 for others)</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notes & Invoice -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Invoice Number</label>
+                                <input type="text" id="editInvoiceNumber" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="EXP-2025-001">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                            <textarea id="editNotes" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Additional details..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="sticky bottom-0 bg-gray-50 border-t p-6 flex justify-between items-center">
+                    <button type="button" onclick="deleteExpenseFromModal()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2">
+                        <i class="fas fa-trash"></i>
+                        Delete
+                    </button>
+                    <div class="flex gap-3">
+                        <button type="button" onclick="closeEditExpenseModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                        <button type="button" onclick="saveEditedExpense()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                            <i class="fas fa-check"></i>
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let expenses = [];
+        let filteredExpenses = [];
+        let bankAccounts = [];
+
+        // Load data on page load
+        async function loadData() {
+            console.log('🔄 Loading company expenses data...');
+            try {
+                // Load expenses
+                const expensesResponse = await fetch('tables/company_expenses?limit=1000&sort=-expense_date');
+                if (expensesResponse.ok) {
+                    const data = await expensesResponse.json();
+                    expenses = data.data || [];
+                    console.log('✅ Loaded', expenses.length, 'expenses from API');
+                    localStorage.setItem('company_expenses', JSON.stringify(expenses));
+                } else {
+                    const stored = localStorage.getItem('company_expenses');
+                    if (stored) {
+                        expenses = JSON.parse(stored);
+                        console.log('✅ Loaded expenses from localStorage (backup)');
+                    }
+                }
+                
+                // Load bank accounts from Financial Management
+                const bankResponse = await fetch('tables/financial_accounts?limit=100');
+                if (bankResponse.ok) {
+                    const data = await bankResponse.json();
+                    bankAccounts = data.data || [];
+                    console.log('✅ Loaded', bankAccounts.length, 'bank accounts from financial_accounts table');
+                    localStorage.setItem('bank_accounts', JSON.stringify(bankAccounts));
+                } else {
+                    const stored = localStorage.getItem('bank_accounts');
+                    if (stored) {
+                        bankAccounts = JSON.parse(stored);
+                        console.log('✅ Loaded bank accounts from localStorage (backup)');
+                    }
+                }
+                
+                filterExpenses();
+            } catch (error) {
+                console.error('Error loading data from API, falling back to localStorage:', error);
+                const stored = localStorage.getItem('company_expenses');
+                if (stored) {
+                    expenses = JSON.parse(stored);
+                    console.log('✅ Loaded expenses from localStorage (error fallback)');
+                }
+                const storedBanks = localStorage.getItem('bank_accounts');
+                if (storedBanks) {
+                    bankAccounts = JSON.parse(storedBanks);
+                    console.log('✅ Loaded bank accounts from localStorage (error fallback)');
+                }
+                filterExpenses();
+            }
+        }
+
+        // Filter expenses
+        function filterExpenses() {
+            const category = document.getElementById('filterCategory').value;
+            const office = document.getElementById('filterOffice').value;
+            const status = document.getElementById('filterStatus').value;
+            const month = document.getElementById('filterMonth').value;
+            const search = document.getElementById('searchTerm').value.toLowerCase();
+            
+            filteredExpenses = expenses.filter(exp => {
+                const matchCategory = !category || exp.expense_category === category;
+                const matchOffice = !office || exp.office === office;
+                const matchStatus = !status || exp.status === status;
+                const matchMonth = !month || exp.expense_date?.startsWith(month);
+                const matchSearch = !search || 
+                    exp.payee?.toLowerCase().includes(search) ||
+                    exp.notes?.toLowerCase().includes(search) ||
+                    exp.expense_category?.toLowerCase().includes(search);
+                
+                return matchCategory && matchOffice && matchStatus && matchMonth && matchSearch;
+            });
+            
+            renderTable();
+            updateDashboard();
+            renderCharts();
+        }
+
+        // Render table
+        function renderTable() {
+            const tbody = document.getElementById('expensesTableBody');
+            tbody.innerHTML = filteredExpenses.map((exp, index) => `
+                <tr class="table-row border-b" onclick="openEditExpenseModal('${exp.id}')">
+                    <td class="px-4 py-3 text-sm">${index + 1}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <span class="px-2 py-1 rounded text-xs font-semibold category-${exp.expense_category?.toLowerCase().replace(' ', '-')}">${exp.expense_category || 'N/A'}</span>
+                    </td>
+                    <td class="px-4 py-3 text-sm font-medium">${exp.payee || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm">${exp.expense_date || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm font-bold">${formatCurrency(exp.amount, exp.currency)}</td>
+                    <td class="px-4 py-3 text-sm">${exp.office || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${exp.bank_account || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <span class="px-2 py-1 rounded text-xs font-semibold status-${exp.status?.toLowerCase()}">${exp.status || 'N/A'}</span>
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                        ${exp.recurring ? `<span class="text-green-600"><i class="fas fa-sync-alt mr-1"></i>${exp.recurring_frequency}</span>` : '<span class="text-gray-400">One-time</span>'}
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="event.stopPropagation(); openEditExpenseModal('${exp.id}')" class="text-blue-600 hover:text-blue-800 mr-2">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="event.stopPropagation(); deleteExpense('${exp.id}')" class="text-red-600 hover:text-red-800">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Update dashboard
+        function updateDashboard() {
+            const payroll = filteredExpenses.filter(e => e.expense_category === 'Payroll').reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+            const rent = filteredExpenses.filter(e => e.expense_category === 'Office Rent').reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+            const samples = filteredExpenses.filter(e => e.expense_category === 'Samples').reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+            const entertainment = filteredExpenses.filter(e => e.expense_category === 'Entertainment').reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+            const other = filteredExpenses.filter(e => !['Payroll', 'Office Rent', 'Samples', 'Entertainment'].includes(e.expense_category)).reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+            
+            document.getElementById('totalPayroll').textContent = '¥' + formatNumber(payroll);
+            document.getElementById('totalRent').textContent = '¥' + formatNumber(rent);
+            document.getElementById('totalSamples').textContent = '¥' + formatNumber(samples);
+            document.getElementById('totalEntertainment').textContent = '¥' + formatNumber(entertainment);
+            document.getElementById('totalOther').textContent = '¥' + formatNumber(other);
+        }
+
+        // Render charts
+        function renderCharts() {
+            // Category chart
+            const categoryData = {};
+            filteredExpenses.forEach(exp => {
+                const cat = exp.expense_category || 'Other';
+                categoryData[cat] = (categoryData[cat] || 0) + (parseFloat(exp.amount) || 0);
+            });
+            
+            const ctx1 = document.getElementById('categoryChart');
+            if (window.categoryChartInstance) window.categoryChartInstance.destroy();
+            window.categoryChartInstance = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(categoryData),
+                    datasets: [{
+                        data: Object.values(categoryData),
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(139, 92, 246, 0.8)',
+                            'rgba(236, 72, 153, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+            
+            // Office chart
+            const officeData = {};
+            filteredExpenses.forEach(exp => {
+                const office = exp.office || 'Unknown';
+                officeData[office] = (officeData[office] || 0) + (parseFloat(exp.amount) || 0);
+            });
+            
+            const ctx2 = document.getElementById('officeChart');
+            if (window.officeChartInstance) window.officeChartInstance.destroy();
+            window.officeChartInstance = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(officeData),
+                    datasets: [{
+                        label: 'Total Expenses',
+                        data: Object.values(officeData),
+                        backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(245, 158, 11, 0.8)', 'rgba(16, 185, 129, 0.8)']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Format currency
+        function formatCurrency(amount, currency) {
+            const symbols = { RMB: '¥', EUR: '€', USD: '$', GBP: '£', HKD: 'HK$' };
+            return (symbols[currency] || '') + formatNumber(amount || 0);
+        }
+
+        // Format number
+        function formatNumber(num) {
+            return (parseFloat(num) || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        // Open add expense modal
+        function openAddExpenseModal() {
+            // Set today's date
+            document.getElementById('addExpenseDate').value = new Date().toISOString().split('T')[0];
+            
+            // Populate bank accounts
+            const bankSelect = document.getElementById('addBankAccount');
+            bankSelect.innerHTML = '<option value="">Select bank account...</option>';
+            bankAccounts.filter(b => b.active).forEach(b => {
+                const option = document.createElement('option');
+                option.value = b.account_name;
+                option.textContent = `${b.account_name} (${b.currency})`;
+                bankSelect.appendChild(option);
+            });
+            
+            document.getElementById('addExpenseModal').classList.remove('hidden');
+        }
+
+        // Close add expense modal
+        function closeAddExpenseModal() {
+            document.getElementById('addExpenseModal').classList.add('hidden');
+            document.getElementById('addExpenseForm').reset();
+        }
+
+        // Toggle recurring fields
+        function toggleRecurringFields() {
+            const isRecurring = document.getElementById('addRecurring').checked;
+            document.getElementById('recurringFields').classList.toggle('hidden', !isRecurring);
+        }
+
+        // Save new expense
+        async function saveNewExpense() {
+            const newExpense = {
+                expense_category: document.getElementById('addCategory').value,
+                subcategory: document.getElementById('addSubcategory').value,
+                expense_date: document.getElementById('addExpenseDate').value,
+                payee: document.getElementById('addPayee').value,
+                office: document.getElementById('addOffice').value,
+                amount: parseFloat(document.getElementById('addAmount').value) || 0,
+                currency: document.getElementById('addCurrency').value,
+                status: document.getElementById('addStatus').value,
+                bank_account: document.getElementById('addBankAccount').value,
+                payment_method: document.getElementById('addPaymentMethod').value,
+                recurring: document.getElementById('addRecurring').checked,
+                recurring_frequency: document.getElementById('addRecurring').checked ? document.getElementById('addRecurringFrequency').value : 'One-time',
+                recurring_day: document.getElementById('addRecurring').checked ? parseInt(document.getElementById('addRecurringDay').value) || 30 : null,
+                invoice_number: document.getElementById('addInvoiceNumber').value,
+                notes: document.getElementById('addNotes').value,
+                created_by: 'Johny'
+            };
+            
+            if (!newExpense.expense_category || !newExpense.payee || !newExpense.office) {
+                alert('⚠️ Please fill in required fields');
+                return;
+            }
+            
+            try {
+                const response = await fetch('tables/company_expenses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newExpense)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    expenses.unshift(result);
+                    localStorage.setItem('company_expenses', JSON.stringify(expenses));
+                    closeAddExpenseModal();
+                    filterExpenses();
+                    alert('✅ Expense added successfully!');
+                } else {
+                    alert('❌ Failed to add expense');
+                }
+            } catch (error) {
+                console.error('Error adding expense:', error);
+                alert('❌ Error adding expense');
+            }
+        }
+
+        // Delete expense
+        async function deleteExpense(expenseId) {
+            if (!confirm('⚠️ Are you sure you want to delete this expense?')) return;
+            
+            try {
+                const response = await fetch(`tables/company_expenses/${expenseId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok || response.status === 204) {
+                    const index = expenses.findIndex(e => e.id === expenseId);
+                    if (index !== -1) {
+                        expenses.splice(index, 1);
+                    }
+                    localStorage.setItem('company_expenses', JSON.stringify(expenses));
+                    filterExpenses();
+                    alert('✅ Expense deleted successfully!');
+                } else {
+                    alert('❌ Failed to delete expense');
+                }
+            } catch (error) {
+                console.error('Error deleting expense:', error);
+                alert('❌ Error deleting expense');
+            }
+        }
+
+        // ========== EDIT MODAL FUNCTIONS ==========
+        
+        // Open edit expense modal
+        async function openEditExpenseModal(expenseId) {
+            const expense = expenses.find(e => e.id === expenseId);
+            if (!expense) {
+                alert('❌ Expense not found');
+                return;
+            }
+            
+            // Populate form fields
+            document.getElementById('editExpenseId').value = expense.id;
+            document.getElementById('editCategory').value = expense.expense_category || '';
+            document.getElementById('editSubcategory').value = expense.subcategory || '';
+            document.getElementById('editExpenseDate').value = expense.expense_date || '';
+            document.getElementById('editPayee').value = expense.payee || '';
+            document.getElementById('editOffice').value = expense.office || '';
+            document.getElementById('editAmount').value = expense.amount || 0;
+            document.getElementById('editCurrency').value = expense.currency || 'RMB';
+            document.getElementById('editStatus').value = expense.status || 'Paid';
+            document.getElementById('editBankAccount').value = expense.bank_account || '';
+            document.getElementById('editPaymentMethod').value = expense.payment_method || '';
+            document.getElementById('editRecurring').checked = expense.recurring || false;
+            document.getElementById('editRecurringFrequency').value = expense.recurring_frequency || 'Monthly';
+            document.getElementById('editRecurringDay').value = expense.recurring_day || 30;
+            document.getElementById('editInvoiceNumber').value = expense.invoice_number || '';
+            document.getElementById('editNotes').value = expense.notes || '';
+            
+            // Populate bank accounts dropdown
+            const bankSelect = document.getElementById('editBankAccount');
+            bankSelect.innerHTML = '<option value="">Select Bank Account</option>';
+            bankAccounts.forEach(bank => {
+                const option = document.createElement('option');
+                option.value = bank.account_name;
+                option.textContent = `${bank.account_name} (${bank.currency})`;
+                if (bank.account_name === expense.bank_account) {
+                    option.selected = true;
+                }
+                bankSelect.appendChild(option);
+            });
+            
+            // Show/hide recurring fields
+            toggleEditRecurringFields();
+            
+            // Show modal
+            document.getElementById('editExpenseModal').classList.remove('hidden');
+        }
+        
+        // Close edit expense modal
+        function closeEditExpenseModal() {
+            document.getElementById('editExpenseModal').classList.add('hidden');
+            // Reset form
+            document.getElementById('editExpenseId').value = '';
+        }
+        
+        // Toggle edit recurring fields
+        function toggleEditRecurringFields() {
+            const isRecurring = document.getElementById('editRecurring').checked;
+            const recurringFields = document.getElementById('editRecurringFields');
+            if (isRecurring) {
+                recurringFields.classList.remove('hidden');
+            } else {
+                recurringFields.classList.add('hidden');
+            }
+        }
+        
+        // Save edited expense
+        async function saveEditedExpense() {
+            const expenseId = document.getElementById('editExpenseId').value;
+            
+            const updatedExpense = {
+                expense_category: document.getElementById('editCategory').value,
+                subcategory: document.getElementById('editSubcategory').value,
+                expense_date: document.getElementById('editExpenseDate').value,
+                payee: document.getElementById('editPayee').value,
+                office: document.getElementById('editOffice').value,
+                amount: parseFloat(document.getElementById('editAmount').value) || 0,
+                currency: document.getElementById('editCurrency').value,
+                status: document.getElementById('editStatus').value,
+                bank_account: document.getElementById('editBankAccount').value,
+                payment_method: document.getElementById('editPaymentMethod').value,
+                recurring: document.getElementById('editRecurring').checked,
+                recurring_frequency: document.getElementById('editRecurringFrequency').value,
+                recurring_day: parseInt(document.getElementById('editRecurringDay').value) || 30,
+                invoice_number: document.getElementById('editInvoiceNumber').value,
+                notes: document.getElementById('editNotes').value
+            };
+            
+            try {
+                const response = await fetch(`tables/company_expenses/${expenseId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedExpense)
+                });
+                
+                if (response.ok) {
+                    const savedExpense = await response.json();
+                    
+                    // Update local array
+                    const index = expenses.findIndex(e => e.id === expenseId);
+                    if (index !== -1) {
+                        expenses[index] = savedExpense;
+                    }
+                    
+                    // Update localStorage
+                    localStorage.setItem('company_expenses', JSON.stringify(expenses));
+                    
+                    // Refresh UI
+                    filterExpenses();
+                    
+                    // Close modal and show success
+                    closeEditExpenseModal();
+                    alert('✅ Expense updated successfully!');
+                } else {
+                    alert('❌ Failed to update expense');
+                }
+            } catch (error) {
+                console.error('Error updating expense:', error);
+                alert('❌ Error updating expense');
+            }
+        }
+        
+        // Delete expense from modal
+        async function deleteExpenseFromModal() {
+            const expenseId = document.getElementById('editExpenseId').value;
+            
+            // Close modal first
+            closeEditExpenseModal();
+            
+            // Call existing delete function
+            await deleteExpense(expenseId);
+        }
+
+        // Export to Excel
+        function exportToExcel() {
+            const csv = [
+                ['#', 'Category', 'Subcategory', 'Payee', 'Date', 'Amount', 'Currency', 'Office', 'Bank Account', 'Payment Method', 'Status', 'Recurring', 'Frequency', 'Notes'].join(','),
+                ...filteredExpenses.map((exp, i) => [
+                    i + 1,
+                    exp.expense_category || '',
+                    exp.subcategory || '',
+                    exp.payee || '',
+                    exp.expense_date || '',
+                    exp.amount || 0,
+                    exp.currency || '',
+                    exp.office || '',
+                    exp.bank_account || '',
+                    exp.payment_method || '',
+                    exp.status || '',
+                    exp.recurring ? 'Yes' : 'No',
+                    exp.recurring_frequency || '',
+                    (exp.notes || '').replace(/,/g, ';')
+                ].join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `company-expenses-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

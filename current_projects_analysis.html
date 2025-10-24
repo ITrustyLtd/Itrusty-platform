@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Trusty Ltd - Request Operations Board</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="js/supabase-config.js"></script>
+    <script src="js/global-navigation.js"></script>
+    <style>
+        .focus-score-bar {
+            background: linear-gradient(90deg, #f87171 0%, #fbbf24 50%, #10b981 100%);
+        }
+        .priority-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .priority-low { background-color: #9ca3af; }
+        .priority-medium { background-color: #f59e0b; }
+        .priority-high { background-color: #ea580c; }
+        .priority-critical { background-color: #dc2626; }
+        .stage-tag {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <!-- Header -->
+    <header class="bg-white border-b shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-tasks text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900" data-i18n="app.title">I Trusty Request Ops</h1>
+                        <p class="text-sm text-gray-500" data-i18n="app.subtitle">Professional Request Management System</p>
+                    </div>
+                </div>
+                
+                <!-- Language Switcher -->
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <button onclick="toggleLanguageMenu()" class="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <span id="currentLanguageFlag">🇬🇷</span>
+                            <span id="currentLanguageName">Ελληνικά</span>
+                            <i class="fas fa-chevron-down text-sm"></i>
+                        </button>
+                        
+                        <div id="languageMenu" class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
+                            <div class="py-1">
+                                <button onclick="changeLanguage('el')" class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-3 lang-option" data-lang="el">
+                                    <span>🇬🇷</span>
+                                    <span>Ελληνικά</span>
+                                    <i class="fas fa-check text-blue-600 ml-auto hidden"></i>
+                                </button>
+                                <button onclick="changeLanguage('en')" class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-3 lang-option" data-lang="en">
+                                    <span>🇺🇸</span>
+                                    <span>English</span>
+                                    <i class="fas fa-check text-blue-600 ml-auto hidden"></i>
+                                </button>
+                                <button onclick="changeLanguage('zh-CN')" class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-3 lang-option" data-lang="zh-CN">
+                                    <span>🇨🇳</span>
+                                    <span>中文</span>
+                                    <i class="fas fa-check text-blue-600 ml-auto hidden"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="flex gap-4">
+                    <div class="text-center">
+                        <div id="totalRequests" class="text-2xl font-bold text-blue-600">-</div>
+                        <div class="text-xs text-gray-500" data-i18n="stats.total">Total</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="activeRequests" class="text-2xl font-bold text-green-600">-</div>
+                        <div class="text-xs text-gray-500" data-i18n="stats.active">Active</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="criticalRequests" class="text-2xl font-bold text-red-600">-</div>
+                        <div class="text-xs text-gray-500" data-i18n="stats.critical">Critical</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="totalValue" class="text-2xl font-bold text-purple-600">-</div>
+                        <div class="text-xs text-gray-500" data-i18n="stats.totalValue">Total Value</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex space-x-8">
+                <button onclick="showTab('dashboard')" class="tab-btn py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600" data-tab="dashboard">
+                    <i class="fas fa-chart-line mr-2"></i><span data-i18n="nav.dashboard">Dashboard</span>
+                </button>
+                <button onclick="showTab('kanban')" class="tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="kanban">
+                    <i class="fas fa-columns mr-2"></i><span data-i18n="nav.kanban">Kanban</span>
+                </button>
+                <button onclick="showTab('table')" class="tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="table">
+                    <i class="fas fa-table mr-2"></i><span data-i18n="nav.table">Table View</span>
+                </button>
+                <button onclick="showTab('clients')" class="tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="clients">
+                    <i class="fas fa-users mr-2"></i><span data-i18n="nav.clients">Clients</span>
+                </button>
+                <button onclick="showTab('analytics')" class="tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="analytics">
+                    <i class="fas fa-chart-pie mr-2"></i><span data-i18n="nav.analytics">Analytics</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Filters Bar -->
+        <div class="bg-white rounded-lg border shadow-sm mb-6">
+            <div class="p-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Search</label>
+                        <div class="relative">
+                            <input type="text" id="searchInput" data-i18n="filter.search" placeholder="Search requests..." 
+                                   class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1" data-i18n="filter.type">Type</label>
+                        <select id="typeFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="" data-i18n="filter.allTypes">All Types</option>
+                            <option value="Private Label" data-i18n="type.privateLabel">Private Label</option>
+                            <option value="Κανονικό αίτημα" data-i18n="type.regular">Regular Request</option>
+                            <option value="After-sales" data-i18n="type.afterSales">After-sales</option>
+                            <option value="Quotation only" data-i18n="type.quotationOnly">Quotation Only</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1" data-i18n="filter.stage">Stage</label>
+                        <select id="stageFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="" data-i18n="filter.allStages">All Stages</option>
+                            <option value="Νέο" data-i18n="stage.new">New</option>
+                            <option value="Σε έρευνα" data-i18n="stage.research">Research</option>
+                            <option value="Διαπραγμάτευση" data-i18n="stage.negotiation">Negotiation</option>
+                            <option value="Δείγματα" data-i18n="stage.samples">Samples</option>
+                            <option value="Παραγγελία" data-i18n="stage.order">Order</option>
+                            <option value="On Hold" data-i18n="stage.onHold">On Hold</option>
+                            <option value="Ακυρώθηκε" data-i18n="stage.cancelled">Cancelled</option>
+                            <option value="Ολοκληρώθηκε" data-i18n="stage.completed">Completed</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1" data-i18n="filter.owner">Owner</label>
+                        <select id="ownerFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="" data-i18n="filter.allOwners">All Owners</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1" data-i18n="filter.priority">Priority</label>
+                        <select id="priorityFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="" data-i18n="filter.allPriorities">All Priorities</option>
+                            <option value="Low" data-i18n="priority.low">Low</option>
+                            <option value="Medium" data-i18n="priority.medium">Medium</option>
+                            <option value="High" data-i18n="priority.high">High</option>
+                            <option value="Critical" data-i18n="priority.critical">Critical</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="clearFilters()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50" data-i18n="filter.clear">
+                            Clear
+                        </button>
+                        <button onclick="showRequestForm()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700" data-i18n="btn.newRequest">
+                            <i class="fas fa-plus mr-1"></i>New Request
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div id="dashboard-content" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <!-- Recent Activity -->
+                <div class="lg:col-span-2 bg-white rounded-lg border shadow-sm">
+                    <div class="p-4 border-b">
+                        <h3 class="text-lg font-semibold" data-i18n="dashboard.recentRequests">Recent Requests</h3>
+                    </div>
+                    <div id="recentRequests" class="p-4">
+                        <!-- Recent requests will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- Team Performance -->
+                <div class="bg-white rounded-lg border shadow-sm">
+                    <div class="p-4 border-b">
+                        <h3 class="text-lg font-semibold" data-i18n="dashboard.teamPerformance">Team Performance</h3>
+                    </div>
+                    <div id="teamPerformance" class="p-4">
+                        <!-- Team performance will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Priority Matrix -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-lg border shadow-sm">
+                    <div class="p-4 border-b">
+                        <h3 class="text-lg font-semibold" data-i18n="dashboard.priorityTasks">High Priority Tasks</h3>
+                    </div>
+                    <div id="priorityTasks" class="p-4">
+                        <!-- Priority tasks will be loaded here -->
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg border shadow-sm">
+                    <div class="p-4 border-b">
+                        <h3 class="text-lg font-semibold" data-i18n="dashboard.overdueItems">Overdue Items</h3>
+                    </div>
+                    <div id="overdueItems" class="p-4">
+                        <!-- Overdue items will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="kanban-content" class="tab-content hidden">
+            <div id="kanbanBoard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4">
+                <!-- Kanban columns will be generated here -->
+            </div>
+        </div>
+
+        <div id="table-content" class="tab-content hidden">
+            <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table id="requestsTable" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requestsTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Table rows will be generated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="clients-content" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white rounded-lg border shadow-sm">
+                    <div class="p-4 border-b flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Client Database</h3>
+                        <button onclick="showClientForm()" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+                            <i class="fas fa-plus mr-1"></i>New Client
+                        </button>
+                    </div>
+                    <div id="clientsList" class="p-4">
+                        <!-- Clients will be loaded here -->
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg border shadow-sm">
+                    <div class="p-4 border-b">
+                        <h3 class="text-lg font-semibold">Client Stats</h3>
+                    </div>
+                    <div id="clientStats" class="p-4">
+                        <!-- Client statistics will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="analytics-content" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white rounded-lg border shadow-sm">
+                    <div class="p-4 border-b">
+                        <h3 class="text-lg font-semibold">Requests by Stage</h3>
+                    </div>
+                    <div class="p-4">
+                        <canvas id="stageChart" style="height: 300px;"></canvas>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg border shadow-sm">
+                    <div class="p-4 border-b">
+                        <h3 class="text-lg font-semibold">Value by Priority</h3>
+                    </div>
+                    <div class="p-4">
+                        <canvas id="valueChart" style="height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-lg border shadow-sm">
+                    <div class="p-4 border-b">
+                        <h3 class="text-lg font-semibold">Monthly Trends</h3>
+                    </div>
+                    <div class="p-4">
+                        <canvas id="trendsChart" style="height: 300px;"></canvas>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg border shadow-sm">
+                    <div class="p-4 border-b">
+                        <h3 class="text-lg font-semibold">Team Workload</h3>
+                    </div>
+                    <div class="p-4">
+                        <canvas id="workloadChart" style="height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Request Form Modal -->
+    <div id="requestModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6 border-b">
+                    <div class="flex justify-between items-center">
+                        <h2 id="modalTitle" class="text-xl font-semibold">New Request</h2>
+                        <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <form id="requestForm" class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Basic Info -->
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                            <input type="text" name="title" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Client *</label>
+                            <input type="text" name="client" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Type *</label>
+                            <select name="type" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="Private Label">Private Label</option>
+                                <option value="Κανονικό αίτημα">Κανονικό αίτημα</option>
+                                <option value="After-sales">After-sales</option>
+                                <option value="Quotation only">Quotation only</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Stage</label>
+                            <select name="stage" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="Νέο">Νέο</option>
+                                <option value="Σε έρευνα">Σε έρευνα</option>
+                                <option value="Διαπραγμάτευση">Διαπραγμάτευση</option>
+                                <option value="Δείγματα">Δείγματα</option>
+                                <option value="Παραγγελία">Παραγγελία</option>
+                                <option value="On Hold">On Hold</option>
+                                <option value="Ακυρώθηκε">Ακυρώθηκε</option>
+                                <option value="Ολοκληρώθηκε">Ολοκληρώθηκε</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Owner</label>
+                            <select name="owner" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="Peng">Peng (Yiwu Manager)</option>
+                                <option value="Lily">Lily (Shenzhen Manager)</option>
+                                <option value="Ruby">Ruby (Shenzhen)</option>
+                                <option value="Xiao Min">Xiao Min (Shenzhen)</option>
+                                <option value="Silent Artist">Silent Artist (Designer)</option>
+                                <option value="Nikos">Nikos (Greece)</option>
+                                <option value="Chrysanthi">Chrysanthi (Greece)</option>
+                                <option value="Unassigned">Unassigned</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                            <select name="priority" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Estimated Value (€)</label>
+                            <input type="number" name="estimated_value" min="0" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Deadline</label>
+                            <input type="date" name="deadline" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Supplier</label>
+                            <input type="text" name="supplier" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">MOQ</label>
+                            <input type="number" name="moq" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Unit Price (€)</label>
+                            <input type="number" name="unit_price" min="0" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Risk Level</label>
+                            <select name="risk_level" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tags (comma-separated)</label>
+                            <input type="text" name="tags" placeholder="SILUAN, HORECA, Electronics" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                            <textarea name="notes" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end gap-3 mt-6 pt-6 border-t">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                            <i class="fas fa-save mr-1"></i>Save Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Controls -->
+    <div id="exportControls" class="fixed bottom-4 left-4 bg-white border border-gray-300 rounded-lg shadow-lg p-4 hidden">
+        <div class="flex flex-col gap-2">
+            <h4 class="font-medium text-sm">Export Options</h4>
+            <button onclick="exportManager.exportRequestsToCSV(true)" class="text-left px-3 py-2 text-sm hover:bg-gray-50 rounded">
+                <i class="fas fa-file-csv mr-2 text-green-600"></i>Export Filtered Requests (CSV)
+            </button>
+            <button onclick="exportManager.exportRequestsToCSV(false)" class="text-left px-3 py-2 text-sm hover:bg-gray-50 rounded">
+                <i class="fas fa-file-csv mr-2 text-blue-600"></i>Export All Requests (CSV)
+            </button>
+            <button onclick="exportManager.exportClientsToCSV()" class="text-left px-3 py-2 text-sm hover:bg-gray-50 rounded">
+                <i class="fas fa-users mr-2 text-purple-600"></i>Export Clients (CSV)
+            </button>
+            <button onclick="exportManager.exportReportJSON()" class="text-left px-3 py-2 text-sm hover:bg-gray-50 rounded">
+                <i class="fas fa-file-code mr-2 text-orange-600"></i>Export Report (JSON)
+            </button>
+            <button onclick="exportManager.exportReportText()" class="text-left px-3 py-2 text-sm hover:bg-gray-50 rounded">
+                <i class="fas fa-file-alt mr-2 text-gray-600"></i>Export Report (Text)
+            </button>
+            <hr class="my-2">
+            <button onclick="toggleExportControls()" class="text-left px-3 py-2 text-sm hover:bg-gray-50 rounded text-gray-500">
+                <i class="fas fa-times mr-2"></i>Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="fixed bottom-4 left-4">
+        <button onclick="toggleExportControls()" class="w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 flex items-center justify-center">
+            <i class="fas fa-download"></i>
+        </button>
+    </div>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/export-utils.js"></script>
+    <script src="js/app.js"></script>
+    
+    <script>
+        // Initialize export manager and notification system
+        let exportManager;
+        let notificationManager;
+        let autoSaveManager;
+        let searchManager;
+        
+        function toggleExportControls() {
+            const controls = document.getElementById('exportControls');
+            controls.classList.toggle('hidden');
+        }
+        
+        function toggleLanguageMenu() {
+            const menu = document.getElementById('languageMenu');
+            menu.classList.toggle('hidden');
+            
+            // Update active language indicator
+            updateLanguageMenu();
+        }
+        
+        function updateLanguageMenu() {
+            const current = i18n.getCurrentLanguage();
+            document.querySelectorAll('.lang-option').forEach(option => {
+                const checkIcon = option.querySelector('.fas.fa-check');
+                if (option.dataset.lang === current) {
+                    checkIcon.classList.remove('hidden');
+                } else {
+                    checkIcon.classList.add('hidden');
+                }
+            });
+        }
+        
+        function changeLanguage(lang) {
+            i18n.setLanguage(lang);
+            
+            // Update language selector display
+            const languages = {
+                'el': { flag: '🇬🇷', name: 'Ελληνικά' },
+                'en': { flag: '🇺🇸', name: 'English' },
+                'zh-CN': { flag: '🇨🇳', name: '中文' }
+            };
+            
+            document.getElementById('currentLanguageFlag').textContent = languages[lang].flag;
+            document.getElementById('currentLanguageName').textContent = languages[lang].name;
+            
+            // Close menu
+            document.getElementById('languageMenu').classList.add('hidden');
+            
+            // Refresh the app UI
+            if (window.app) {
+                app.updateUI();
+            }
+        }
+        
+        // Close language menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const languageMenu = document.getElementById('languageMenu');
+            const languageButton = e.target.closest('button[onclick="toggleLanguageMenu()"]');
+            
+            if (!languageButton && !languageMenu.contains(e.target)) {
+                languageMenu.classList.add('hidden');
+            }
+        });
+        
+        // Initialize enhanced features after app loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize UI with current language
+            setTimeout(() => {
+                if (window.i18n) {
+                    i18n.updateUI();
+                    updateLanguageMenu();
+                    
+                    // Set initial language display
+                    const currentLang = i18n.getCurrentLanguage();
+                    const languages = {
+                        'el': { flag: '🇬🇷', name: 'Ελληνικά' },
+                        'en': { flag: '🇺🇸', name: 'English' },
+                        'zh-CN': { flag: '🇨🇳', name: '中文' }
+                    };
+                    
+                    if (languages[currentLang]) {
+                        document.getElementById('currentLanguageFlag').textContent = languages[currentLang].flag;
+                        document.getElementById('currentLanguageName').textContent = languages[currentLang].name;
+                    }
+                }
+                
+                if (window.app) {
+                    exportManager = new ExportManager(app);
+                    notificationManager = new NotificationManager();
+                    autoSaveManager = new AutoSaveManager(app);
+                    searchManager = new SearchManager(app);
+                    
+                    // Override app's showNotification method to use i18n
+                    app.showNotification = (messageKey, type) => {
+                        const message = i18n.t(messageKey) || messageKey;
+                        notificationManager.show(message, type);
+                    };
+                    
+                    console.log('Enhanced features initialized');
+                }
+            }, 1000);
+        });
+        
+        // Listen for language changes to update the app
+        window.addEventListener('languageChanged', () => {
+            if (window.app) {
+                app.updateUI();
+            }
+        });
+    </script>
+</body>
+</html>

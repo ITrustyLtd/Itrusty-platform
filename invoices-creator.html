@@ -1,0 +1,2645 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Creator - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Papa Parse για CSV parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/page-protection.js"></script>
+    <script src="js/global-navigation.js"></script>
+    <style>
+        /* ========== MUJI THEME SYSTEM (Background Only) ========== */
+        :root {
+            --body-bg: #F9FAFB;
+            --card-bg: #FFFFFF;
+            --nav-gradient-from: #8B7355;
+            --nav-gradient-to: #6B5D4F;
+            --text-dark: #111827;
+        }
+
+        [data-theme="elegant"] {
+            --body-bg: #F4F3EE;
+            --card-bg: #FDFCFA;
+            --nav-gradient-from: #8B7355;
+            --nav-gradient-to: #6B5D4F;
+        }
+
+        [data-theme="eco"] {
+            --body-bg: #EFEDE0;
+            --card-bg: #F9F8F0;
+            --nav-gradient-from: #4A7C59;
+            --nav-gradient-to: #3A5E45;
+        }
+
+        [data-theme="santorini"] {
+            --body-bg: #F1F1F3;
+            --card-bg: #FAFAFA;
+            --nav-gradient-from: #2A5A8E;
+            --nav-gradient-to: #1E4570;
+        }
+
+        [data-theme="colorful"] {
+            --body-bg: #FBE2B1;
+            --card-bg: #FEF5E7;
+            --nav-gradient-from: #B69030;
+            --nav-gradient-to: #8F6D25;
+        }
+        
+        body {
+            background-color: var(--body-bg) !important;
+            transition: background-color 0.3s ease;
+        }
+        
+        /* Apply theme to navigation */
+        nav.themed-nav {
+            background: linear-gradient(to right, var(--nav-gradient-from), var(--nav-gradient-to)) !important;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            
+            .print-only {
+                display: block !important;
+            }
+            
+            body {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+            
+            @page {
+                size: A4 landscape;
+                margin: 1cm;
+            }
+            
+            .invoice-container {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+            }
+            
+            /* Hide internal columns from client PDFs */
+            /* Columns hidden: Product URL, Image URL, Notes, Price CNY, FX Rate, Markup %, Actions */
+            .hide-on-print {
+                display: none !important;
+            }
+            
+            /* PACKING LIST: Show packing columns in print, hide price columns */
+            body[data-invoice-type="packing_list"] .packing-column {
+                display: table-cell !important;
+            }
+            
+            body[data-invoice-type="packing_list"] .price-column {
+                display: none !important;
+            }
+            
+            /* PACKING LIST: Show Notes in print */
+            body[data-invoice-type="packing_list"] .show-for-packing {
+                display: table-cell !important;
+            }
+            
+            /* ALWAYS hide these columns in print (for all invoice types) */
+            .hide-for-packing,
+            .no-print:not(.show-for-packing) {
+                display: none !important;
+            }
+            
+            /* Ensure proper page breaks */
+            .invoice-grid {
+                page-break-inside: avoid;
+            }
+            
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            
+            table th, table td {
+                border: 1px solid #333;
+                padding: 8px;
+                font-size: 10pt;
+            }
+            
+            /* ===== PRINT LAYOUT OPTIMIZATION (Phase 5B) ===== */
+            
+            /* 1. Compress header section by 30% */
+            .invoice-header {
+                margin-bottom: 0.25rem !important;
+                padding-bottom: 0.25rem !important;
+                gap: 1rem !important;
+            }
+            
+            .invoice-header img {
+                height: 50px !important; /* Reduced from 80px (37.5% reduction) */
+                margin-bottom: 0.5rem !important;
+            }
+            
+            .invoice-header .text-sm {
+                font-size: 9pt !important;
+                line-height: 1.2 !important;
+            }
+            
+            .invoice-header .space-y-1 > * + * {
+                margin-top: 0.15rem !important; /* Reduced spacing */
+            }
+            
+            #invoiceTypeBadge {
+                padding: 0.4rem 1rem !important; /* Reduced from 1.5rem 3rem */
+                font-size: 14pt !important; /* Reduced from 20pt */
+                margin-bottom: 0.5rem !important;
+            }
+            
+            /* 2. Compress customer/shipper boxes by 25% */
+            .invoice-container > .grid.grid-cols-2:nth-child(2) {
+                margin-bottom: 0.25rem !important; /* Minimal spacing before table */
+            }
+            
+            .border-2.rounded-lg {
+                padding: 0.5rem !important; /* Reduced from 1rem (50% reduction) */
+            }
+            
+            .border-2.rounded-lg h3 {
+                font-size: 11pt !important;
+                margin-bottom: 0.4rem !important;
+            }
+            
+            .border-2.rounded-lg .text-sm {
+                font-size: 9pt !important;
+                line-height: 1.3 !important;
+            }
+            
+            .editable-cell.min-h-\\[60px\\] {
+                min-height: 40px !important; /* Reduced from 60px (33% reduction) */
+            }
+            
+            /* 3. Reduce column header height significantly */
+            .invoice-grid th {
+                padding: 4px 6px !important; /* Reduced from 8px (50% reduction) */
+                font-size: 9pt !important;
+                font-weight: 600 !important;
+                line-height: 1.1 !important;
+            }
+            
+            .invoice-grid td {
+                padding: 4px 6px !important; /* Reduced from 8px */
+                font-size: 9pt !important;
+                line-height: 1.2 !important;
+            }
+            
+            /* 4. Tighten product grid spacing */
+            .overflow-x-auto {
+                margin-bottom: 1rem !important; /* Reduced from 1.5rem */
+                margin-top: 0 !important; /* No top margin - start immediately after header */
+            }
+            
+            /* Remove ALL spacing between customer boxes and product table */
+            .overflow-x-auto.mb-6 {
+                margin-top: 0 !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            /* 5. Compress footer section */
+            .grid.grid-cols-2.gap-8.mt-8 {
+                margin-top: 1rem !important; /* Reduced from 2rem */
+                gap: 1rem !important;
+            }
+            
+            .grid.grid-cols-2.gap-8.mt-8 table tr td {
+                padding: 0.25rem 0.5rem !important; /* Tighter spacing */
+                font-size: 9pt !important;
+            }
+            
+            /* 6. Make grand total row slightly more prominent but compact */
+            .border-t-2.border-purple-700 td {
+                padding: 0.5rem 0.5rem !important;
+                font-size: 12pt !important;
+            }
+            
+            /* 7. Compress payment terms section */
+            .mt-8.text-sm.text-gray-700 {
+                margin-top: 1rem !important;
+                font-size: 9pt !important;
+            }
+            
+            .mt-8.text-sm.text-gray-700 p {
+                padding: 0.5rem !important;
+            }
+        }
+        
+        /* Excel-like grid styling */
+        .editable-cell {
+            min-height: 30px;
+            padding: 8px;
+            border: 1px solid #e5e7eb;
+            cursor: text;
+            background: white;
+            transition: all 0.2s;
+        }
+        
+        .editable-cell:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+        
+        .editable-cell:focus {
+            outline: 2px solid #3b82f6;
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        
+        .invoice-grid th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 10pt;
+            border: 1px solid #5a67d8;
+        }
+        
+        /* ✅ FLAT COLORS - Χωρίς gradients/shadows (Johny May 15, 2025) */
+        
+        /* Quotation: Flat Light Blue */
+        body[data-invoice-type="quotation"] .invoice-grid th {
+            background: #A8C5E0 !important;  /* Soft blue */
+            border: 1px solid #7FA3C3;
+        }
+        
+        /* Pro Forma: Flat Light Orange */
+        body[data-invoice-type="proforma"] .invoice-grid th {
+            background: #F5C99A !important;  /* Soft orange */
+            border: 1px solid #E8A374;
+        }
+        
+        /* Commercial: Flat Light Red */
+        body[data-invoice-type="commercial"] .invoice-grid th {
+            background: #F0A8A8 !important;  /* Soft red */
+            border: 1px solid #D45B5B;
+        }
+        
+        /* Packing List: Flat Light Green */
+        body[data-invoice-type="packing_list"] .invoice-grid th {
+            background: #A8D5A8 !important;  /* Soft green */
+            border: 1px solid #7FBD7F;
+        }
+        
+        /* ===== COLUMN VISIBILITY CONTROL FOR PACKING LIST ===== */
+        /* Hide price columns when packing list is selected */
+        body[data-invoice-type="packing_list"] .price-column {
+            display: none !important;
+        }
+        
+        /* Hide packing columns for non-packing list types */
+        body:not([data-invoice-type="packing_list"]) .packing-column {
+            display: none !important;
+        }
+        
+        /* Hide financial summary for packing list */
+        body[data-invoice-type="packing_list"] #bankAccountsSection,
+        body[data-invoice-type="packing_list"] .grid.grid-cols-2.gap-8.mt-8 > div:last-child {
+            display: none !important;
+        }
+        
+        /* Show packing list totals row only for packing list */
+        #packingListTotals {
+            display: none;
+        }
+        body[data-invoice-type="packing_list"] #packingListTotals {
+            display: table-row;
+        }
+        body[data-invoice-type="packing_list"] .grand-total-row {
+            display: none;
+        }
+        
+        /* Conditional bank accounts visibility - ONLY show in Pro Forma Invoice */
+        #bankAccountsSection {
+            display: none; /* Hidden by default */
+        }
+        
+        body[data-invoice-type="proforma"] #bankAccountsSection {
+            display: block; /* Only show for Pro Forma */
+        }
+        
+        /* ✅ Adjust ONLY footer grid when bank accounts are hidden (NOT shipper/GST boxes!) */
+        body:not([data-invoice-type="proforma"]) .grid.grid-cols-2.gap-8.mt-8 {
+            grid-template-columns: 1fr; /* Single column when bank section hidden */
+        }
+        
+        body:not([data-invoice-type="proforma"]) .grid.grid-cols-2.gap-8.mt-8 > div:last-child {
+            max-width: 500px; /* Center and limit width of financial summary */
+            margin-left: auto;
+        }
+        
+        /* ✅ DYNAMIC BOX COLORS - Ομοιομορφία με invoice type (Johny May 15, 2025) */
+        .invoice-box {
+            min-height: 200px; /* Ίδιο ύψος */
+        }
+        
+        /* Quotation: Soft Blue */
+        body[data-invoice-type="quotation"] .invoice-box {
+            background: #EBF3FA !important;  /* Very light blue */
+            border-color: #A8C5E0 !important;
+        }
+        body[data-invoice-type="quotation"] .invoice-box h3 {
+            color: #4A6B9E !important;
+        }
+        
+        /* Pro Forma: Soft Orange */
+        body[data-invoice-type="proforma"] .invoice-box {
+            background: #FDF5ED !important;  /* Very light orange */
+            border-color: #F5C99A !important;
+        }
+        body[data-invoice-type="proforma"] .invoice-box h3 {
+            color: #D89364 !important;
+        }
+        
+        /* Commercial: Soft Red */
+        body[data-invoice-type="commercial"] .invoice-box {
+            background: #FDEAEA !important;  /* Very light red */
+            border-color: #F0A8A8 !important;
+        }
+        body[data-invoice-type="commercial"] .invoice-box h3 {
+            color: #C44B4B !important;
+        }
+        
+        /* Packing List: Soft Green */
+        body[data-invoice-type="packing_list"] .invoice-box {
+            background: #E8F5E9 !important;  /* Very light green */
+            border-color: #A8D5A8 !important;
+        }
+        body[data-invoice-type="packing_list"] .invoice-box h3 {
+            color: #4A7C2F !important;
+        }
+        
+        /* ✅ TOTAL PRICE COLUMN - Dynamic color */
+        body[data-invoice-type="quotation"] [data-field="total_price"] {
+            background: #EBF3FA !important;  /* Soft blue */
+        }
+        body[data-invoice-type="proforma"] [data-field="total_price"] {
+            background: #FDF5ED !important;  /* Soft orange */
+        }
+        body[data-invoice-type="commercial"] [data-field="total_price"] {
+            background: #FDEAEA !important;  /* Soft red */
+        }
+        
+        /* ============================================
+           🆕 AUTOCOMPLETE DROPDOWN STYLING
+           ============================================ */
+        
+        .autocomplete-dropdown {
+            position: absolute;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1000;
+            min-width: 500px;
+            display: none;
+        }
+        
+        .autocomplete-dropdown.active {
+            display: block;
+            animation: fadeInDown 0.2s ease-out;
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .autocomplete-header {
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            border-radius: 6px 6px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .autocomplete-item {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        
+        .autocomplete-item:hover,
+        .autocomplete-item.selected {
+            background: #f3f4f6;
+            transform: translateX(4px);
+        }
+        
+        .autocomplete-item.selected {
+            background: #ede9fe;
+            border-left: 3px solid #667eea;
+        }
+        
+        .autocomplete-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 2px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+        
+        .autocomplete-image.placeholder {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            font-size: 24px;
+        }
+        
+        .autocomplete-details {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .autocomplete-name {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 14px;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .autocomplete-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        
+        .autocomplete-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .autocomplete-price {
+            color: #059669;
+            font-weight: 600;
+        }
+        
+        .autocomplete-description {
+            font-size: 11px;
+            color: #9ca3af;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .autocomplete-no-results {
+            padding: 24px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 13px;
+        }
+        
+        .autocomplete-loading {
+            padding: 24px;
+            text-align: center;
+            color: #667eea;
+            font-size: 13px;
+        }
+        
+        /* Scrollbar styling */
+        .autocomplete-dropdown::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .autocomplete-dropdown::-webkit-scrollbar-track {
+            background: #f3f4f6;
+        }
+        
+        .autocomplete-dropdown::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+        
+        .autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+        
+        /* End of Autocomplete Styling */
+        
+        /* ✅ GRAND TOTAL ROW - Dynamic color */
+        body[data-invoice-type="quotation"] .grand-total-row {
+            border-color: #5B7BB4 !important;
+        }
+        body[data-invoice-type="quotation"] .grand-total-row td {
+            background: #EBF3FA !important;  /* Soft blue */
+        }
+        body[data-invoice-type="proforma"] .grand-total-row {
+            border-color: #E8A374 !important;
+        }
+        body[data-invoice-type="proforma"] .grand-total-row td {
+            background: #FDF5ED !important;  /* Soft orange */
+        }
+        body[data-invoice-type="commercial"] .grand-total-row {
+            border-color: #D45B5B !important;
+        }
+        body[data-invoice-type="commercial"] .grand-total-row td {
+            background: #FDEAEA !important;  /* Soft red */
+        }
+        
+        /* ✅ ADD PRODUCT ROW BUTTON - Dynamic color */
+        #addProductBtn {
+            transition: background-color 0.3s ease;
+        }
+        body[data-invoice-type="quotation"] #addProductBtn {
+            background: #5B7BB4 !important;
+        }
+        body[data-invoice-type="quotation"] #addProductBtn:hover {
+            background: #4A6B9E !important;
+        }
+        body[data-invoice-type="proforma"] #addProductBtn {
+            background: #E8A374 !important;
+        }
+        body[data-invoice-type="proforma"] #addProductBtn:hover {
+            background: #D89364 !important;
+        }
+        body[data-invoice-type="commercial"] #addProductBtn {
+            background: #D45B5B !important;
+        }
+        body[data-invoice-type="commercial"] #addProductBtn:hover {
+            background: #C44B4B !important;
+        }
+        
+        /* ✅ INVOICE NUMBER - Editable & dynamic color */
+        #invoiceNumber {
+            cursor: text;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+        #invoiceNumber:hover {
+            border-color: #d1d5db;
+            background: #f9fafb;
+        }
+        body[data-invoice-type="quotation"] #invoiceNumber {
+            color: #5B7BB4 !important;
+        }
+        body[data-invoice-type="proforma"] #invoiceNumber {
+            color: #E8A374 !important;
+        }
+        body[data-invoice-type="commercial"] #invoiceNumber {
+            color: #D45B5B !important;
+        }
+        
+        .invoice-grid td {
+            border: 1px solid #e5e7eb;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        .invoice-header {
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        
+        /* ✅ BADGES - Flat colors χωρίς gradients */
+        .quotation-badge {
+            background: #5B7BB4 !important;  /* Flat blue */
+            box-shadow: none;
+        }
+        
+        .proforma-badge {
+            background: #E8A374 !important;  /* Flat orange */
+            box-shadow: none;
+        }
+        
+        .commercial-badge {
+            background: #D45B5B !important;  /* Flat red */
+            box-shadow: none;
+        }
+        
+        .packing_list-badge {
+            background: #7FBD7F !important;  /* Flat green */
+            box-shadow: none;
+        }
+        
+        /* ✅ CUSTOMER CODE BADGE - Dynamic color based on invoice type */
+        .customer-code-badge {
+            transition: background-color 0.3s ease;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        /* Default (no type selected) */
+        .customer-code-badge {
+            background: #9CA3AF;  /* Gray */
+        }
+        
+        /* Quotation: Blue */
+        body[data-invoice-type="quotation"] .customer-code-badge {
+            background: #5B7BB4 !important;
+        }
+        
+        /* Pro Forma: Orange */
+        body[data-invoice-type="proforma"] .customer-code-badge {
+            background: #E8A374 !important;
+        }
+        
+        /* Commercial: Red */
+        body[data-invoice-type="commercial"] .customer-code-badge {
+            background: #D45B5B !important;
+        }
+        
+        /* Packing List: Green */
+        body[data-invoice-type="packing_list"] .customer-code-badge {
+            background: #7FBD7F !important;
+        }
+        
+        .input-like {
+            border: 1px solid #e5e7eb;
+            padding: 4px 8px;
+            border-radius: 4px;
+            min-width: 60px;
+            text-align: right;
+        }
+        
+        .input-like:focus {
+            outline: 2px solid #3b82f6;
+            border-color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50" style="background-color: var(--body-bg);">
+    <!-- Navigation -->
+    <nav class="themed-nav bg-gradient-to-r from-purple-700 to-indigo-800 text-white p-4 shadow-lg no-print">
+        <div class="container mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-6">
+                <a href="index.html" class="flex items-center space-x-2 hover:opacity-80 transition">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <span class="text-purple-300">|</span>
+                <div class="flex items-center space-x-2 font-semibold">
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Invoice Creator</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <!-- Theme Switcher -->
+                <div class="theme-dropdown-invoice" style="position: relative; display: inline-block;">
+                    <button class="theme-label-invoice flex items-center space-x-2 px-3 py-2 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition">
+                        <i class="fas fa-palette"></i>
+                        <span>Theme</span>
+                    </button>
+                    <div class="theme-menu-invoice" style="display: none; position: absolute; top: 100%; right: 0; background: white; border: 1px solid #E5E7EB; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 8px; z-index: 1000; min-width: 160px; margin-top: 4px;">
+                        <div class="theme-option-invoice" onclick="switchInvoiceTheme('default')" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; cursor: pointer; color: #111827; font-size: 13px;" onmouseover="this.style.background='#F3F4F6'" onmouseout="this.style.background='transparent'">
+                            <div style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #E5E7EB; background: #F9FAFB;"></div>
+                            <span>Default</span>
+                        </div>
+                        <div class="theme-option-invoice" onclick="switchInvoiceTheme('elegant')" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; cursor: pointer; color: #111827; font-size: 13px;" onmouseover="this.style.background='#F3F4F6'" onmouseout="this.style.background='transparent'">
+                            <div style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #E5E7EB; background: #F4F3EE;"></div>
+                            <span>Elegant</span>
+                        </div>
+                        <div class="theme-option-invoice" onclick="switchInvoiceTheme('eco')" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; cursor: pointer; color: #111827; font-size: 13px;" onmouseover="this.style.background='#F3F4F6'" onmouseout="this.style.background='transparent'">
+                            <div style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #E5E7EB; background: #EFEDE0;"></div>
+                            <span>Eco</span>
+                        </div>
+                        <div class="theme-option-invoice" onclick="switchInvoiceTheme('santorini')" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; cursor: pointer; color: #111827; font-size: 13px;" onmouseover="this.style.background='#F3F4F6'" onmouseout="this.style.background='transparent'">
+                            <div style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #E5E7EB; background: #F1F1F3;"></div>
+                            <span>Santorini</span>
+                        </div>
+                        <div class="theme-option-invoice" onclick="switchInvoiceTheme('colorful')" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; cursor: pointer; color: #111827; font-size: 13px;" onmouseover="this.style.background='#F3F4F6'" onmouseout="this.style.background='transparent'">
+                            <div style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #E5E7EB; background: #FBE2B1;"></div>
+                            <span>Colorful</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <button onclick="toggleLanguage()" class="flex items-center space-x-2 px-3 py-2 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition">
+                    <i class="fas fa-globe"></i>
+                    <span id="languageLabel">EN</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container mx-auto p-6 max-w-7xl">
+        <!-- Action Bar -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6 no-print">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div class="flex items-center space-x-4">
+                    <button onclick="saveInvoice()" class="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                        <i class="fas fa-save"></i>
+                        <span>Save Invoice</span>
+                    </button>
+                    
+                    <button onclick="window.print()" class="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-print"></i>
+                        <span>Print / PDF</span>
+                    </button>
+                    
+                    <button onclick="loadInvoice()" class="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                        <i class="fas fa-folder-open"></i>
+                        <span>Load Saved</span>
+                    </button>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <span class="text-sm text-gray-600">Invoice Type:</span>
+                    <select id="invoiceType" onchange="updateInvoiceType()" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        <option value="quotation">Quotation</option>
+                        <option value="proforma">Pro Forma Invoice</option>
+                        <option value="commercial">Commercial Invoice</option>
+                        <option value="packing_list">Packing List</option>
+                        <option value="services_receipt">Services Receipt</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Document -->
+        <div class="invoice-container bg-white rounded-lg shadow-xl p-8" id="invoiceDocument">
+            <!-- Header Section -->
+            <div class="invoice-header grid grid-cols-2 gap-8">
+                <!-- Left: Logo & Company Info -->
+                <div>
+                    <img src="https://i.postimg.cc/Njf0T28p/I-Trusty-clear-logo-1.png" alt="I Trusty Ltd" class="h-20 mb-4">
+                    
+                    <div class="text-sm text-gray-700 space-y-1">
+                        <p class="font-bold text-lg text-red-700">iTRUSTY LIMITED</p>
+                        <p>GXWP 33, 55 Lockhart Rd, Wan Chai, Hong Kong</p>
+                        <p>email: info@yiwusafetrade.com</p>
+                        <p>Mobile: (+86) 18757682724</p>
+                        <p><a href="http://itrusty.co" class="text-blue-600 hover:underline">itrusty.co</a></p>
+                    </div>
+                    
+                </div>
+                
+                <!-- Right: Invoice Type Badge & Date -->
+                <div class="text-right">
+                    <div id="invoiceTypeBadge" class="inline-block px-6 py-3 rounded-lg text-white font-bold text-xl mb-4 quotation-badge">
+                        Quotation
+                    </div>
+                    
+                    <div class="text-sm text-gray-700 space-y-2">
+                        <div>
+                            <input type="date" id="invoiceDate" class="border-b border-gray-300 focus:border-purple-600 px-2 py-1 outline-none" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Customer & Invoice Details - ✅ Έδιο ύψος, δίπλα-δίπλα -->
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <!-- A: Shipper / Your Company (Left) -->
+                <div id="shipperBox" class="border-2 rounded-lg p-4 invoice-box">
+                    <h3 class="font-bold mb-3 flex items-center">
+                        <i class="fas fa-building mr-2"></i>
+                        <span>SHIPPER</span>
+                    </h3>
+                    
+                    <div class="text-sm space-y-1">
+                        <p class="font-semibold">I Trusty Ltd</p>
+                        <p contenteditable="true" class="editable-cell">Trading / e-commerce</p>
+                        <div contenteditable="true" class="editable-cell min-h-[60px]">
+                            Room: 1014, 15, 10/F, YEE LIAM BLDG,
+                            86-90 Lockhart Rd, Wan Chai, Hong Kong
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 text-sm">
+                        <p>Name Surname: <span contenteditable="true" class="editable-cell inline-block min-w-[150px]">Lily *</span></p>
+                    </div>
+                </div>
+                
+                <!-- B: GST / Customer (Right) -->
+                <div id="gstBox" class="border-2 rounded-lg p-4 invoice-box">
+                    <h3 class="font-bold mb-3 flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-user-tie mr-2"></i>
+                            <span>CLIENT</span>
+                        </div>
+                        <div id="customerCodeBadge" class="customer-code-badge px-4 py-2 rounded-lg text-white font-bold text-xl">
+                            ---
+                        </div>
+                    </h3>
+                    
+                    <div class="text-sm space-y-2 no-print">
+                        <div>
+                            <label class="block text-gray-600 mb-1">Select Customer:</label>
+                            <select id="customerSelect" onchange="loadCustomerInfo()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">-- Select Customer --</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="customerInfo" class="text-sm space-y-2">
+                        <!-- Company Name -->
+                        <p class="font-semibold text-gray-800">
+                            <span contenteditable="true" id="companyName" class="editable-cell inline-block min-w-[250px]"></span>
+                        </p>
+                        
+                        <!-- Contact Name -->
+                        <p class="text-gray-700">
+                            <span contenteditable="true" id="contactName" class="editable-cell inline-block min-w-[200px]"></span>
+                        </p>
+                        
+                        <!-- Address -->
+                        <p class="text-gray-700">
+                            <span contenteditable="true" id="customerAddress" class="editable-cell inline-block min-w-[300px]"></span>
+                        </p>
+                        
+                        <!-- Postal Code, City, Country -->
+                        <p class="text-gray-700">
+                            <span contenteditable="true" id="postalCityCountry" class="editable-cell inline-block min-w-[300px]"></span>
+                        </p>
+                        
+                        <!-- Tel, VAT -->
+                        <p class="text-gray-700">
+                            <span contenteditable="true" id="telVat" class="editable-cell inline-block min-w-[300px]"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Invoice Number & Reference - ✅ Editable -->
+            <div class="mb-4 no-print flex items-center justify-between">
+                <div>
+                    <label class="text-sm text-gray-600 mr-2">Invoice Number:</label>
+                    <span id="invoiceNumber" contenteditable="true" class="font-mono font-bold text-lg"></span>
+                </div>
+                <div>
+                    <label class="text-sm text-gray-600 mr-2">Customer Code:</label>
+                    <input type="text" id="customerCode" maxlength="3" placeholder="ABC" class="px-3 py-1 border border-gray-300 rounded uppercase text-center w-20" />
+                </div>
+            </div>
+
+            <!-- Products Grid (Excel-like) -->
+            <div class="overflow-x-auto mb-6">
+                <table class="invoice-grid w-full border-collapse" id="invoiceGrid">
+                    <thead>
+                        <tr>
+                            <th class="w-16">ITEM NUMBER</th>
+                            <th class="w-20">PICTURE</th>
+                            <th class="w-32">NAME</th>
+                            <th class="w-64">DESCRIPTION</th>
+                            <th class="w-24 packing-column">COLOR</th>
+                            <th class="w-16">CTN</th>
+                            <th class="w-24">QTY PER CTN</th>
+                            <th class="w-24">TOTAL QTY</th>
+                            <th class="w-20 packing-column">CTN L (cm)</th>
+                            <th class="w-20 packing-column">CTN W (cm)</th>
+                            <th class="w-20 packing-column">CTN H (cm)</th>
+                            <th class="w-24 packing-column">CTN WT (kg)</th>
+                            <th class="w-24 packing-column">TOTAL CTN WT</th>
+                            <th class="w-24 packing-column">CBM</th>
+                            <th class="w-24 packing-column">N.W (KG)</th>
+                            <th class="w-24 packing-column">G.W (KG)</th>
+                            <th class="w-24 price-column">UNIT PRICE €</th>
+                            <th class="w-24 price-column">TOTAL PRICE €</th>
+                            <th class="w-32 no-print hide-for-packing">PRODUCT URL</th>
+                            <th class="w-32 no-print hide-for-packing">IMAGE URL</th>
+                            <th class="w-48 show-for-packing">NOTES</th>
+                            <th class="w-24 no-print price-column">Price CNY</th>
+                            <th class="w-20 no-print price-column">FX Rate</th>
+                            <th class="w-20 no-print price-column">MARKUP %</th>
+                            <th class="w-12 no-print">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoiceRows">
+                        <!-- Rows will be added dynamically -->
+                    </tbody>
+                    <tfoot>
+                        <!-- Packing List Totals Row -->
+                        <tr id="packingListTotals" class="border-t-2 font-bold text-lg" style="border-color: #7FBD7F;">
+                            <td colspan="5" class="text-right pr-4 py-3" style="background: #E8F5E9;">TOTAL:</td>
+                            <td class="text-center py-3" id="totalCartons" style="background: #E8F5E9;">0</td>
+                            <td colspan="2" class="text-center py-3" id="totalPieces" style="background: #E8F5E9;">0</td>
+                            <td colspan="5" class="text-center py-3" style="background: #E8F5E9;"><!-- Dimensions columns --></td>
+                            <td class="text-center py-3" id="totalCBM" style="background: #E8F5E9;">0.00</td>
+                            <td class="text-center py-3" id="totalNetWeight" style="background: #E8F5E9;">0.00</td>
+                            <td class="text-center py-3" id="totalGrossWeight" style="background: #E8F5E9;">0.00</td>
+                            <td colspan="9"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                
+                <!-- Buttons Container -->
+                <div class="mt-4 no-print flex items-center space-x-4">
+                    <button id="addProductBtn" onclick="addRow()" class="flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Product Row</span>
+                    </button>
+                    
+                    <!-- CSV Upload Button -->
+                    <button onclick="document.getElementById('csvUploadInput').click()" class="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                        <i class="fas fa-upload"></i>
+                        <span>📤 Upload Products from CSV</span>
+                    </button>
+                    
+                    <!-- Hidden File Input -->
+                    <input type="file" id="csvUploadInput" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleCSVUpload(event)" />
+                </div>
+            </div>
+            
+            <!-- Footer: Totals & Charges -->
+            <div class="grid grid-cols-2 gap-8 mt-8">
+                <!-- Left: Bank Accounts -->
+                <div id="bankAccountsSection" class="text-sm">
+                    <h4 class="font-bold text-gray-700 mb-3">Bank Account Details:</h4>
+                    <div id="bankAccountsList" class="space-y-3">
+                        <!-- Bank accounts will be added here -->
+                    </div>
+                    
+                    <button onclick="addBankAccount()" class="mt-3 no-print text-sm text-purple-600 hover:text-purple-700">
+                        <i class="fas fa-plus-circle mr-1"></i>Add Bank Account
+                    </button>
+                </div>
+                
+                <!-- Right: Financial Summary -->
+                <div class="text-sm">
+                    <table class="w-full">
+                        <tr>
+                            <td class="text-right pr-4 py-2">Total:</td>
+                            <td class="text-right font-semibold">€<span id="subtotalProducts">0.00</span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-right pr-4 py-2">Mainland Costs (EU):</td>
+                            <td class="text-right">€<span contenteditable="true" class="input-like" id="mainlandCosts" oninput="recalculateTotals()">0.00</span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-right pr-4 py-2">F.O.B. Costs (EU):</td>
+                            <td class="text-right">€<span contenteditable="true" class="input-like" id="fobCosts" oninput="recalculateTotals()">0.00</span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-right pr-4 py-2">Freight:</td>
+                            <td class="text-right">€<span contenteditable="true" class="input-like" id="freight" oninput="recalculateTotals()">0.00</span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-right pr-4 py-2">Customs:</td>
+                            <td class="text-right">€<span contenteditable="true" class="input-like" id="customs" oninput="recalculateTotals()">0.00</span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-right pr-4 py-2">Insurance:</td>
+                            <td class="text-right">€<span contenteditable="true" class="input-like" id="insurance" oninput="recalculateTotals()">0.00</span></td>
+                        </tr>
+                        
+                        <!-- Additional Charges (Dynamic) -->
+                        <tbody id="additionalCharges">
+                            <!-- Additional charges will be added here -->
+                        </tbody>
+                        
+                        <tr class="no-print">
+                            <td colspan="2" class="pt-2">
+                                <button onclick="addCharge()" class="text-sm text-purple-600 hover:text-purple-700">
+                                    <i class="fas fa-plus-circle mr-1"></i>Add Charge/Deduction
+                                </button>
+                            </td>
+                        </tr>
+                        
+                        <!-- Deposit Paid (Deduction) -->
+                        <tr id="depositRow" class="hidden">
+                            <td class="text-right pr-4 py-2 text-red-700">Deposit Paid:</td>
+                            <td class="text-right text-red-700">-€<span contenteditable="true" class="input-like" id="depositPaid" oninput="recalculateTotals()">0.00</span></td>
+                        </tr>
+                        
+                        <tr class="border-t-2 border-purple-700 font-bold text-lg grand-total-row">
+                            <td class="text-right pr-4 py-3">Grand Total (EU):</td>
+                            <td class="text-right">€<span id="grandTotal">0.00</span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Payment Terms & Notes -->
+            <div class="mt-8 text-sm text-gray-700">
+                <p contenteditable="true" class="editable-cell p-3 bg-gray-50 rounded">
+                    <strong>Payment Terms:</strong> 30% deposit upon order confirmation, 70% balance before shipment.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Google Sheets Configuration
+        const GOOGLE_SHEETS_API_KEY = 'AIzaSyCmkmFVYAe06mCFuF8943oC7YoeNyWpDFI';
+        const SPREADSHEET_ID = '1qBFGD4HVd6AfOviyRHTyggVQ-v0ZHE0NOQ1-oIr47NE';
+        const CONTACTS_SHEET_NAME = 'Contacts';  // Tab name in Google Sheets
+        
+        // Global state
+        let invoiceData = {
+            type: 'quotation',
+            date: new Date().toISOString().split('T')[0],
+            customer_id: null,
+            customer_code: '',
+            customer_name: '',
+            items: [],
+            charges: [],
+            bank_accounts: [],
+            exchange_rate_eur_cny: 7.8,
+            exchange_rate_usd_cny: 7.2
+        };
+        
+        let rowCounter = 0;
+        let customersData = [];
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Set invoice type attribute for color theming
+            document.body.setAttribute('data-invoice-type', 'quotation');
+            
+            // Set today's date
+            document.getElementById('invoiceDate').value = invoiceData.date;
+            
+            // Generate initial invoice number
+            updateInvoiceNumber();
+            
+            // Load customers from Google Sheets
+            await loadCustomersFromGoogleSheets();
+            
+            // Add initial row
+            addRow();
+            
+            // Add initial bank account
+            addBankAccount();
+        });
+        
+        // Update invoice type
+        function updateInvoiceType() {
+            const type = document.getElementById('invoiceType').value;
+            invoiceData.type = type;
+            
+            // Update body attribute for color theming AND conditional visibility
+            document.body.setAttribute('data-invoice-type', type);
+            
+            const badge = document.getElementById('invoiceTypeBadge');
+            const typeNames = {
+                'quotation': 'Quotation',
+                'proforma': 'Pro Forma Invoice',
+                'commercial': 'Commercial Invoice',
+                'packing_list': 'Packing List',
+                'services_receipt': 'Services Receipt'
+            };
+            
+            badge.textContent = typeNames[type];
+            badge.className = `inline-block px-6 py-3 rounded-lg text-white font-bold text-xl mb-4 ${type}-badge`;
+            
+            // Visual feedback for bank account visibility
+            const bankSection = document.getElementById('bankAccountsSection');
+            if (type === 'proforma') {
+                console.log('✅ Bank accounts section now VISIBLE (Pro Forma Invoice)');
+            } else {
+                console.log('🚫 Bank accounts section now HIDDEN (' + typeNames[type] + ')');
+            }
+            
+            updateInvoiceNumber();
+        }
+        
+        // Generate invoice number
+        function updateInvoiceNumber() {
+            const type = invoiceData.type;
+            const date = document.getElementById('invoiceDate').value.replace(/-/g, '');
+            const customerCode = document.getElementById('customerCode').value || 'XXX';
+            
+            const prefixes = {
+                'quotation': 'QUO',
+                'proforma': 'PFI',
+                'commercial': 'CIV',
+                'packing_list': 'PKL',
+                'services_receipt': 'SRV'
+            };
+            
+            const prefix = prefixes[type];
+            const number = '001'; // Will be auto-incremented from database
+            
+            const invoiceNumber = `${prefix}-${date}-${customerCode}-${number}`;
+            document.getElementById('invoiceNumber').textContent = invoiceNumber;
+        }
+        
+        // Update customer code trigger
+        document.getElementById('customerCode').addEventListener('input', updateInvoiceNumber);
+        document.getElementById('invoiceDate').addEventListener('change', () => {
+            invoiceData.date = document.getElementById('invoiceDate').value;
+            updateInvoiceNumber();
+        });
+        
+        // Add product row
+        function addRow() {
+            rowCounter++;
+            const tbody = document.getElementById('invoiceRows');
+            const row = document.createElement('tr');
+            row.dataset.rowId = rowCounter;
+            
+            row.innerHTML = `
+                <td contenteditable="true" class="editable-cell" data-field="item_number">${rowCounter}</td>
+                <td class="p-1" data-field="picture">
+                    <img src="" alt="" class="w-16 h-16 object-cover mx-auto hidden" data-image-display />
+                    <span class="text-xs text-gray-400">No image</span>
+                </td>
+                <td contenteditable="true" class="editable-cell" data-field="name"></td>
+                <td contenteditable="true" class="editable-cell" data-field="description"></td>
+                <td contenteditable="true" class="editable-cell packing-column" data-field="product_color"></td>
+                <td contenteditable="true" class="editable-cell" data-field="ctn" oninput="calculateRowTotal(this)">0</td>
+                <td contenteditable="true" class="editable-cell" data-field="qty_per_ctn" oninput="calculateRowTotal(this)">0</td>
+                <td contenteditable="true" class="editable-cell bg-gray-50 font-semibold" data-field="total_qty" oninput="handleManualQtyEdit(this)">0</td>
+                <td contenteditable="true" class="editable-cell packing-column" data-field="carton_length" oninput="calculatePackingFields(this)">0</td>
+                <td contenteditable="true" class="editable-cell packing-column" data-field="carton_width" oninput="calculatePackingFields(this)">0</td>
+                <td contenteditable="true" class="editable-cell packing-column" data-field="carton_height" oninput="calculatePackingFields(this)">0</td>
+                <td contenteditable="true" class="editable-cell packing-column" data-field="carton_weight" oninput="calculatePackingFields(this)">0.00</td>
+                <td contenteditable="true" class="editable-cell packing-column bg-gray-50 font-semibold" data-field="total_carton_weight" oninput="handleManualPackingEdit(this)">0.00</td>
+                <td contenteditable="true" class="editable-cell packing-column bg-gray-50 font-semibold" data-field="cbm" oninput="handleManualPackingEdit(this)">0.00</td>
+                <td contenteditable="true" class="editable-cell packing-column" data-field="net_weight" oninput="recalculateTotals()">0.00</td>
+                <td contenteditable="true" class="editable-cell packing-column" data-field="gross_weight" oninput="recalculateTotals()">0.00</td>
+                <td contenteditable="true" class="editable-cell price-column" data-field="unit_price" oninput="handleManualPriceEdit(this)">0.00</td>
+                <td contenteditable="true" class="editable-cell bg-purple-50 font-bold price-column" data-field="total_price" oninput="handleManualTotalEdit(this)">0.00</td>
+                <td contenteditable="true" class="editable-cell no-print hide-for-packing" data-field="product_url"></td>
+                <td class="no-print hide-for-packing"><input type="text" class="w-full px-1 text-xs" placeholder="https://..." data-field="image_url" oninput="updateImageDisplay(this)" /></td>
+                <td contenteditable="true" class="editable-cell show-for-packing" data-field="notes"></td>
+                <td contenteditable="true" class="editable-cell no-print price-column" data-field="price_cny" oninput="calculateUnitPriceFromCNY(this)">0.00</td>
+                <td contenteditable="true" class="editable-cell no-print price-column" data-field="fx_rate" oninput="calculateUnitPriceFromCNY(this)">7.8</td>
+                <td contenteditable="true" class="editable-cell no-print price-column" data-field="markup_percent" oninput="calculateUnitPriceFromCNY(this)">25</td>
+                <td class="no-print">
+                    <button onclick="deleteRow(${rowCounter})" class="text-red-600 hover:text-red-700">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
+        }
+        
+        // NEW: Update image display when URL changes
+        function updateImageDisplay(input) {
+            const row = input.closest('tr');
+            const pictureCell = row.querySelector('[data-field="picture"]');
+            const img = pictureCell.querySelector('[data-image-display]');
+            const placeholder = pictureCell.querySelector('span');
+            const url = input.value.trim();
+            
+            if (url) {
+                img.src = url;
+                img.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            } else {
+                img.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+            }
+        }
+        
+        // NEW: Calculate unit price from CNY with formula: (CNY × (1 + Markup%)) / FX_Rate
+        function calculateUnitPriceFromCNY(element) {
+            const row = element.closest('tr');
+            const priceCNY = parseFloat(row.querySelector('[data-field="price_cny"]').textContent.replace(/,/g, '')) || 0;
+            const fxRate = parseFloat(row.querySelector('[data-field="fx_rate"]').textContent.replace(/,/g, '')) || 7.8;
+            const markupPercent = parseFloat(row.querySelector('[data-field="markup_percent"]').textContent.replace(/,/g, '')) || 0;
+            
+            if (priceCNY > 0 && fxRate > 0) {
+                // Formula: Unit Price EUR = (Price CNY × (1 + Markup%/100)) / FX Rate
+                const unitPriceEUR = (priceCNY * (1 + markupPercent / 100)) / fxRate;
+                row.querySelector('[data-field="unit_price"]').textContent = formatCurrency(unitPriceEUR);
+            }
+            
+            calculateRowTotal(row);
+        }
+        
+        // NEW: Handle manual edits to calculated fields
+        function handleManualQtyEdit(element) {
+            // User manually edited total qty - don't auto-recalculate from ctn × qty_per_ctn
+            element.dataset.manualEdit = 'true';
+            calculateRowTotal(element.closest('tr'));
+        }
+        
+        function handleManualPriceEdit(element) {
+            // User manually edited unit price - mark as override
+            element.dataset.manualEdit = 'true';
+            calculateRowTotal(element.closest('tr'));
+        }
+        
+        function handleManualTotalEdit(element) {
+            // User manually edited total price - mark as override
+            element.dataset.manualEdit = 'true';
+            recalculateTotals();
+        }
+        
+        // NEW: Handle manual edits to packing fields
+        function handleManualPackingEdit(element) {
+            // User manually edited CBM or Total Carton Weight - mark as override
+            element.dataset.manualEdit = 'true';
+            recalculateTotals();
+        }
+        
+        // NEW: Calculate packing fields (CBM and Total Carton Weight)
+        function calculatePackingFields(element) {
+            const row = element.closest('tr');
+            
+            // Get values
+            const ctn = parseFloat(row.querySelector('[data-field="ctn"]')?.textContent.replace(/,/g, '')) || 0;
+            const length = parseFloat(row.querySelector('[data-field="carton_length"]')?.textContent.replace(/,/g, '')) || 0;
+            const width = parseFloat(row.querySelector('[data-field="carton_width"]')?.textContent.replace(/,/g, '')) || 0;
+            const height = parseFloat(row.querySelector('[data-field="carton_height"]')?.textContent.replace(/,/g, '')) || 0;
+            const cartonWeight = parseFloat(row.querySelector('[data-field="carton_weight"]')?.textContent.replace(/,/g, '')) || 0;
+            
+            const cbmCell = row.querySelector('[data-field="cbm"]');
+            const totalCartonWeightCell = row.querySelector('[data-field="total_carton_weight"]');
+            
+            // Calculate CBM (unless manually edited)
+            // Formula: (Length × Width × Height) / 1,000,000 × CTN
+            if (cbmCell && !cbmCell.dataset.manualEdit) {
+                if (length > 0 && width > 0 && height > 0 && ctn > 0) {
+                    const cbmPerCarton = (length * width * height) / 1000000;
+                    const totalCBM = cbmPerCarton * ctn;
+                    cbmCell.textContent = formatCurrency(totalCBM);
+                }
+            }
+            
+            // Calculate Total Carton Weight (unless manually edited)
+            // Formula: Carton Weight × CTN
+            if (totalCartonWeightCell && !totalCartonWeightCell.dataset.manualEdit) {
+                if (cartonWeight > 0 && ctn > 0) {
+                    const totalWeight = cartonWeight * ctn;
+                    totalCartonWeightCell.textContent = formatCurrency(totalWeight);
+                }
+            }
+            
+            // Trigger totals recalculation
+            recalculateTotals();
+        }
+        
+        // Calculate row total (updated logic)
+        function calculateRowTotal(rowOrElement) {
+            const row = rowOrElement.closest ? rowOrElement.closest('tr') : rowOrElement;
+            
+            const ctn = parseFloat(row.querySelector('[data-field="ctn"]').textContent.replace(/,/g, '')) || 0;
+            const qtyPerCtn = parseFloat(row.querySelector('[data-field="qty_per_ctn"]').textContent.replace(/,/g, '')) || 0;
+            const unitPrice = parseFloat(row.querySelector('[data-field="unit_price"]').textContent.replace(/,/g, '')) || 0;
+            
+            const totalQtyCell = row.querySelector('[data-field="total_qty"]');
+            const totalPriceCell = row.querySelector('[data-field="total_price"]');
+            
+            // Auto-calculate total quantity (unless manually edited)
+            if (!totalQtyCell.dataset.manualEdit) {
+                const totalQty = ctn * qtyPerCtn;
+                totalQtyCell.textContent = formatCurrency(totalQty);
+            }
+            
+            // Auto-calculate total price (unless manually edited)
+            if (!totalPriceCell.dataset.manualEdit) {
+                const totalQty = parseFloat(totalQtyCell.textContent.replace(/,/g, '')) || 0;
+                const totalPrice = totalQty * unitPrice;
+                totalPriceCell.textContent = formatCurrency(totalPrice);
+            }
+            
+            recalculateTotals();
+        }
+        
+        // Format number with thousand separators
+        function formatCurrency(number) {
+            return number.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+        
+        // Recalculate all totals
+        function recalculateTotals() {
+            let subtotal = 0;
+            let totalCartons = 0;
+            let totalPieces = 0;
+            let totalCBM = 0;
+            let totalNetWeight = 0;
+            let totalGrossWeight = 0;
+            
+            // Sum all product totals
+            document.querySelectorAll('#invoiceRows tr').forEach(row => {
+                const totalPriceText = row.querySelector('[data-field="total_price"]')?.textContent || '0';
+                const totalPrice = parseFloat(totalPriceText.replace('€', '').replace(/,/g, '')) || 0;
+                subtotal += totalPrice;
+                
+                // Packing list totals
+                const ctn = parseFloat(row.querySelector('[data-field="ctn"]')?.textContent.replace(/,/g, '')) || 0;
+                const qtyPerCtn = parseFloat(row.querySelector('[data-field="qty_per_ctn"]')?.textContent.replace(/,/g, '')) || 0;
+                const cbm = parseFloat(row.querySelector('[data-field="cbm"]')?.textContent.replace(/,/g, '')) || 0;
+                const netWeight = parseFloat(row.querySelector('[data-field="net_weight"]')?.textContent.replace(/,/g, '')) || 0;
+                const grossWeight = parseFloat(row.querySelector('[data-field="gross_weight"]')?.textContent.replace(/,/g, '')) || 0;
+                
+                totalCartons += ctn;
+                totalPieces += (ctn * qtyPerCtn);
+                totalCBM += cbm;
+                totalNetWeight += netWeight;
+                totalGrossWeight += grossWeight;
+            });
+            
+            document.getElementById('subtotalProducts').textContent = formatCurrency(subtotal);
+            
+            // Update packing list totals
+            document.getElementById('totalCartons').textContent = totalCartons;
+            document.getElementById('totalPieces').textContent = totalPieces;
+            document.getElementById('totalCBM').textContent = formatCurrency(totalCBM);
+            document.getElementById('totalNetWeight').textContent = formatCurrency(totalNetWeight);
+            document.getElementById('totalGrossWeight').textContent = formatCurrency(totalGrossWeight);
+            
+            // Additional costs
+            const mainlandCosts = parseFloat(document.getElementById('mainlandCosts').textContent.replace(/,/g, '')) || 0;
+            const fobCosts = parseFloat(document.getElementById('fobCosts').textContent.replace(/,/g, '')) || 0;
+            const freight = parseFloat(document.getElementById('freight').textContent.replace(/,/g, '')) || 0;
+            const customs = parseFloat(document.getElementById('customs').textContent.replace(/,/g, '')) || 0;
+            const insurance = parseFloat(document.getElementById('insurance').textContent.replace(/,/g, '')) || 0;
+            const depositPaid = parseFloat(document.getElementById('depositPaid').textContent.replace(/,/g, '')) || 0;
+            
+            // Additional charges (dynamic)
+            let additionalTotal = 0;
+            document.querySelectorAll('#additionalCharges tr').forEach(row => {
+                const amount = parseFloat(row.querySelector('.charge-amount').textContent.replace(/,/g, '')) || 0;
+                const isDeduction = row.dataset.isDeduction === 'true';
+                additionalTotal += isDeduction ? -amount : amount;
+            });
+            
+            const grandTotal = subtotal + mainlandCosts + fobCosts + freight + customs + insurance + additionalTotal - depositPaid;
+            document.getElementById('grandTotal').textContent = formatCurrency(grandTotal);
+        }
+        
+        // Delete row
+        function deleteRow(rowId) {
+            const row = document.querySelector(`tr[data-row-id="${rowId}"]`);
+            if (row && confirm('Delete this row?')) {
+                row.remove();
+                recalculateTotals();
+            }
+        }
+        
+        // Add bank account
+        function addBankAccount() {
+            const container = document.getElementById('bankAccountsList');
+            const accountNum = container.children.length + 1;
+            
+            const accountDiv = document.createElement('div');
+            accountDiv.className = 'border border-gray-300 rounded p-3 bg-white bank-account-item';
+            accountDiv.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <strong>Account ${accountNum}:</strong>
+                    <button onclick="deleteBankAccount(this)" class="no-print text-red-600 hover:text-red-700 text-sm">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="space-y-1 text-xs">
+                    <p>Bank: <span contenteditable="true" class="editable-cell inline-block min-w-[150px]">Bank Name</span></p>
+                    <p>Account: <span contenteditable="true" class="editable-cell inline-block min-w-[150px]">Account Number</span></p>
+                    <p>SWIFT: <span contenteditable="true" class="editable-cell inline-block min-w-[100px]">SWIFT Code</span></p>
+                    <p>IBAN: <span contenteditable="true" class="editable-cell inline-block min-w-[150px]">IBAN</span></p>
+                </div>
+            `;
+            
+            container.appendChild(accountDiv);
+        }
+        
+        // Delete bank account (NEW FUNCTION)
+        function deleteBankAccount(button) {
+            if (confirm('Delete this bank account?')) {
+                const accountDiv = button.closest('.bank-account-item');
+                accountDiv.remove();
+                
+                // Renumber remaining accounts
+                const container = document.getElementById('bankAccountsList');
+                const accounts = container.querySelectorAll('.bank-account-item');
+                accounts.forEach((account, index) => {
+                    const label = account.querySelector('strong');
+                    label.textContent = `Account ${index + 1}:`;
+                });
+            }
+        }
+        
+        // Add charge/deduction
+        function addCharge() {
+            const tbody = document.getElementById('additionalCharges');
+            const chargeName = prompt('Charge name (e.g., Handling Fee, Deposit Paid):');
+            if (!chargeName) return;
+            
+            const isDeduction = chargeName.toLowerCase().includes('deposit') || chargeName.toLowerCase().includes('paid');
+            
+            const row = document.createElement('tr');
+            row.dataset.isDeduction = isDeduction;
+            row.innerHTML = `
+                <td class="text-right pr-4 py-2 ${isDeduction ? 'text-red-700' : ''}">
+                    <span contenteditable="true" class="editable-cell inline-block">${chargeName}</span>:
+                </td>
+                <td class="text-right ${isDeduction ? 'text-red-700' : ''}">
+                    ${isDeduction ? '-' : ''}€<span contenteditable="true" class="input-like charge-amount" oninput="recalculateTotals()">0.00</span>
+                    <button onclick="this.closest('tr').remove(); recalculateTotals();" class="no-print ml-2 text-red-600 text-sm">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
+        }
+        
+        // ============================================
+        // 🆕 CSV UPLOAD FUNCTIONALITY
+        // ============================================
+        
+        /**
+         * Χειρίζεται το upload CSV αρχείου και γεμίζει το invoice grid
+         * @param {Event} event - Το file input change event
+         */
+        function handleCSVUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Έλεγχος τύπου αρχείου
+            const validTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+            const fileName = file.name.toLowerCase();
+            
+            if (!validTypes.includes(file.type) && !fileName.endsWith('.csv')) {
+                alert('❌ Παρακαλώ επιλέξτε ένα έγκυρο CSV αρχείο!');
+                event.target.value = ''; // Reset input
+                return;
+            }
+            
+            // Εμφάνιση loading indicator
+            showLoadingMessage('Φόρτωση προϊόντων από CSV...');
+            
+            // Parse το CSV με Papa Parse
+            Papa.parse(file, {
+                header: true,  // Πρώτη γραμμή = headers
+                skipEmptyLines: true,
+                transformHeader: (header) => {
+                    // Normalize headers (remove spaces, lowercase)
+                    return header.trim();
+                },
+                complete: function(results) {
+                    console.log('📊 CSV Parsed:', results);
+                    
+                    if (results.errors.length > 0) {
+                        console.error('❌ CSV Parsing Errors:', results.errors);
+                        alert('⚠️ Το CSV αρχείο έχει σφάλματα μορφοποίησης. Παρακαλώ ελέγξτε το αρχείο.');
+                        hideLoadingMessage();
+                        return;
+                    }
+                    
+                    const products = results.data;
+                    
+                    if (products.length === 0) {
+                        alert('⚠️ Το CSV αρχείο είναι κενό!');
+                        hideLoadingMessage();
+                        return;
+                    }
+                    
+                    // Validation: Έλεγχος αν έχει τις σωστές στήλες
+                    const requiredColumns = ['Name', 'Unit Price EUR'];
+                    const headers = Object.keys(products[0]);
+                    const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+                    
+                    if (missingColumns.length > 0) {
+                        alert(`❌ Λείπουν απαραίτητες στήλες:\n${missingColumns.join(', ')}\n\nΠαρακαλώ χρησιμοποιήστε το σωστό template!`);
+                        hideLoadingMessage();
+                        return;
+                    }
+                    
+                    // Καθαρισμός υπάρχοντων γραμμών (προαιρετικό - ρωτάμε τον χρήστη)
+                    const existingRows = document.getElementById('invoiceRows').children.length;
+                    let shouldClear = true;
+                    
+                    if (existingRows > 0) {
+                        shouldClear = confirm(`Υπάρχουν ήδη ${existingRows} προϊόντα στο grid.\n\nΘέλετε να τα ΔΙΑΓΡΑΨΕΤΕ και να φορτώσετε τα νέα;\n\n• ΝΑΙ = Διαγραφή + Φόρτωση νέων\n• ΟΧΙ = Προσθήκη στα υπάρχοντα`);
+                    }
+                    
+                    if (shouldClear) {
+                        document.getElementById('invoiceRows').innerHTML = '';
+                        rowCounter = 0;
+                    }
+                    
+                    // Προσθήκη προϊόντων στο grid
+                    let successCount = 0;
+                    let errorCount = 0;
+                    
+                    products.forEach((product, index) => {
+                        try {
+                            // Δημιουργία νέας γραμμής
+                            addRow();
+                            
+                            // Πάρε την τελευταία γραμμή που προστέθηκε
+                            const rows = document.getElementById('invoiceRows').children;
+                            const row = rows[rows.length - 1];
+                            
+                            // Mapping CSV columns to table cells
+                            const cellMappings = {
+                                'Item Number': 'item_number',
+                                'Picture URL': 'image_url',
+                                'Name': 'name',
+                                'Description': 'description',
+                                'Color': 'product_color',
+                                'CTN': 'ctn',
+                                'QTY per CTN': 'qty_per_ctn',
+                                'Carton Length': 'carton_length',
+                                'Carton Width': 'carton_width',
+                                'Carton Height': 'carton_height',
+                                'Carton Weight': 'carton_weight',
+                                'Total Carton Weight': 'total_carton_weight',
+                                'CBM': 'cbm',
+                                'N.W': 'net_weight',
+                                'G.W': 'gross_weight',
+                                'Unit Price EUR': 'unit_price',
+                                'Product URL': 'product_url',
+                                'Image URL': 'image_url',
+                                'Notes': 'notes',
+                                'Price CNY': 'price_cny',
+                                'FX Rate': 'fx_rate',
+                                'Markup %': 'markup_percent'
+                            };
+                            
+                            // Γέμισε τα κελιά με δεδομένα από το CSV
+                            Object.keys(cellMappings).forEach(csvColumn => {
+                                const cellField = cellMappings[csvColumn];
+                                const value = product[csvColumn];
+                                
+                                if (value !== undefined && value !== '') {
+                                    // Βρες το κελί
+                                    let cell = row.querySelector(`[data-field="${cellField}"]`);
+                                    
+                                    if (cell) {
+                                        // Ειδική χειρισμός για Image URL
+                                        if (cellField === 'image_url' && cell.tagName === 'INPUT') {
+                                            cell.value = value;
+                                            // Trigger image update
+                                            updateImageDisplay(cell);
+                                        } else if (cell.hasAttribute('contenteditable')) {
+                                            // Contenteditable cells
+                                            cell.textContent = value;
+                                        } else {
+                                            cell.textContent = value;
+                                        }
+                                    }
+                                }
+                            });
+                            
+                            // Trigger υπολογισμούς
+                            const ctnCell = row.querySelector('[data-field="ctn"]');
+                            if (ctnCell) {
+                                calculateRowTotal(ctnCell);
+                            }
+                            
+                            successCount++;
+                            
+                        } catch (error) {
+                            console.error(`❌ Error processing row ${index + 1}:`, error);
+                            errorCount++;
+                        }
+                    });
+                    
+                    // Επανυπολογισμός συνόλων
+                    recalculateTotals();
+                    
+                    // Μήνυμα επιτυχίας
+                    hideLoadingMessage();
+                    
+                    if (errorCount === 0) {
+                        alert(`✅ Επιτυχής φόρτωση!\n\n📦 ${successCount} προϊόντα προστέθηκαν στο invoice.`);
+                    } else {
+                        alert(`⚠️ Μερική επιτυχία:\n\n✅ ${successCount} προϊόντα φορτώθηκαν\n❌ ${errorCount} προϊόντα είχαν σφάλματα`);
+                    }
+                    
+                    // Reset το file input για να επιτρέψει re-upload
+                    event.target.value = '';
+                },
+                error: function(error) {
+                    console.error('❌ Papa Parse Error:', error);
+                    alert('❌ Σφάλμα κατά την ανάγνωση του αρχείου. Παρακαλώ δοκιμάστε ξανά.');
+                    hideLoadingMessage();
+                    event.target.value = '';
+                }
+            });
+        }
+        
+        /**
+         * Εμφανίζει loading μήνυμα
+         */
+        function showLoadingMessage(message) {
+            // Δημιουργία loading overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'loadingOverlay';
+            overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            overlay.innerHTML = `
+                <div class="bg-white rounded-lg p-6 shadow-xl flex items-center space-x-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    <span class="text-lg font-semibold text-gray-700">${message}</span>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        
+        /**
+         * Κρύβει το loading μήνυμα
+         */
+        function hideLoadingMessage() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+        
+        // ============================================
+        // END OF CSV UPLOAD FUNCTIONALITY
+        // ============================================
+        
+        // Load customers from Google Sheets Contacts tab
+        async function loadCustomersFromGoogleSheets() {
+            try {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${CONTACTS_SHEET_NAME}?key=${GOOGLE_SHEETS_API_KEY}`;
+                
+                console.log('📡 Loading customers from Google Sheets Contacts tab...');
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('📥 Google Sheets response:', data);
+                
+                if (data.values && data.values.length > 1) {
+                    const headers = data.values[0];
+                    const rows = data.values.slice(1);
+                    
+                    console.log('📋 Headers:', headers);
+                    console.log('📄 Total rows:', rows.length);
+                    console.log('🔍 First row:', rows[0]);
+                    
+                    // Map Google Sheets columns to customer data
+                    // ACTUAL DATA STRUCTURE (ignoring misleading headers):
+                    // From real data: [AGL, Idle, Active, ANGELIKI, ALLOIMONOU, medexhellas@gmail.com, , 6975606708, ALLOIMONOU AGGELIKI, 9999999, LAGKADAS THESSALONIKIS, GREECE, LAGKADAS THESSALONIKIS, 32512]
+                    // Column A (0) = ID
+                    // Column B (1) = Status1
+                    // Column C (2) = Status2  
+                    // Column D (3) = First Name
+                    // Column E (4) = Surname
+                    // Column F (5) = Email
+                    // Column G (6) = Mobile
+                    // Column H (7) = Phone
+                    // Column I (8) = Company Name
+                    // Column J (9) = Tax ID / VAT
+                    // Column K (10) = Address
+                    // Column L (11) = Country
+                    // Column M (12) = City
+                    // Column N (13) = Zip / Postal Code
+                    
+                    customersData = rows.map((row, index) => {
+                        // ✅ CORRECT MAPPING FROM JOHNY (May 15, 2025):
+                        // Column A (0) = Customer Code (dropdown)
+                        // Column H (7) = Company Name
+                        // Column D (3) = Surname (Επίθετο)
+                        // Column C (2) = Name (Όνομα)
+                        // Column J (9) = Address
+                        // Column M (12) = Postal Code
+                        // Column L (11) = City
+                        // Column K (10) = Country
+                        // Column G (6) = Telephone
+                        // Column I (8) = VAT Number
+                        
+                        const customer = {
+                            id: row[0] || `cust_${index + 1}`,        // Column A (0): Customer Code
+                            active: true,
+                            first_name: row[2] || '',                  // Column C (2): Name/Όνομα
+                            surname: row[3] || '',                     // Column D (3): Surname/Επίθετο
+                            phone: row[6] || '',                       // Column G (6): Telephone
+                            company: row[7] || '',                     // Column H (7): Company Name
+                            vat_number: row[8] || '',                  // Column I (8): VAT Number
+                            address: row[9] || '',                     // Column J (9): Address
+                            country: row[10] || '',                    // Column K (10): Country
+                            city: row[11] || '',                       // Column L (11): City
+                            postal_code: row[12] || '',                // Column M (12): Postal Code
+                            // Derived fields
+                            customer_code: row[0] || `CUS${index + 1}`,  // Column A
+                            customer_name: row[7] || `${row[2]} ${row[3]}`.trim(), // Column H or C+D
+                            contact_person: `${row[3]} ${row[2]}`.trim()  // Column D (Surname) + C (Name)
+                        };
+                        
+                        // Log first 3 for debugging
+                        if (index < 3) {
+                            console.log(`👤 Customer ${index + 1}:`, customer);
+                        }
+                        
+                        return customer;
+                    });
+                    
+                    // ===== APPLY CUSTOMER FILTERING =====
+                    if (window.PageProtection && window.PageProtection.filterCustomersByPermission) {
+                        const originalCount = customersData.length;
+                        customersData = await window.PageProtection.filterCustomersByPermission(customersData);
+                        
+                        if (customersData.length < originalCount) {
+                            console.log(`🔐 Customer filtering applied in invoice creator: ${customersData.length}/${originalCount} customers visible`);
+                        }
+                    }
+                    
+                    // Populate dropdown
+                    const select = document.getElementById('customerSelect');
+                    customersData.forEach(customer => {
+                        const option = document.createElement('option');
+                        option.value = customer.id;
+                        option.textContent = `${customer.customer_code} - ${customer.customer_name}`;
+                        select.appendChild(option);
+                    });
+                    
+                    console.log('✅ Loaded', customersData.length, 'customers from Google Sheets');
+                } else {
+                    console.warn('⚠️ No data found in Contacts sheet');
+                }
+            } catch (error) {
+                console.error('❌ Error loading customers from Google Sheets:', error);
+                alert('❌ Failed to load customers from Google Sheets. Check console for details.');
+            }
+        }
+        
+        // Load customer info - ENHANCED: Map to Google Sheets columns
+        function loadCustomerInfo() {
+            const select = document.getElementById('customerSelect');
+            const customerId = select.value;
+            
+            if (!customerId) return;
+            
+            const customer = customersData.find(c => c.id === customerId);
+            if (!customer) return;
+            
+            // Update invoice data
+            invoiceData.customer_id = customer.id;
+            invoiceData.customer_code = customer.customer_code || '';
+            invoiceData.customer_name = customer.customer_name || '';
+            
+            // Populate customer code
+            document.getElementById('customerCode').value = customer.customer_code || '';
+            
+            // ✅ JOHNY'S EXACT SPECIFICATION (May 15, 2025):
+            
+            // 2nd field: "Company Name:" + Column H data
+            const companyName = customer.company || '';
+            document.getElementById('companyName').textContent = companyName;
+            
+            // 3rd field: "Contact Person:" + Column D (Surname) + Column C (Name)
+            const contactName = customer.contact_person || 
+                               (customer.surname && customer.first_name ? `${customer.surname} ${customer.first_name}` : '') ||
+                               '';
+            document.getElementById('contactName').textContent = contactName;
+            
+            // 4th field: "Address:" + Column J data
+            const address = customer.address || '';
+            document.getElementById('customerAddress').textContent = address;
+            
+            // 5th field: "Postal Code/City/Country:" + Columns M/L/K data
+            let locationParts = [];
+            if (customer.postal_code) locationParts.push(customer.postal_code);  // Column M
+            if (customer.city) locationParts.push(customer.city);                 // Column L
+            if (customer.country) locationParts.push(customer.country);           // Column K
+            const location = locationParts.join(' / ') || '';
+            document.getElementById('postalCityCountry').textContent = location;
+            
+            // 6th field: "Tel/VAT No:" + Column G (Tel) / Column I (VAT)
+            let telVatParts = [];
+            if (customer.phone) telVatParts.push(customer.phone);                 // Column G
+            if (customer.vat_number) telVatParts.push(`VAT: ${customer.vat_number}`);  // Column I
+            const telVat = telVatParts.join(' / ') || '';
+            document.getElementById('telVat').textContent = telVat;
+            
+            // ✅ NEW: Update Customer Code Badge next to GST icon
+            const customerCodeBadge = document.getElementById('customerCodeBadge');
+            if (customerCodeBadge) {
+                customerCodeBadge.textContent = customer.customer_code || '---';
+            }
+            
+            // Visual feedback - GREEN highlight
+            select.style.borderColor = '#10b981';
+            select.style.backgroundColor = '#d1fae5';
+            setTimeout(() => {
+                select.style.borderColor = '';
+                select.style.backgroundColor = '';
+            }, 2000);
+            
+            updateInvoiceNumber();
+        }
+        
+        // ============================================
+        // 🆕 AUTOCOMPLETE FUNCTIONALITY
+        // ============================================
+        
+        let productsLibraryCache = []; // Cache for products
+        let autocompleteTimeout = null;
+        let currentAutocompleteCell = null;
+        let selectedAutocompleteIndex = -1;
+        
+        /**
+         * Load Products Library for autocomplete
+         */
+        async function loadProductsLibraryCache() {
+            try {
+                const response = await fetch('tables/products?page=1&limit=1000');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    productsLibraryCache = data.data || [];
+                    console.log(`📦 Products Library loaded: ${productsLibraryCache.length} products`);
+                    
+                    if (productsLibraryCache.length === 0) {
+                        console.warn('⚠️ Products Library is empty! Add products first.');
+                    }
+                } else {
+                    console.error('❌ Failed to load Products Library. Status:', response.status);
+                }
+            } catch (error) {
+                console.error('❌ Error loading Products Library:', error);
+            }
+        }
+        
+        /**
+         * Initialize autocomplete on NAME fields
+         */
+        function initializeAutocomplete() {
+            // Load products library cache
+            loadProductsLibraryCache();
+            
+            // Add event listeners to existing and future NAME cells
+            document.addEventListener('input', (e) => {
+                const target = e.target;
+                if (target.hasAttribute('data-field') && target.getAttribute('data-field') === 'name') {
+                    handleAutocompleteInput(target);
+                }
+            });
+            
+            // Close dropdown on outside click
+            document.addEventListener('click', (e) => {
+                const dropdown = document.getElementById('autocompleteDropdown');
+                if (!dropdown.contains(e.target) && !e.target.closest('[data-field="name"]')) {
+                    hideAutocompleteDropdown();
+                }
+            });
+            
+            // Keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                const dropdown = document.getElementById('autocompleteDropdown');
+                if (dropdown.classList.contains('active')) {
+                    handleAutocompleteKeyboard(e);
+                }
+            });
+        }
+        
+        /**
+         * Handle input in NAME field
+         */
+        function handleAutocompleteInput(cell) {
+            currentAutocompleteCell = cell;
+            const query = cell.textContent.trim();
+            
+            // Clear existing timeout
+            if (autocompleteTimeout) {
+                clearTimeout(autocompleteTimeout);
+            }
+            
+            // Hide dropdown if query is too short
+            if (query.length < 2) {
+                hideAutocompleteDropdown();
+                return;
+            }
+            
+            // Debounce search
+            autocompleteTimeout = setTimeout(() => {
+                searchProducts(query, cell);
+            }, 300);
+        }
+        
+        /**
+         * Search products in library
+         */
+        function searchProducts(query, cell) {
+            if (productsLibraryCache.length === 0) {
+                showAutocompleteLoading();
+                return;
+            }
+            
+            const queryLower = query.toLowerCase();
+            
+            // Search by name, SKU, or description
+            const results = productsLibraryCache.filter(product => {
+                const name = (product.product_name || '').toLowerCase();
+                const sku = (product.sku || '').toLowerCase();
+                const desc = (product.description || '').toLowerCase();
+                
+                return name.includes(queryLower) || 
+                       sku.includes(queryLower) || 
+                       desc.includes(queryLower);
+            });
+            
+            // Sort by relevance (exact match first)
+            results.sort((a, b) => {
+                const aName = (a.product_name || '').toLowerCase();
+                const bName = (b.product_name || '').toLowerCase();
+                
+                const aStarts = aName.startsWith(queryLower);
+                const bStarts = bName.startsWith(queryLower);
+                
+                if (aStarts && !bStarts) return -1;
+                if (!aStarts && bStarts) return 1;
+                
+                return aName.localeCompare(bName);
+            });
+            
+            // Limit to top 10 results
+            const topResults = results.slice(0, 10);
+            
+            displayAutocompleteResults(topResults, cell);
+        }
+        
+        /**
+         * Display autocomplete results
+         */
+        function displayAutocompleteResults(results, cell) {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            const resultsContainer = document.getElementById('autocompleteResults');
+            const headerText = document.getElementById('autocompleteHeaderText');
+            
+            if (!dropdown) {
+                console.error('❌ Autocomplete dropdown element not found!');
+                return;
+            }
+            
+            if (results.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="autocomplete-no-results">
+                        <i class="fas fa-search"></i>
+                        <p>No products found</p>
+                    </div>
+                `;
+            } else {
+                headerText.textContent = `${results.length} product${results.length > 1 ? 's' : ''} found`;
+                
+                resultsContainer.innerHTML = results.map((product, index) => {
+                    const imageUrl = product.image_url_1 || '';
+                    const price = product.unit_price_eur || 0;
+                    const sku = product.sku || 'N/A';
+                    const description = product.description || '';
+                    
+                    return `
+                        <div class="autocomplete-item" data-index="${index}" data-product-id="${product.id}">
+                            ${imageUrl ? 
+                                `<img src="${imageUrl}" alt="${product.product_name}" class="autocomplete-image" onerror="this.outerHTML='<div class=\\'autocomplete-image placeholder\\'><i class=\\'fas fa-image\\'></i></div>'">` :
+                                `<div class="autocomplete-image placeholder"><i class="fas fa-image"></i></div>`
+                            }
+                            <div class="autocomplete-details">
+                                <div class="autocomplete-name">${product.product_name}</div>
+                                <div class="autocomplete-meta">
+                                    <span class="autocomplete-price">
+                                        <i class="fas fa-euro-sign"></i> €${price.toFixed(2)}
+                                    </span>
+                                    <span>
+                                        <i class="fas fa-barcode"></i> ${sku}
+                                    </span>
+                                    ${product.qty_per_box ? `
+                                        <span>
+                                            <i class="fas fa-box"></i> ${product.qty_per_box}/box
+                                        </span>
+                                    ` : ''}
+                                </div>
+                                ${description ? `<div class="autocomplete-description">${description}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Add click handlers
+                resultsContainer.querySelectorAll('.autocomplete-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const productId = item.getAttribute('data-product-id');
+                        const product = results.find(p => p.id == productId);
+                        if (product) {
+                            selectAutocompleteProduct(product, cell);
+                        }
+                    });
+                });
+            }
+            
+            // Position and show dropdown
+            positionAutocompleteDropdown(cell);
+            dropdown.classList.add('active');
+            selectedAutocompleteIndex = -1;
+        }
+        
+        /**
+         * Position dropdown near the cell
+         */
+        function positionAutocompleteDropdown(cell) {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            const cellRect = cell.getBoundingClientRect();
+            
+            dropdown.style.top = `${cellRect.bottom + window.scrollY + 5}px`;
+            dropdown.style.left = `${cellRect.left + window.scrollX}px`;
+        }
+        
+        /**
+         * Select a product from autocomplete
+         */
+        function selectAutocompleteProduct(product, cell) {
+            const row = cell.closest('tr');
+            if (!row) return;
+            
+            // Fill all fields
+            const fieldsMap = {
+                'name': product.product_name || '',
+                'description': product.description || '',
+                'unit_price': product.unit_price_eur || 0,
+                'price_cny': product.unit_price_rmb || 0,
+                'fx_rate': 7.8, // Default
+                'markup_percent': product.default_markup_percent || 25,
+                'qty_per_ctn': product.qty_per_box || 0,
+                'notes': product.internal_notes || ''
+            };
+            
+            Object.keys(fieldsMap).forEach(field => {
+                const targetCell = row.querySelector(`[data-field="${field}"]`);
+                if (targetCell) {
+                    if (targetCell.tagName === 'INPUT') {
+                        targetCell.value = fieldsMap[field];
+                    } else {
+                        targetCell.textContent = fieldsMap[field];
+                    }
+                }
+            });
+            
+            // Fill image URL
+            const imageUrlInput = row.querySelector('[data-field="image_url"]');
+            if (imageUrlInput && product.image_url_1) {
+                imageUrlInput.value = product.image_url_1;
+                updateImageDisplay(imageUrlInput);
+            }
+            
+            // Trigger calculations
+            const ctnCell = row.querySelector('[data-field="ctn"]');
+            if (ctnCell) {
+                calculateRowTotal(ctnCell);
+            }
+            
+            // Hide dropdown
+            hideAutocompleteDropdown();
+            
+            // Visual feedback
+            cell.style.backgroundColor = '#d1fae5';
+            setTimeout(() => {
+                cell.style.backgroundColor = '';
+            }, 1000);
+            
+            console.log(`✅ Auto-filled product: ${product.product_name}`);
+        }
+        
+        /**
+         * Hide autocomplete dropdown
+         */
+        function hideAutocompleteDropdown() {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            dropdown.classList.remove('active');
+            selectedAutocompleteIndex = -1;
+        }
+        
+        /**
+         * Show loading state
+         */
+        function showAutocompleteLoading() {
+            const resultsContainer = document.getElementById('autocompleteResults');
+            resultsContainer.innerHTML = `
+                <div class="autocomplete-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading products...</p>
+                </div>
+            `;
+            
+            const dropdown = document.getElementById('autocompleteDropdown');
+            dropdown.classList.add('active');
+        }
+        
+        /**
+         * Handle keyboard navigation
+         */
+        function handleAutocompleteKeyboard(e) {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            const items = dropdown.querySelectorAll('.autocomplete-item');
+            
+            if (items.length === 0) return;
+            
+            switch(e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    selectedAutocompleteIndex = Math.min(selectedAutocompleteIndex + 1, items.length - 1);
+                    updateAutocompleteSelection(items);
+                    break;
+                    
+                case 'ArrowUp':
+                    e.preventDefault();
+                    selectedAutocompleteIndex = Math.max(selectedAutocompleteIndex - 1, 0);
+                    updateAutocompleteSelection(items);
+                    break;
+                    
+                case 'Enter':
+                    e.preventDefault();
+                    if (selectedAutocompleteIndex >= 0 && selectedAutocompleteIndex < items.length) {
+                        items[selectedAutocompleteIndex].click();
+                    }
+                    break;
+                    
+                case 'Escape':
+                    e.preventDefault();
+                    hideAutocompleteDropdown();
+                    break;
+            }
+        }
+        
+        /**
+         * Update visual selection in dropdown
+         */
+        function updateAutocompleteSelection(items) {
+            items.forEach((item, index) => {
+                if (index === selectedAutocompleteIndex) {
+                    item.classList.add('selected');
+                    item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+        
+        // Initialize autocomplete on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeAutocomplete();
+        });
+        
+        // Also try immediate initialization if DOM is already loaded
+        if (document.readyState !== 'loading') {
+            initializeAutocomplete();
+        }
+        
+        // ============================================
+        // END OF AUTOCOMPLETE FUNCTIONALITY
+        // ============================================
+        
+        // Save invoice
+        // ============================================
+        // 🆕 AUTO-SAVE PRODUCTS TO LIBRARY
+        // ============================================
+        
+        /**
+         * Extracts products from invoice grid and saves to Products Library
+         * Checks for duplicates (by name + unit_price_eur)
+         * @param {Array} invoiceItems - Products from invoice grid
+         * @returns {Object} - Statistics of saved products
+         */
+        async function saveProductsToLibrary(invoiceItems) {
+            const stats = {
+                total: invoiceItems.length,
+                new: 0,
+                duplicates: 0,
+                errors: 0
+            };
+            
+            try {
+                // Fetch existing products to check for duplicates
+                const response = await fetch('tables/products?limit=10000');
+                if (!response.ok) {
+                    console.warn('Could not fetch existing products for duplicate check');
+                    return stats;
+                }
+                
+                const existingProductsData = await response.json();
+                const existingProducts = existingProductsData.data || [];
+                
+                // Process each invoice item
+                for (const item of invoiceItems) {
+                    // Skip items without name or price
+                    if (!item.name || !item.unit_price) {
+                        continue;
+                    }
+                    
+                    // Check for duplicate (by name + unit_price_eur)
+                    const isDuplicate = existingProducts.some(p => 
+                        p.product_name.toLowerCase().trim() === item.name.toLowerCase().trim() &&
+                        Math.abs((p.unit_price_eur || 0) - item.unit_price) < 0.01
+                    );
+                    
+                    if (isDuplicate) {
+                        stats.duplicates++;
+                        console.log(`⏩ Skipping duplicate product: ${item.name}`);
+                        continue;
+                    }
+                    
+                    // Generate SKU (simple format: first 3 letters + random)
+                    const generateSKU = () => {
+                        const prefix = item.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
+                        const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+                        return `${prefix}-${random}`;
+                    };
+                    
+                    // Create product data matching Products Library schema
+                    const productData = {
+                        sku: generateSKU(),
+                        product_name: item.name,
+                        internal_code: item.item_number ? `INV-${item.item_number}` : '',
+                        category: 'Imported from Invoice',
+                        is_active: true,
+                        description: item.description || '',
+                        unit_price_rmb: item.price_cny || 0,
+                        unit_price_eur: item.unit_price || 0,
+                        unit_price_usd: 0, // Not available in invoice
+                        default_markup_percent: item.markup_percent || 25,
+                        qty_per_box: item.qty_per_ctn || null,
+                        box_dimensions: '',
+                        gross_weight: null,
+                        supplier_name: '',
+                        supplier_contact: '',
+                        supplier_phone: '',
+                        supplier_address: '',
+                        image_url_1: item.image_url || '',
+                        image_url_2: '',
+                        image_url_3: '',
+                        tags: 'invoice-import',
+                        internal_notes: `Imported from invoice. Product URL: ${item.product_url || 'N/A'}\nNotes: ${item.notes || 'N/A'}`
+                    };
+                    
+                    // Save to Products Library
+                    try {
+                        const saveResponse = await fetch('tables/products', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(productData)
+                        });
+                        
+                        if (saveResponse.ok) {
+                            stats.new++;
+                            console.log(`✅ Saved to Products Library: ${item.name}`);
+                        } else {
+                            stats.errors++;
+                            console.error(`❌ Failed to save product: ${item.name}`);
+                        }
+                    } catch (saveError) {
+                        stats.errors++;
+                        console.error(`❌ Error saving product ${item.name}:`, saveError);
+                    }
+                }
+                
+                return stats;
+                
+            } catch (error) {
+                console.error('❌ Error in saveProductsToLibrary:', error);
+                return stats;
+            }
+        }
+        
+        // ============================================
+        // END OF AUTO-SAVE PRODUCTS TO LIBRARY
+        // ============================================
+        
+
+        async function saveInvoice() {
+            // Collect all data
+            const items = [];
+            document.querySelectorAll('#invoiceRows tr').forEach((row, index) => {
+                const item = {
+                    item_number: parseFloat(row.querySelector('[data-field="item_number"]')?.textContent) || (index + 1),
+                    image_url: row.querySelector('[data-field="image_url"]')?.value || '',
+                    name: row.querySelector('[data-field="name"]')?.textContent || '',
+                    description: row.querySelector('[data-field="description"]')?.textContent || '',
+                    product_color: row.querySelector('[data-field="product_color"]')?.textContent || '',
+                    ctn: parseFloat(row.querySelector('[data-field="ctn"]')?.textContent.replace(/,/g, '')) || 0,
+                    qty_per_ctn: parseFloat(row.querySelector('[data-field="qty_per_ctn"]')?.textContent.replace(/,/g, '')) || 0,
+                    total_qty: parseFloat(row.querySelector('[data-field="total_qty"]')?.textContent.replace(/,/g, '')) || 0,
+                    carton_length: parseFloat(row.querySelector('[data-field="carton_length"]')?.textContent.replace(/,/g, '')) || 0,
+                    carton_width: parseFloat(row.querySelector('[data-field="carton_width"]')?.textContent.replace(/,/g, '')) || 0,
+                    carton_height: parseFloat(row.querySelector('[data-field="carton_height"]')?.textContent.replace(/,/g, '')) || 0,
+                    carton_weight: parseFloat(row.querySelector('[data-field="carton_weight"]')?.textContent.replace(/,/g, '')) || 0,
+                    total_carton_weight: parseFloat(row.querySelector('[data-field="total_carton_weight"]')?.textContent.replace(/,/g, '')) || 0,
+                    cbm: parseFloat(row.querySelector('[data-field="cbm"]')?.textContent.replace(/,/g, '')) || 0,
+                    net_weight: parseFloat(row.querySelector('[data-field="net_weight"]')?.textContent.replace(/,/g, '')) || 0,
+                    gross_weight: parseFloat(row.querySelector('[data-field="gross_weight"]')?.textContent.replace(/,/g, '')) || 0,
+                    unit_price: parseFloat(row.querySelector('[data-field="unit_price"]')?.textContent.replace(/,/g, '')) || 0,
+                    total_price: parseFloat(row.querySelector('[data-field="total_price"]')?.textContent.replace(/[€,]/g, '')) || 0,
+                    product_url: row.querySelector('[data-field="product_url"]')?.textContent || '',
+                    notes: row.querySelector('[data-field="notes"]')?.textContent || '',
+                    price_cny: parseFloat(row.querySelector('[data-field="price_cny"]')?.textContent.replace(/,/g, '')) || 0,
+                    fx_rate: parseFloat(row.querySelector('[data-field="fx_rate"]')?.textContent.replace(/,/g, '')) || 7.8,
+                    markup_percent: parseFloat(row.querySelector('[data-field="markup_percent"]')?.textContent.replace(/,/g, '')) || 0
+                };
+                items.push(item);
+            });
+            
+            const invoicePayload = {
+                invoice_number: document.getElementById('invoiceNumber').textContent,
+                invoice_type: invoiceData.type,
+                customer_id: invoiceData.customer_id,
+                customer_code: document.getElementById('customerCode').value,
+                customer_name: invoiceData.customer_name,
+                invoice_date: document.getElementById('invoiceDate').value,
+                currency: 'EUR',
+                exchange_rate_eur_cny: 7.8,
+                items: items,
+                subtotal_products: parseFloat(document.getElementById('subtotalProducts').textContent),
+                mainland_costs_eu: parseFloat(document.getElementById('mainlandCosts').textContent) || 0,
+                fob_costs_eu: parseFloat(document.getElementById('fobCosts').textContent) || 0,
+                freight: parseFloat(document.getElementById('freight').textContent) || 0,
+                customs: parseFloat(document.getElementById('customs').textContent) || 0,
+                insurance: parseFloat(document.getElementById('insurance').textContent) || 0,
+                deposit_paid: parseFloat(document.getElementById('depositPaid').textContent) || 0,
+                grand_total: parseFloat(document.getElementById('grandTotal').textContent.replace('€', '')),
+                status: 'draft',
+                created_by: 'current_user', // Will be replaced with actual user
+                created_at: new Date().toISOString()
+            };
+            
+            try {
+                const response = await fetch('tables/invoices', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(invoicePayload)
+                });
+                
+                if (response.ok) {
+                    const savedInvoice = await response.json();
+                    console.log('Invoice saved:', savedInvoice);
+                    
+                    // AUTO-CREATE TRANSACTION for Commercial Invoices
+                    if (invoicePayload.invoice_type === 'commercial') {
+                        try {
+                            const transactionPayload = {
+                                transaction_date: invoicePayload.invoice_date,
+                                transaction_type: 'income',
+                                category: 'sales',
+                                amount: invoicePayload.grand_total,
+                                currency: 'EUR',
+                                customer_id: invoicePayload.customer_id,
+                                customer_name: invoicePayload.customer_name,
+                                invoice_id: savedInvoice.id,
+                                invoice_number: invoicePayload.invoice_number,
+                                description: `Commercial Invoice ${invoicePayload.invoice_number} - ${invoicePayload.customer_name}`,
+                                payment_method: 'Bank Transfer',
+                                status: 'pending',
+                                created_at: new Date().toISOString()
+                            };
+                            
+                            const transactionResponse = await fetch('tables/transactions', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify(transactionPayload)
+                            });
+                            
+                            if (transactionResponse.ok) {
+                                const transaction = await transactionResponse.json();
+                                
+                                // Link transaction back to invoice
+                                await fetch(`tables/invoices/${savedInvoice.id}`, {
+                                    method: 'PATCH',
+                                    headers: {'Content-Type': 'application/json'},
+                                    body: JSON.stringify({
+                                        transaction_id: transaction.id,
+                                        creates_transaction: true
+                                    })
+                                });
+                                
+                                console.log('✅ Transaction auto-created:', transaction.id);
+                                alert(`✅ Commercial Invoice saved successfully!\n\n💰 Financial transaction created automatically (€${invoicePayload.grand_total.toFixed(2)})`);
+                            } else {
+                                console.error('Transaction creation failed:', await transactionResponse.text());
+                                alert('✅ Invoice saved, but transaction creation failed. Please create manually.');
+                            }
+                        } catch (transError) {
+                            console.error('Transaction creation error:', transError);
+                            alert('✅ Invoice saved, but transaction creation failed. Please create manually.');
+                        }
+                    } else {
+                        alert('✅ Invoice saved successfully!');
+                    }
+                    
+                    // 🆕 AUTO-SAVE PRODUCTS TO LIBRARY
+                    try {
+                        console.log('💾 Saving products to library...');
+                        const productStats = await saveProductsToLibrary(items);
+                        
+                        if (productStats.new > 0 || productStats.duplicates > 0) {
+                            console.log(`\n📦 Products Library Update:\n✅ New products added: ${productStats.new}\n⏩ Duplicates skipped: ${productStats.duplicates}\n❌ Errors: ${productStats.errors}\n`);
+                            
+                            // Show notification to user (if new products were added)
+                            if (productStats.new > 0) {
+                                setTimeout(() => {
+                                    alert(`📦 Products Library Updated!\n\n✅ ${productStats.new} new product(s) added to library\n⏩ ${productStats.duplicates} duplicate(s) skipped`);
+                                }, 500); // Delay to show after invoice save message
+                            }
+                        }
+                    } catch (prodError) {
+                        console.error('⚠️ Error saving products to library:', prodError);
+                        // Don't show error to user - products library update is optional
+                    }
+                    
+                    // Update customer stats
+                    if (invoicePayload.customer_id) {
+                        try {
+                            const customerResponse = await fetch(`tables/customers/${invoicePayload.customer_id}`);
+                            if (customerResponse.ok) {
+                                const customer = await customerResponse.json();
+                                
+                                const updatedCustomer = {
+                                    total_invoices_count: (customer.total_invoices_count || 0) + 1,
+                                    last_invoice_date: invoicePayload.invoice_date
+                                };
+                                
+                                if (invoicePayload.invoice_type === 'quotation') {
+                                    updatedCustomer.total_quoted_amount = (customer.total_quoted_amount || 0) + invoicePayload.grand_total;
+                                } else if (invoicePayload.invoice_type === 'commercial') {
+                                    updatedCustomer.total_invoiced_amount = (customer.total_invoiced_amount || 0) + invoicePayload.grand_total;
+                                }
+                                
+                                await fetch(`tables/customers/${invoicePayload.customer_id}`, {
+                                    method: 'PATCH',
+                                    headers: {'Content-Type': 'application/json'},
+                                    body: JSON.stringify(updatedCustomer)
+                                });
+                                
+                                console.log('✅ Customer stats updated');
+                            }
+                        } catch (custError) {
+                            console.error('Customer update error:', custError);
+                        }
+                    }
+                } else {
+                    alert('❌ Error saving invoice. Check console.');
+                    console.error('Save error:', await response.text());
+                }
+            } catch (error) {
+                alert('❌ Network error. Check console.');
+                console.error('Save error:', error);
+            }
+        }
+        
+        // Language toggle (placeholder)
+        function toggleLanguage() {
+            const label = document.getElementById('languageLabel');
+            label.textContent = label.textContent === 'EN' ? '中文' : 'EN';
+            alert('Language toggle functionality will be implemented in Phase 2');
+        }
+        
+        // Load saved invoice (placeholder)
+        async function loadInvoice() {
+            try {
+                // Fetch all saved invoices
+                const response = await fetch('tables/invoices?limit=100&sort=-created_at');
+                if (!response.ok) {
+                    alert('❌ Failed to load invoices');
+                    return;
+                }
+                
+                const data = await response.json();
+                const invoices = data.data || [];
+                
+                if (invoices.length === 0) {
+                    alert('ℹ️ No saved invoices found');
+                    return;
+                }
+                
+                // Create selection dialog
+                let invoicesList = invoices.map((inv, index) => 
+                    `${index + 1}. ${inv.invoice_number || 'N/A'} - ${inv.customer_name || 'Unknown'} - ${inv.invoice_type || 'N/A'} - ${new Date(inv.created_at).toLocaleDateString()}`
+                ).join('\n');
+                
+                const selection = prompt(
+                    `📄 Select Invoice to Load:\n\n${invoicesList}\n\nEnter the number (1-${invoices.length}):`,
+                    '1'
+                );
+                
+                if (!selection) return;
+                
+                const index = parseInt(selection) - 1;
+                if (index < 0 || index >= invoices.length) {
+                    alert('❌ Invalid selection');
+                    return;
+                }
+                
+                const selectedInvoice = invoices[index];
+                
+                // Load invoice data
+                invoiceData.invoice_number = selectedInvoice.invoice_number || '';
+                invoiceData.invoice_date = selectedInvoice.invoice_date || new Date().toISOString().split('T')[0];
+                invoiceData.invoice_type = selectedInvoice.invoice_type || 'quotation';
+                invoiceData.customer_id = selectedInvoice.customer_id || '';
+                invoiceData.customer_name = selectedInvoice.customer_name || '';
+                invoiceData.customer_address = selectedInvoice.customer_address || '';
+                invoiceData.customer_city = selectedInvoice.customer_city || '';
+                invoiceData.customer_postal_code = selectedInvoice.customer_postal_code || '';
+                invoiceData.customer_country = selectedInvoice.customer_country || '';
+                invoiceData.customer_vat = selectedInvoice.customer_vat || '';
+                invoiceData.items = selectedInvoice.items || [];
+                invoiceData.total = selectedInvoice.total || 0;
+                invoiceData.notes = selectedInvoice.notes || '';
+                
+                // Update UI
+                document.getElementById('invoiceType').value = invoiceData.invoice_type;
+                updateInvoiceType();
+                
+                // Set customer (if dropdown exists)
+                const customerSelect = document.getElementById('customerSelect');
+                if (customerSelect) {
+                    customerSelect.value = invoiceData.customer_id;
+                    loadCustomerInfo();
+                }
+                
+                // Set invoice number and date
+                document.getElementById('invoiceNumber').textContent = invoiceData.invoice_number;
+                document.getElementById('invoiceDate').textContent = new Date(invoiceData.invoice_date).toLocaleDateString();
+                
+                // Render items
+                renderInvoiceItems();
+                
+                alert(`✅ Invoice loaded successfully!\n\n${invoiceData.invoice_number} - ${invoiceData.customer_name}`);
+                
+            } catch (error) {
+                console.error('Error loading invoice:', error);
+                alert('❌ Error loading invoice. Check console for details.');
+            }
+        }
+
+        // ==========================================
+        // THEME SYSTEM FOR INVOICE CREATOR
+        // ==========================================
+        
+        function switchInvoiceTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('itrusty_theme', theme);
+            console.log('🎨 Invoice theme switched to:', theme);
+        }
+
+        // Load saved theme on page load
+        (function() {
+            const savedTheme = localStorage.getItem('itrusty_theme') || 'default';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
+            // Theme dropdown hover management
+            let themeCloseTimeout = null;
+            
+            document.addEventListener('DOMContentLoaded', () => {
+                const themeDropdown = document.querySelector('.theme-dropdown-invoice');
+                const themeMenu = document.querySelector('.theme-menu-invoice');
+                
+                if (themeDropdown && themeMenu) {
+                    themeDropdown.addEventListener('mouseenter', () => {
+                        clearTimeout(themeCloseTimeout);
+                        themeMenu.style.display = 'block';
+                    });
+                    
+                    themeDropdown.addEventListener('mouseleave', () => {
+                        themeCloseTimeout = setTimeout(() => {
+                            themeMenu.style.display = 'none';
+                        }, 1500); // 1.5 seconds delay
+                    });
+                    
+                    themeMenu.addEventListener('mouseenter', () => {
+                        clearTimeout(themeCloseTimeout);
+                    });
+                    
+                    themeMenu.addEventListener('mouseleave', () => {
+                        themeCloseTimeout = setTimeout(() => {
+                            themeMenu.style.display = 'none';
+                        }, 1500);
+                    });
+                }
+            });
+        })();
+    </script>
+    <!-- 🆕 AUTOCOMPLETE DROPDOWN -->
+    <div id="autocompleteDropdown" class="autocomplete-dropdown">
+        <div class="autocomplete-header">
+            <i class="fas fa-search"></i>
+            <span id="autocompleteHeaderText">Search Products Library</span>
+        </div>
+        <div id="autocompleteResults">
+            <!-- Results will be inserted here dynamically -->
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Trusty Ltd - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* Elegant Theme (Default) */
+            --primary-color: #1F2A44;
+            --primary-light: #2C3E5C;
+            --primary-lighter: #3A4F6E;
+            --accent-color: #DCC9B6;
+            --accent-light: #8E8275;
+            --background: #F4F3EE;
+            --text-dark: #1F2A44;
+            --text-light: #6B7280;
+        }
+
+        [data-theme="eco"] {
+            --primary-color: #486349;
+            --primary-light: #5A745B;
+            --primary-lighter: #6C866D;
+            --accent-color: #688C59;
+            --accent-light: #06CCD8;
+            --background: #EFEDE0;
+            --text-dark: #486349;
+            --text-light: #6B7280;
+        }
+
+        [data-theme="santorini"] {
+            --primary-color: #1A4599;
+            --primary-light: #2B56AA;
+            --primary-lighter: #3C67BB;
+            --accent-color: #53A8E2;
+            --accent-light: #E2E8DA;
+            --background: #F1F1F3;
+            --text-dark: #1A4599;
+            --text-light: #6B7280;
+        }
+
+        [data-theme="colorful"] {
+            --primary-color: #B69030;
+            --primary-light: #C0A350;
+            --primary-lighter: #CAB570;
+            --accent-color: #F0AA5C;
+            --accent-light: #969504;
+            --background: #EFEDE0;
+            --text-dark: #5C4A1E;
+            --text-light: #6B7280;
+        }
+
+        body {
+            background-color: var(--background);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .nav-button {
+            background: var(--primary-color);
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            overflow: hidden;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .nav-button i {
+            font-size: 24px;
+            transition: margin 0.3s;
+        }
+
+        .nav-button span {
+            opacity: 0;
+            max-width: 0;
+            transition: opacity 0.3s, max-width 0.3s, margin 0.3s;
+            font-weight: 500;
+        }
+
+        .nav-button:hover {
+            width: auto;
+            min-width: 180px;
+            padding: 0 20px;
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .nav-button:hover i {
+            margin-right: 12px;
+        }
+
+        .nav-button:hover span {
+            opacity: 1;
+            max-width: 200px;
+        }
+
+        .nav-button:active {
+            transform: translateY(0);
+            background: var(--primary-lighter);
+        }
+
+        .dashboard-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .theme-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .theme-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .theme-button.active {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(31, 42, 68, 0.1);
+        }
+
+        .lang-switcher {
+            background: var(--primary-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .lang-switcher:hover {
+            background: var(--primary-light);
+            transform: translateY(-1px);
+        }
+
+        .alert-badge {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+    </style>
+</head>
+<body class="p-6" data-theme="elegant">
+    <!-- Top Bar -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold mb-1" style="color: var(--text-dark)">I Trusty Ltd</h1>
+            <p class="text-sm" style="color: var(--text-light)" id="welcomeText">Welcome back, Johny</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <!-- Language Switcher -->
+            <div class="flex gap-2">
+                <button class="lang-switcher" data-lang="en" onclick="switchLanguage('en')">EN</button>
+                <button class="lang-switcher" data-lang="zh" onclick="switchLanguage('zh')">中文</button>
+            </div>
+            
+            <!-- Theme Switcher -->
+            <div class="flex gap-2 items-center">
+                <span class="text-sm font-medium mr-2" style="color: var(--text-dark)" id="themeLabel">Theme:</span>
+                <button class="theme-button active" data-theme="elegant" onclick="changeTheme('elegant')" 
+                        style="background: #1F2A44" title="Elegant"></button>
+                <button class="theme-button" data-theme="eco" onclick="changeTheme('eco')" 
+                        style="background: #486349" title="Eco"></button>
+                <button class="theme-button" data-theme="santorini" onclick="changeTheme('santorini')" 
+                        style="background: #1A4599" title="Santorini"></button>
+                <button class="theme-button" data-theme="colorful" onclick="changeTheme('colorful')" 
+                        style="background: #B69030" title="Colorful"></button>
+            </div>
+
+            <!-- Notifications -->
+            <button class="relative p-2 hover:bg-white/50 rounded-lg transition" onclick="toggleNotifications()">
+                <i class="fas fa-bell text-2xl" style="color: var(--text-dark)"></i>
+                <span id="notifBadge" class="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center alert-badge hidden">0</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="stat-card">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <p class="text-white/80 text-sm mb-1" id="activeOrdersLabel">Active Orders</p>
+                    <h3 class="text-3xl font-bold" id="activeOrdersCount">0</h3>
+                </div>
+                <i class="fas fa-shopping-cart text-2xl text-white/30"></i>
+            </div>
+            <div class="text-white/70 text-xs" id="activeOrdersChange">+12% from last month</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <p class="text-white/80 text-sm mb-1" id="monthlyRevenueLabel">Monthly Revenue</p>
+                    <h3 class="text-3xl font-bold" id="monthlyRevenue">¥0</h3>
+                </div>
+                <i class="fas fa-dollar-sign text-2xl text-white/30"></i>
+            </div>
+            <div class="text-white/70 text-xs" id="revenueChange">+8% from last month</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <p class="text-white/80 text-sm mb-1" id="teamCostLabel">Monthly Payroll</p>
+                    <h3 class="text-3xl font-bold" id="teamCost">¥0</h3>
+                </div>
+                <i class="fas fa-users text-2xl text-white/30"></i>
+            </div>
+            <div class="text-white/70 text-xs" id="teamCount">11 team members</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <p class="text-white/80 text-sm mb-1" id="overdueLabel">Overdue Items</p>
+                    <h3 class="text-3xl font-bold" id="overdueCount">0</h3>
+                </div>
+                <i class="fas fa-exclamation-triangle text-2xl text-white/30"></i>
+            </div>
+            <div class="text-white/70 text-xs" id="overdueText">Requires attention</div>
+        </div>
+    </div>
+
+    <!-- Navigation Cards -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold mb-4" style="color: var(--text-dark)" id="quickAccessLabel">Quick Access</h2>
+        <div class="flex flex-wrap gap-4">
+            <button class="nav-button" onclick="window.location.href='orders-enhanced.html'">
+                <i class="fas fa-box"></i>
+                <span id="ordersNav">Orders & Workflow</span>
+            </button>
+            <button class="nav-button" onclick="window.location.href='projects.html'">
+                <i class="fas fa-project-diagram"></i>
+                <span id="projectsNav">Projects</span>
+            </button>
+            <button class="nav-button" onclick="window.location.href='team-management.html'">
+                <i class="fas fa-users"></i>
+                <span id="teamNav">Team</span>
+            </button>
+            <button class="nav-button" onclick="window.location.href='suppliers-list.html'">
+                <i class="fas fa-truck"></i>
+                <span id="suppliersNav">Suppliers</span>
+            </button>
+            <button class="nav-button" onclick="window.location.href='daily-activities.html'">
+                <i class="fas fa-calendar-day"></i>
+                <span id="activitiesNav">Activities</span>
+            </button>
+            <button class="nav-button" onclick="window.location.href='workflow-manager.html'">
+                <i class="fas fa-tasks"></i>
+                <span id="workflowNav">Workflow</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Dashboards -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Orders Pipeline -->
+        <div class="dashboard-card">
+            <h3 class="text-lg font-semibold mb-4" style="color: var(--text-dark)" id="pipelineLabel">Orders Pipeline</h3>
+            <div class="chart-container">
+                <canvas id="pipelineChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Team Utilization -->
+        <div class="dashboard-card">
+            <h3 class="text-lg font-semibold mb-4" style="color: var(--text-dark)" id="utilizationLabel">Team Utilization</h3>
+            <div class="chart-container">
+                <canvas id="utilizationChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Recent Alerts -->
+        <div class="dashboard-card">
+            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2" style="color: var(--text-dark)">
+                <i class="fas fa-bell text-red-500 alert-badge"></i>
+                <span id="alertsLabel">Recent Alerts</span>
+            </h3>
+            <div id="alertsList" class="space-y-3">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+
+        <!-- Monthly Performance -->
+        <div class="dashboard-card">
+            <h3 class="text-lg font-semibold mb-4" style="color: var(--text-dark)" id="performanceLabel">Monthly Performance</h3>
+            <div class="chart-container">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/dashboard-enhanced.js"></script>
+</body>
+</html>

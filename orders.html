@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders - I Trusty Timeline Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="js/i18n-system.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/global-navigation.js"></script>
+    <style>
+        /* ========== THEME SYSTEM (MUJI Minimal Style) ========== */
+        :root {
+            /* Default - Original Colors */
+            --header-bg: #FFFFFF;
+            --body-bg: #F9FAFB;
+            --card-bg: #FFFFFF;
+            --text-dark: #111827;
+            --border-color: #E5E7EB;
+        }
+
+        [data-theme="elegant"] {
+            --header-bg: #F4F3EE;
+            --body-bg: #F4F3EE;
+            --card-bg: #FDFCFA;
+            --text-dark: #1F2A44;
+            --border-color: #DCC9B6;
+        }
+
+        [data-theme="eco"] {
+            --header-bg: #EFEDE0;
+            --body-bg: #EFEDE0;
+            --card-bg: #F9F8F0;
+            --text-dark: #2C3E2F;
+            --border-color: #688C59;
+        }
+
+        [data-theme="santorini"] {
+            --header-bg: #F1F1F3;
+            --body-bg: #F1F1F3;
+            --card-bg: #FAFAFA;
+            --text-dark: #1A3B6B;
+            --border-color: #53A8E2;
+        }
+
+        [data-theme="colorful"] {
+            --header-bg: #FBE2B1;
+            --body-bg: #FBE2B1;
+            --card-bg: #FEF5E7;
+            --text-dark: #5C4A1E;
+            --border-color: #B69030;
+        }
+
+        body {
+            background-color: var(--body-bg) !important;
+            color: var(--text-dark);
+            transition: background-color 0.3s ease;
+        }
+
+        header {
+            background-color: var(--header-bg) !important;
+            border-color: var(--border-color);
+            transition: background-color 0.3s ease;
+        }
+
+        .bg-white {
+            background-color: var(--card-bg) !important;
+        }
+
+        /* ========== THEME DROPDOWN (Small & Discrete) ========== */
+        .theme-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .theme-label {
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background 0.2s;
+            font-size: 13px;
+            color: #6B7280;
+            background: #F3F4F6;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .theme-label:hover {
+            background: #E5E7EB;
+        }
+
+        .theme-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 8px;
+            z-index: 1000;
+            min-width: 140px;
+            margin-top: 4px;
+        }
+
+        .theme-dropdown:hover .theme-menu {
+            display: block;
+        }
+
+        .theme-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 13px;
+        }
+
+        .theme-option:hover {
+            background: #F3F4F6;
+        }
+
+        .theme-color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #E5E7EB;
+        }
+
+        /* ========== ORIGINAL STYLES ========== */
+        .order-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #10b981;
+            transition: all 0.3s;
+        }
+        
+        .order-card:hover {
+            box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .priority-urgent { border-left-color: #ef4444; }
+        .priority-high { border-left-color: #f59e0b; }
+        .priority-medium { border-left-color: #3b82f6; }
+        .priority-low { border-left-color: #9ca3af; }
+        
+        .office-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .yiwu-badge { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .shenzhen-badge { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .both-badge { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        
+        .timeline-item {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 16px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #3b82f6;
+        }
+        
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: 3px;
+            top: 14px;
+            width: 2px;
+            height: 100%;
+            background: #e5e7eb;
+        }
+        
+        .timeline-item:last-child::after {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="bg-white border-b shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-6">
+                    <a href="index.html" class="flex items-center gap-2 text-blue-600 hover:text-blue-700">
+                        <i class="fas fa-arrow-left"></i>
+                        <span data-i18n="navigation.backToCalendar">Back to Calendar</span>
+                    </a>
+                    <h1 class="text-xl font-semibold" data-i18n="orders.title">Orders Management</h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    <!-- Language Toggle -->
+                    <button onclick="window.i18n.toggleLanguage()" class="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition flex items-center gap-2">
+                        <i class="fas fa-language"></i>
+                        <span id="languageLabel">中文</span>
+                    </button>
+                    
+                    <!-- Theme Dropdown (MUJI Minimal Style) -->
+                    <div class="theme-dropdown">
+                        <div class="theme-label">
+                            <i class="fas fa-palette"></i> <span data-i18n="navigation.theme">Theme</span>
+                        </div>
+                        <div class="theme-menu">
+                            <div class="theme-option" onclick="changeTheme('default')">
+                                <div class="theme-color-dot" style="background: linear-gradient(135deg, #667eea, #764ba2)"></div>
+                                <span>Default</span>
+                            </div>
+                            <div class="theme-option" onclick="changeTheme('elegant')">
+                                <div class="theme-color-dot" style="background: linear-gradient(135deg, #8B7355, #6B5D4F)"></div>
+                                <span>Elegant</span>
+                            </div>
+                            <div class="theme-option" onclick="changeTheme('eco')">
+                                <div class="theme-color-dot" style="background: linear-gradient(135deg, #4A7C59, #3A5E45)"></div>
+                                <span>Eco</span>
+                            </div>
+                            <div class="theme-option" onclick="changeTheme('santorini')">
+                                <div class="theme-color-dot" style="background: linear-gradient(135deg, #2A5A8E, #1E4570)"></div>
+                                <span>Santorini</span>
+                            </div>
+                            <div class="theme-option" onclick="changeTheme('colorful')">
+                                <div class="theme-color-dot" style="background: linear-gradient(135deg, #B69030, #8F6D25)"></div>
+                                <span>Colorful</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="showCreateOrderModal()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-plus"></i> <span data-i18n="orders.newOrder">New Order</span>
+                    </button>
+                    <button onclick="exportOrders()" class="text-gray-600 hover:text-gray-800">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button onclick="refreshData()" class="text-gray-600 hover:text-gray-800">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Stats Overview -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+            <div class="bg-white p-4 rounded-lg shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase">Total Orders</p>
+                        <p class="text-xl font-bold text-gray-900" id="totalOrders">0</p>
+                    </div>
+                    <i class="fas fa-shopping-cart text-2xl text-blue-500"></i>
+                </div>
+            </div>
+            
+            <div class="bg-white p-4 rounded-lg shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase">Processing</p>
+                        <p class="text-xl font-bold text-yellow-600" id="processingOrders">0</p>
+                    </div>
+                    <i class="fas fa-cog text-2xl text-yellow-500"></i>
+                </div>
+            </div>
+            
+            <div class="bg-white p-4 rounded-lg shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase">Shipped</p>
+                        <p class="text-xl font-bold text-blue-600" id="shippedOrders">0</p>
+                    </div>
+                    <i class="fas fa-truck text-2xl text-blue-500"></i>
+                </div>
+            </div>
+            
+            <div class="bg-white p-4 rounded-lg shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase">Total Value</p>
+                        <p class="text-xl font-bold text-green-600" id="totalValue">¥0</p>
+                    </div>
+                    <i class="fas fa-money-bill text-2xl text-green-500"></i>
+                </div>
+            </div>
+            
+            <div class="bg-white p-4 rounded-lg shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase">Overdue</p>
+                        <p class="text-xl font-bold text-red-600" id="overdueOrders">0</p>
+                    </div>
+                    <i class="fas fa-exclamation-triangle text-2xl text-red-500"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <input type="text" id="searchOrders" placeholder="Search orders..." 
+                       class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                
+                <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Statuses</option>
+                    <option value="Received">Received</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Sourcing">Sourcing</option>
+                    <option value="Production">Production</option>
+                    <option value="Quality Check">Quality Check</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+                
+                <select id="priorityFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Priorities</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Urgent">Urgent</option>
+                </select>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <select id="officeFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Offices</option>
+                    <option value="Yiwu">Yiwu</option>
+                    <option value="Shenzhen">Shenzhen</option>
+                    <option value="Both">Both</option>
+                </select>
+                
+                <select id="currencyFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Currencies</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="RMB">RMB (¥)</option>
+                    <option value="GBP">GBP (£)</option>
+                </select>
+                
+                <select id="transactionTypeFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Types</option>
+                    <option value="customer_order">Customer Order</option>
+                    <option value="supplier_order">Supplier Order</option>
+                    <option value="commission">Commission</option>
+                    <option value="services">Services</option>
+                    <option value="products">Products</option>
+                    <option value="shipping">Shipping</option>
+                </select>
+                
+                <button onclick="applyFilters()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                    Filter
+                </button>
+            </div>
+        </div>
+
+        <!-- Orders Grid -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <!-- Orders List -->
+            <div class="xl:col-span-2">
+                <!-- Selection Controls -->
+                <div class="bg-white p-3 rounded-t-lg shadow-sm border-b flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" 
+                               id="selectAllOrders" 
+                               class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                               onchange="window.ordersManager.toggleSelectAllOrders(this.checked)">
+                        <label for="selectAllOrders" class="text-sm font-medium text-gray-700 cursor-pointer">
+                            Select All
+                        </label>
+                    </div>
+                    <button id="bulkDeleteBtn" 
+                            onclick="window.ordersManager.deleteSelectedOrders()" 
+                            class="hidden bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition flex items-center gap-2">
+                        <i class="fas fa-trash"></i>
+                        <span>Delete 0 order(s)</span>
+                    </button>
+                </div>
+                
+                <div id="ordersList" class="space-y-4 mt-4">
+                    <!-- Orders will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Order Analytics -->
+            <div class="space-y-6">
+                <!-- Status Distribution -->
+                <div class="bg-white p-6 rounded-lg shadow-sm" style="max-height: 50vh;">
+                    <h3 class="text-lg font-semibold mb-4">Order Status Distribution</h3>
+                    <div style="max-height: calc(50vh - 100px); overflow-y: auto;">
+                        <canvas id="statusChart" style="height: 200px;"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity Timeline -->
+                <div class="bg-white p-6 rounded-lg shadow-sm" style="max-height: 50vh;">
+                    <h3 class="text-lg font-semibold mb-4">Recent Activity</h3>
+                    <div id="activityTimeline" style="max-height: calc(50vh - 100px); overflow-y: auto;">
+                        <!-- Activity items will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Monthly Trends -->
+                <div class="bg-white p-6 rounded-lg shadow-sm" style="max-height: 50vh;">
+                    <h3 class="text-lg font-semibold mb-4">Monthly Order Trends</h3>
+                    <div style="max-height: calc(50vh - 100px); overflow-y: auto;">
+                        <canvas id="trendsChart" style="height: 200px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Order Modal -->
+    <div id="createOrderModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">Create New Order</h3>
+                        <button onclick="closeCreateOrderModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="createOrderForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Order Number</label>
+                                <input type="text" name="order_number" required 
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
+                                <input type="text" name="client_name" required 
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Currency *</label>
+                                <select name="currency" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="USD">USD ($)</option>
+                                    <option value="RMB">RMB (¥)</option>
+                                    <option value="GBP">GBP (£)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Transaction Type *</label>
+                                <select name="transaction_type" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="customer_order">Customer Order (Sales)</option>
+                                    <option value="supplier_order">Supplier Order (Purchase)</option>
+                                    <option value="commission">Commission Payment</option>
+                                    <option value="services">Services</option>
+                                    <option value="products">Products</option>
+                                    <option value="shipping">Shipping Costs</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                                <input type="number" name="quantity" min="1" required 
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Unit Price</label>
+                                <input type="number" name="unit_price" min="0" step="0.01" required 
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                                <select name="priority" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="Low">Low</option>
+                                    <option value="Medium" selected>Medium</option>
+                                    <option value="High">High</option>
+                                    <option value="Urgent">Urgent</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Assigned Office</label>
+                                <select name="assigned_office" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="Yiwu">Yiwu</option>
+                                    <option value="Shenzhen">Shenzhen</option>
+                                    <option value="Both">Both</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Date</label>
+                                <input type="date" name="delivery_date" 
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Product Description</label>
+                            <textarea name="product_description" rows="3" required 
+                                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Information</label>
+                            <textarea name="supplier_info" rows="2" 
+                                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+                        
+                        <div class="flex justify-end gap-3 pt-4">
+                            <button type="button" onclick="closeCreateOrderModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                            <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Create Order</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div id="orderDetailModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold" id="orderDetailTitle">Order Details</h3>
+                        <button onclick="closeOrderDetail()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div id="orderDetailContent">
+                        <!-- Order details will be populated here -->
+                    </div>
+                    
+                    <div class="mt-6 pt-4 border-t flex justify-between">
+                        <button onclick="deleteOrder()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2">
+                            <i class="fas fa-trash"></i>
+                            Delete Order
+                        </button>
+                        <button onclick="openEditOrderModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                            <i class="fas fa-edit"></i>
+                            Edit Order
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Order Modal -->
+    <div id="editOrderModal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-900">
+                            <i class="fas fa-edit text-blue-600 mr-2"></i>
+                            Edit Order
+                        </h3>
+                        <button onclick="closeEditOrderModal()" class="text-gray-400 hover:text-gray-600 text-xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <form id="editOrderForm" class="space-y-4">
+                        <input type="hidden" id="editOrderId" name="id">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Order Number *</label>
+                                <input type="text" id="editOrderNumber" name="order_number" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Client Name *</label>
+                                <input type="text" id="editClientName" name="client_name" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Product Description *</label>
+                                <textarea id="editProductDescription" name="product_description" rows="3" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                                <input type="number" id="editQuantity" name="quantity" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Currency *</label>
+                                <select id="editCurrency" name="currency" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="USD">USD ($)</option>
+                                    <option value="RMB">RMB (¥)</option>
+                                    <option value="GBP">GBP (£)</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Transaction Type *</label>
+                                <select id="editTransactionType" name="transaction_type" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="customer_order">Customer Order (Sales)</option>
+                                    <option value="supplier_order">Supplier Order (Purchase)</option>
+                                    <option value="commission">Commission Payment</option>
+                                    <option value="services">Services</option>
+                                    <option value="products">Products</option>
+                                    <option value="shipping">Shipping Costs</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Unit Price</label>
+                                <input type="number" id="editUnitPrice" name="unit_price" step="0.01" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="0.00">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Total Value</label>
+                                <input type="number" id="editTotalValue" name="total_value" step="0.01" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="0.00">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select id="editOrderStatus" name="status" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="Received">Received</option>
+                                    <option value="Processing">Processing</option>
+                                    <option value="Sourcing">Sourcing</option>
+                                    <option value="Production">Production</option>
+                                    <option value="Quality Check">Quality Check</option>
+                                    <option value="Shipped">Shipped</option>
+                                    <option value="Delivered">Delivered</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                                <select id="editOrderPriority" name="priority" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                    <option value="Urgent">Urgent</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Assigned Office</label>
+                                <select id="editAssignedOffice" name="assigned_office" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="Yiwu">Yiwu</option>
+                                    <option value="Shenzhen">Shenzhen</option>
+                                    <option value="Both">Both</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Order Date</label>
+                                <input type="date" id="editOrderDate" name="order_date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Date</label>
+                                <input type="date" id="editDeliveryDate" name="delivery_date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Info</label>
+                                <textarea id="editSupplierInfo" name="supplier_info" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-4 border-t">
+                            <button type="button" onclick="closeEditOrderModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                                <i class="fas fa-save"></i>
+                                Update Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/orders.js"></script>
+    <!-- Auto-initialize data on first load -->
+    <script src="auto-initialize.js"></script>
+
+<!-- Initialize Internationalization System -->
+<script>
+    // Theme switching (MUJI Minimal Style)
+    function changeTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('i-trusty-theme', theme);
+    }
+
+    // Load saved theme
+    window.addEventListener('DOMContentLoaded', () => {
+        const savedTheme = localStorage.getItem('i-trusty-theme') || 'default';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    });
+    
+    // Initialize i18n on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        window.i18n = new I18nSystem();
+        window.i18n.translatePage();
+        
+        // Update language label
+        const label = document.getElementById('languageLabel');
+        if (label) {
+            label.textContent = window.i18n.currentLanguage === 'en' ? '中文' : 'English';
+        }
+    });
+</script>
+</body>
+</html>

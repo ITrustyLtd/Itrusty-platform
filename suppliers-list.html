@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suppliers Management - I Trusty Ltd</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Global Navigation -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/global-navigation.js"></script>
+    
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Hide old header when global navigation is present */
+        body:has(#globalNavigation) .bg-white.rounded-lg.shadow-lg:first-child {
+            display: none !important;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        
+        .supplier-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .supplier-card:hover {
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+            transform: translateY(-4px);
+        }
+        
+        .rating-stars {
+            color: #F59E0B;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge-active {
+            background: #D1FAE5;
+            color: #059669;
+        }
+        
+        .badge-inactive {
+            background: #FEE2E2;
+            color: #DC2626;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 90%;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3B82F6;
+        }
+        
+        .btn-primary {
+            background: #3B82F6;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .btn-primary:hover {
+            background: #2563EB;
+        }
+        
+        .btn-secondary {
+            background: #6B7280;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .btn-secondary:hover {
+            background: #4B5563;
+        }
+        
+        .search-box {
+            padding: 12px 20px;
+            border: 2px solid #E5E7EB;
+            border-radius: 10px;
+            font-size: 14px;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: #3B82F6;
+        }
+        
+        .filter-btn {
+            padding: 10px 20px;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .filter-btn:hover {
+            border-color: #3B82F6;
+            color: #3B82F6;
+        }
+        
+        .filter-btn.active {
+            background: #3B82F6;
+            color: white;
+            border-color: #3B82F6;
+        }
+        
+        /* ===== THEME SELECTOR STYLES ===== */
+        .theme-selector {
+            display: flex;
+            gap: 8px;
+            background: white;
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid #E5E7EB;
+        }
+        
+        .theme-btn {
+            padding: 6px 16px;
+            border: none;
+            background: transparent;
+            color: #6B7280;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        
+        .theme-btn:hover {
+            background: #F3F4F6;
+            color: #374151;
+        }
+        
+        .theme-btn.active {
+            background: #374151;
+            color: white;
+        }
+        
+        /* ===== MUJI MINIMAL THEME ===== */
+        body[data-theme="muji"] {
+            background: #FAFAF8 !important; /* Natural warm white */
+        }
+        
+        /* MUJI: Cards - Minimal flat design */
+        body[data-theme="muji"] .supplier-card {
+            background: white !important;
+            border: 1px solid #E8E8E8 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            padding: 24px !important;
+        }
+        
+        body[data-theme="muji"] .supplier-card:hover {
+            transform: none !important;
+            border-color: #A08F80 !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+        }
+        
+        /* MUJI: Badges - Natural tones */
+        body[data-theme="muji"] .badge {
+            border-radius: 2px !important;
+        }
+        
+        body[data-theme="muji"] .badge-active {
+            background: #E8E8E8 !important;
+            color: #4A4A4A !important;
+        }
+        
+        body[data-theme="muji"] .badge-inactive {
+            background: #D4C5B9 !important;
+            color: #6B5D52 !important;
+        }
+        
+        /* MUJI: Buttons - Flat minimal design */
+        body[data-theme="muji"] .btn-primary {
+            background: #A08F80 !important;
+            border-radius: 2px !important;
+            font-weight: 400 !important;
+        }
+        
+        body[data-theme="muji"] .btn-primary:hover {
+            background: #8B7A6B !important;
+        }
+        
+        body[data-theme="muji"] .btn-secondary {
+            background: #E8E8E8 !important;
+            color: #4A4A4A !important;
+            border-radius: 2px !important;
+            font-weight: 400 !important;
+        }
+        
+        body[data-theme="muji"] .btn-secondary:hover {
+            background: #D4C5B9 !important;
+        }
+        
+        /* MUJI: Inputs - Clean borders */
+        body[data-theme="muji"] .form-input,
+        body[data-theme="muji"] .search-box {
+            border: 1px solid #D4C5B9 !important;
+            border-radius: 0 !important;
+        }
+        
+        body[data-theme="muji"] .form-input:focus,
+        body[data-theme="muji"] .search-box:focus {
+            border-color: #A08F80 !important;
+            box-shadow: 0 0 0 2px rgba(160, 143, 128, 0.1) !important;
+        }
+        
+        /* MUJI: Filter buttons */
+        body[data-theme="muji"] .filter-btn {
+            border: 1px solid #D4C5B9 !important;
+            border-radius: 2px !important;
+            background: white !important;
+        }
+        
+        body[data-theme="muji"] .filter-btn:hover {
+            border-color: #A08F80 !important;
+            color: #4A4A4A !important;
+        }
+        
+        body[data-theme="muji"] .filter-btn.active {
+            background: #A08F80 !important;
+            color: white !important;
+            border-color: #A08F80 !important;
+        }
+        
+        /* MUJI: Modal */
+        body[data-theme="muji"] .modal-content {
+            border-radius: 0 !important;
+            border: 1px solid #D4C5B9 !important;
+        }
+        
+        /* MUJI: Rating stars - Natural gold */
+        body[data-theme="muji"] .rating-stars {
+            color: #C9A962 !important;
+        }
+        
+        /* MUJI: Headers and text */
+        body[data-theme="muji"] h1,
+        body[data-theme="muji"] h2,
+        body[data-theme="muji"] h3 {
+            color: #4A4A4A !important;
+            font-weight: 500 !important;
+        }
+        
+        /* ===== MODERN THEME ===== */
+        body[data-theme="modern"] {
+            background: #F9FAFB !important;
+        }
+        
+        body[data-theme="modern"] .supplier-card {
+            border-radius: 12px !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+        }
+        
+        body[data-theme="modern"] .supplier-card:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.12) !important;
+        }
+        
+        body[data-theme="modern"] .btn-primary {
+            background: #6366F1 !important;
+        }
+        
+        body[data-theme="modern"] .btn-primary:hover {
+            background: #4F46E5 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">
+                        <i class="fas fa-truck mr-3 text-blue-500"></i>
+                        <span id="pageTitle">Suppliers Management</span>
+                    </h1>
+                    <p class="text-gray-600 mt-2" id="pageSubtitle">Manage your supplier network and track RMB orders</p>
+                </div>
+                <div class="flex gap-3 items-center">
+                    <!-- Theme Selector -->
+                    <div class="theme-selector">
+                        <button class="theme-btn" onclick="setTheme('muji')" data-theme="muji">
+                            MUJI
+                        </button>
+                        <button class="theme-btn active" onclick="setTheme('modern')" data-theme="modern">
+                            Modern
+                        </button>
+                        <button class="theme-btn" onclick="setTheme('original')" data-theme="original">
+                            Original
+                        </button>
+                    </div>
+                    
+                    <button class="btn-primary" onclick="openAddSupplierModal()">
+                        <i class="fas fa-plus mr-2"></i>
+                        <span id="addSupplierBtn">Add Supplier</span>
+                    </button>
+                    <button class="btn-secondary" onclick="window.location.href='index.html'">
+                        <i class="fas fa-home mr-2"></i>
+                        <span id="backBtn">Dashboard</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Search and Filters -->
+            <div class="flex flex-wrap gap-4 items-center">
+                <input type="text" 
+                       id="searchInput" 
+                       class="search-box" 
+                       placeholder="Search suppliers..."
+                       onkeyup="filterSuppliers()">
+                
+                <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">
+                    <span id="filterAll">All</span> (<span id="countAll">0</span>)
+                </button>
+                <button class="filter-btn" data-filter="active" onclick="setFilter('active')">
+                    <span id="filterActive">Active</span> (<span id="countActive">0</span>)
+                </button>
+                <button class="filter-btn" data-filter="inactive" onclick="setFilter('inactive')">
+                    <span id="filterInactive">Inactive</span> (<span id="countInactive">0</span>)
+                </button>
+                
+                <select id="categoryFilter" class="form-input" style="width: auto; min-width: 200px;" onchange="filterSuppliers()">
+                    <option value="all" id="filterCategoryAll">All Categories</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Suppliers Grid -->
+        <div id="suppliersGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Supplier cards will be loaded here -->
+        </div>
+        
+        <!-- Empty State -->
+        <div id="emptyState" class="text-center py-12 hidden">
+            <i class="fas fa-truck text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-600 mb-2" id="emptyTitle">No suppliers found</h3>
+            <p class="text-gray-500" id="emptyMessage">Add your first supplier to get started</p>
+        </div>
+    </div>
+    
+    <!-- Add/Edit Supplier Modal -->
+    <div id="supplierModal" class="modal">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold" id="modalTitle">Add New Supplier</h2>
+                <button onclick="closeSupplierModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <form id="supplierForm" onsubmit="saveSupplier(event)">
+                <input type="hidden" id="supplierId">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" id="labelSupplierName">Supplier Name</label>
+                        <input type="text" id="supplierName" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" id="labelSupplierNameZh">Chinese Name</label>
+                        <input type="text" id="supplierNameZh" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" id="labelContactPerson">Contact Person</label>
+                        <input type="text" id="contactPerson" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" id="labelPhone">Phone</label>
+                        <input type="tel" id="phone" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" id="labelWechat">WeChat ID</label>
+                        <input type="text" id="wechatId" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" id="labelEmail">Email</label>
+                        <input type="email" id="email" class="form-input">
+                    </div>
+                    
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" id="labelAddress">Address</label>
+                        <input type="text" id="address" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" id="labelCity">City</label>
+                        <input type="text" id="city" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" id="labelProvince">Province</label>
+                        <input type="text" id="province" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" id="labelCategories">Product Categories</label>
+                        <input type="text" id="productCategories" class="form-input" placeholder="e.g., Electronics, Textiles">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" id="labelPaymentTerms">Payment Terms</label>
+                        <input type="text" id="paymentTerms" class="form-input" placeholder="e.g., 30% deposit, 70% before shipment">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" id="labelCreditLimit">Credit Limit (RMB)</label>
+                        <input type="number" id="creditLimitRmb" class="form-input" step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" id="labelDeliveryDays">Avg Delivery Days</label>
+                        <input type="number" id="avgDeliveryDays" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" id="labelQualityRating">Quality Rating (1-5)</label>
+                        <input type="number" id="qualityRating" class="form-input" min="1" max="5" step="0.1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" id="labelReliabilityRating">Reliability Rating (1-5)</label>
+                        <input type="number" id="reliabilityRating" class="form-input" min="1" max="5" step="0.1">
+                    </div>
+                    
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" id="labelNotes">Notes</label>
+                        <textarea id="notes" class="form-input" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="active" checked class="mr-2">
+                            <span id="labelActive">Active Supplier</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button type="submit" class="btn-primary flex-1">
+                        <i class="fas fa-save mr-2"></i>
+                        <span id="saveBtn">Save Supplier</span>
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="closeSupplierModal()">
+                        <span id="cancelBtn">Cancel</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        let suppliers = [];
+        let currentFilter = 'all';
+        let currentLanguage = 'en';
+        
+        // Translation object
+        const translations = {
+            en: {
+                pageTitle: "Suppliers Management",
+                pageSubtitle: "Manage your supplier network and track RMB orders",
+                addSupplierBtn: "Add Supplier",
+                backBtn: "Dashboard",
+                filterAll: "All",
+                filterActive: "Active",
+                filterInactive: "Inactive",
+                filterCategoryAll: "All Categories",
+                emptyTitle: "No suppliers found",
+                emptyMessage: "Add your first supplier to get started",
+                modalTitle: "Add New Supplier",
+                modalTitleEdit: "Edit Supplier",
+                labelSupplierName: "Supplier Name",
+                labelSupplierNameZh: "Chinese Name",
+                labelContactPerson: "Contact Person",
+                labelPhone: "Phone",
+                labelWechat: "WeChat ID",
+                labelEmail: "Email",
+                labelAddress: "Address",
+                labelCity: "City",
+                labelProvince: "Province",
+                labelCategories: "Product Categories",
+                labelPaymentTerms: "Payment Terms",
+                labelCreditLimit: "Credit Limit (RMB)",
+                labelDeliveryDays: "Avg Delivery Days",
+                labelQualityRating: "Quality Rating (1-5)",
+                labelReliabilityRating: "Reliability Rating (1-5)",
+                labelNotes: "Notes",
+                labelActive: "Active Supplier",
+                saveBtn: "Save Supplier",
+                cancelBtn: "Cancel",
+                editBtn: "Edit",
+                deleteBtn: "Delete",
+                confirmDelete: "Are you sure you want to delete this supplier?",
+                orders: "orders",
+                spent: "spent",
+                quality: "Quality",
+                reliability: "Reliability",
+                delivery: "Delivery"
+            },
+            zh: {
+                pageTitle: "供应商管理",
+                pageSubtitle: "管理您的供应商网络并跟踪人民币订单",
+                addSupplierBtn: "添加供应商",
+                backBtn: "控制面板",
+                filterAll: "全部",
+                filterActive: "活跃",
+                filterInactive: "非活跃",
+                filterCategoryAll: "所有类别",
+                emptyTitle: "未找到供应商",
+                emptyMessage: "添加您的第一个供应商以开始",
+                modalTitle: "添加新供应商",
+                modalTitleEdit: "编辑供应商",
+                labelSupplierName: "供应商名称",
+                labelSupplierNameZh: "中文名称",
+                labelContactPerson: "联系人",
+                labelPhone: "电话",
+                labelWechat: "微信号",
+                labelEmail: "邮箱",
+                labelAddress: "地址",
+                labelCity: "城市",
+                labelProvince: "省份",
+                labelCategories: "产品类别",
+                labelPaymentTerms: "付款条款",
+                labelCreditLimit: "信用额度(人民币)",
+                labelDeliveryDays: "平均交货天数",
+                labelQualityRating: "质量评分(1-5)",
+                labelReliabilityRating: "可靠性评分(1-5)",
+                labelNotes: "备注",
+                labelActive: "活跃供应商",
+                saveBtn: "保存供应商",
+                cancelBtn: "取消",
+                editBtn: "编辑",
+                deleteBtn: "删除",
+                confirmDelete: "您确定要删除此供应商吗？",
+                orders: "订单",
+                spent: "已花费",
+                quality: "质量",
+                reliability: "可靠性",
+                delivery: "交货"
+            }
+        };
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            currentLanguage = localStorage.getItem('i-trusty-language') || 'en';
+            updateLanguage();
+            await loadSuppliers();
+        });
+        
+        // Update language
+        function updateLanguage() {
+            const t = translations[currentLanguage];
+            Object.keys(t).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.textContent = t[key];
+                }
+            });
+        }
+        
+        // Load suppliers from database
+        async function loadSuppliers() {
+            try {
+                const response = await fetch('tables/suppliers?limit=1000');
+                const data = await response.json();
+                suppliers = data.data || [];
+                
+                // Populate category filter
+                const categories = [...new Set(suppliers.flatMap(s => s.product_categories || []))];
+                const categoryFilter = document.getElementById('categoryFilter');
+                categories.forEach(cat => {
+                    if (cat) {
+                        const option = document.createElement('option');
+                        option.value = cat;
+                        option.textContent = cat;
+                        categoryFilter.appendChild(option);
+                    }
+                });
+                
+                displaySuppliers();
+                updateCounts();
+            } catch (error) {
+                console.error('Error loading suppliers:', error);
+            }
+        }
+        
+        // Display suppliers
+        function displaySuppliers() {
+            const grid = document.getElementById('suppliersGrid');
+            const emptyState = document.getElementById('emptyState');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            
+            let filtered = suppliers.filter(supplier => {
+                // Filter by active status
+                if (currentFilter === 'active' && !supplier.active) return false;
+                if (currentFilter === 'inactive' && supplier.active) return false;
+                
+                // Filter by search term
+                if (searchTerm) {
+                    const matchesSearch = 
+                        (supplier.supplier_name || '').toLowerCase().includes(searchTerm) ||
+                        (supplier.supplier_name_zh || '').toLowerCase().includes(searchTerm) ||
+                        (supplier.contact_person || '').toLowerCase().includes(searchTerm) ||
+                        (supplier.city || '').toLowerCase().includes(searchTerm);
+                    if (!matchesSearch) return false;
+                }
+                
+                // Filter by category
+                if (categoryFilter !== 'all') {
+                    if (!supplier.product_categories || !supplier.product_categories.includes(categoryFilter)) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                grid.innerHTML = filtered.map(supplier => createSupplierCard(supplier)).join('');
+            }
+        }
+        
+        // Create supplier card HTML
+        function createSupplierCard(supplier) {
+            const t = translations[currentLanguage];
+            const qualityStars = renderStars(supplier.quality_rating || 0);
+            const reliabilityStars = renderStars(supplier.reliability_rating || 0);
+            const categories = (supplier.product_categories || []).slice(0, 3).join(', ');
+            
+            return `
+                <div class="supplier-card">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">${supplier.supplier_name || '-'}</h3>
+                            ${supplier.supplier_name_zh ? `<p class="text-sm text-gray-600">${supplier.supplier_name_zh}</p>` : ''}
+                        </div>
+                        <span class="badge ${supplier.active ? 'badge-active' : 'badge-inactive'}">
+                            ${supplier.active ? t.filterActive : t.filterInactive}
+                        </span>
+                    </div>
+                    
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-user w-5"></i>
+                            <span>${supplier.contact_person || '-'}</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-phone w-5"></i>
+                            <span>${supplier.phone || '-'}</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-map-marker-alt w-5"></i>
+                            <span>${supplier.city || '-'}${supplier.province ? ', ' + supplier.province : ''}</span>
+                        </div>
+                        ${categories ? `
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-boxes w-5"></i>
+                            <span>${categories}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <p class="text-xs text-gray-500">${t.quality}</p>
+                            <div class="rating-stars text-sm">${qualityStars}</div>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">${t.reliability}</p>
+                            <div class="rating-stars text-sm">${reliabilityStars}</div>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">${t.orders}</p>
+                            <p class="font-semibold">${supplier.total_orders_count || 0}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">${t.spent}</p>
+                            <p class="font-semibold">¥${(supplier.total_spent_rmb || 0).toLocaleString()}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button class="btn-primary flex-1" onclick="editSupplier('${supplier.id}')">
+                            <i class="fas fa-edit mr-2"></i>${t.editBtn}
+                        </button>
+                        <button class="btn-secondary" onclick="deleteSupplier('${supplier.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Render star rating
+        function renderStars(rating) {
+            const fullStars = Math.floor(rating);
+            const halfStar = rating % 1 >= 0.5;
+            let html = '';
+            
+            for (let i = 0; i < fullStars; i++) {
+                html += '<i class="fas fa-star"></i>';
+            }
+            if (halfStar) {
+                html += '<i class="fas fa-star-half-alt"></i>';
+            }
+            for (let i = fullStars + (halfStar ? 1 : 0); i < 5; i++) {
+                html += '<i class="far fa-star"></i>';
+            }
+            
+            return html;
+        }
+        
+        // Update filter counts
+        function updateCounts() {
+            document.getElementById('countAll').textContent = suppliers.length;
+            document.getElementById('countActive').textContent = suppliers.filter(s => s.active).length;
+            document.getElementById('countInactive').textContent = suppliers.filter(s => !s.active).length;
+        }
+        
+        // Set filter
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.filter === filter) {
+                    btn.classList.add('active');
+                }
+            });
+            displaySuppliers();
+        }
+        
+        // Filter suppliers
+        function filterSuppliers() {
+            displaySuppliers();
+        }
+        
+        // Open add supplier modal
+        function openAddSupplierModal() {
+            const t = translations[currentLanguage];
+            document.getElementById('modalTitle').textContent = t.modalTitle;
+            document.getElementById('supplierForm').reset();
+            document.getElementById('supplierId').value = '';
+            document.getElementById('supplierModal').classList.add('active');
+        }
+        
+        // Edit supplier
+        function editSupplier(id) {
+            const t = translations[currentLanguage];
+            const supplier = suppliers.find(s => s.id === id);
+            if (!supplier) return;
+            
+            document.getElementById('modalTitle').textContent = t.modalTitleEdit;
+            document.getElementById('supplierId').value = supplier.id;
+            document.getElementById('supplierName').value = supplier.supplier_name || '';
+            document.getElementById('supplierNameZh').value = supplier.supplier_name_zh || '';
+            document.getElementById('contactPerson').value = supplier.contact_person || '';
+            document.getElementById('phone').value = supplier.phone || '';
+            document.getElementById('wechatId').value = supplier.wechat_id || '';
+            document.getElementById('email').value = supplier.email || '';
+            document.getElementById('address').value = supplier.address || '';
+            document.getElementById('city').value = supplier.city || '';
+            document.getElementById('province').value = supplier.province || '';
+            document.getElementById('productCategories').value = (supplier.product_categories || []).join(', ');
+            document.getElementById('paymentTerms').value = supplier.payment_terms || '';
+            document.getElementById('creditLimitRmb').value = supplier.credit_limit_rmb || '';
+            document.getElementById('avgDeliveryDays').value = supplier.average_delivery_days || '';
+            document.getElementById('qualityRating').value = supplier.quality_rating || '';
+            document.getElementById('reliabilityRating').value = supplier.reliability_rating || '';
+            document.getElementById('notes').value = supplier.notes || '';
+            document.getElementById('active').checked = supplier.active !== false;
+            
+            document.getElementById('supplierModal').classList.add('active');
+        }
+        
+        // Close modal
+        function closeSupplierModal() {
+            document.getElementById('supplierModal').classList.remove('active');
+        }
+        
+        // Save supplier
+        async function saveSupplier(event) {
+            event.preventDefault();
+            
+            const id = document.getElementById('supplierId').value;
+            const categories = document.getElementById('productCategories').value
+                .split(',')
+                .map(c => c.trim())
+                .filter(c => c);
+            
+            const supplierData = {
+                supplier_name: document.getElementById('supplierName').value,
+                supplier_name_zh: document.getElementById('supplierNameZh').value,
+                contact_person: document.getElementById('contactPerson').value,
+                phone: document.getElementById('phone').value,
+                wechat_id: document.getElementById('wechatId').value,
+                email: document.getElementById('email').value,
+                address: document.getElementById('address').value,
+                city: document.getElementById('city').value,
+                province: document.getElementById('province').value,
+                product_categories: categories,
+                payment_terms: document.getElementById('paymentTerms').value,
+                credit_limit_rmb: parseFloat(document.getElementById('creditLimitRmb').value) || 0,
+                average_delivery_days: parseInt(document.getElementById('avgDeliveryDays').value) || 0,
+                quality_rating: parseFloat(document.getElementById('qualityRating').value) || 0,
+                reliability_rating: parseFloat(document.getElementById('reliabilityRating').value) || 0,
+                notes: document.getElementById('notes').value,
+                active: document.getElementById('active').checked,
+                total_orders_count: 0,
+                total_spent_rmb: 0
+            };
+            
+            try {
+                let response;
+                if (id) {
+                    // Update existing
+                    response = await fetch(`tables/suppliers/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(supplierData)
+                    });
+                } else {
+                    // Create new
+                    response = await fetch('tables/suppliers', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(supplierData)
+                    });
+                }
+                
+                if (response.ok) {
+                    closeSupplierModal();
+                    await loadSuppliers();
+                } else {
+                    alert('Error saving supplier');
+                }
+            } catch (error) {
+                console.error('Error saving supplier:', error);
+                alert('Error saving supplier');
+            }
+        }
+        
+        // Delete supplier
+        async function deleteSupplier(id) {
+            const t = translations[currentLanguage];
+            if (!confirm(t.confirmDelete)) return;
+            
+            try {
+                const response = await fetch(`tables/suppliers/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    await loadSuppliers();
+                } else {
+                    alert('Error deleting supplier');
+                }
+            } catch (error) {
+                console.error('Error deleting supplier:', error);
+                alert('Error deleting supplier');
+            }
+        }
+        
+        // ===== THEME SWITCHING SYSTEM =====
+        function setTheme(themeName) {
+            // Set theme on body
+            document.body.setAttribute('data-theme', themeName);
+            
+            // Save to localStorage
+            localStorage.setItem('suppliers-theme', themeName);
+            
+            // Update active button
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-theme') === themeName) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            console.log('✅ Theme changed to:', themeName);
+        }
+        
+        // Load saved theme on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('suppliers-theme') || 'modern';
+            setTheme(savedTheme);
+        });
+    </script>
+</body>
+</html>

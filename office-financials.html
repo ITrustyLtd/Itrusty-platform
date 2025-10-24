@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Office Financial Analytics - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-chart-pie text-blue-600 mr-2"></i>
+                        Office Financial Analytics
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <select id="monthSelector" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                        <!-- Populated dynamically -->
+                    </select>
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-home mr-1"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Company-Wide Summary -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl shadow-lg p-8 mb-8 text-white">
+            <h2 class="text-2xl font-bold mb-4">
+                <i class="fas fa-building mr-2"></i>
+                I Trusty Ltd - Company Overview
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div>
+                    <div class="text-sm opacity-90">Total Revenue</div>
+                    <div class="text-3xl font-bold mt-1" id="totalRevenue">¥0</div>
+                </div>
+                <div>
+                    <div class="text-sm opacity-90">Total Costs</div>
+                    <div class="text-3xl font-bold mt-1" id="totalCosts">¥0</div>
+                </div>
+                <div>
+                    <div class="text-sm opacity-90">Net Profit</div>
+                    <div class="text-3xl font-bold mt-1" id="totalProfit">¥0</div>
+                </div>
+                <div>
+                    <div class="text-sm opacity-90">Profit Margin</div>
+                    <div class="text-3xl font-bold mt-1" id="totalMargin">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Office Comparison Chart -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">
+                <i class="fas fa-chart-bar text-blue-600 mr-2"></i>
+                Office Performance Comparison
+            </h3>
+            <canvas id="officeComparisonChart" style="height: 300px;"></canvas>
+        </div>
+
+        <!-- Individual Office Details -->
+        <div id="officeDetailsContainer" class="space-y-6">
+            <!-- Populated dynamically -->
+        </div>
+
+        <!-- Calculate Button -->
+        <div class="mt-8 text-center">
+            <button onclick="calculateFinancials()" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg shadow-lg font-semibold transition">
+                <i class="fas fa-calculator mr-2"></i>
+                Recalculate Current Month Financials
+            </button>
+            <p class="text-sm text-gray-500 mt-2">
+                This will update financial data based on current orders and tasks
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Office rent costs (annual to monthly)
+        const OFFICE_RENT = {
+            'Yiwu': 70000 / 12,      // ¥5,833/month
+            'Shenzhen': 132000 / 12, // ¥11,000/month
+            'Greece': 0              // No rent or add if needed
+        };
+
+        let currentMonth = '';
+        let officeData = {};
+        let chart = null;
+
+        // Initialize
+        async function init() {
+            await populateMonthSelector();
+            await loadFinancialData();
+        }
+
+        // Populate month selector with last 12 months
+        function populateMonthSelector() {
+            const selector = document.getElementById('monthSelector');
+            const now = new Date();
+            
+            for (let i = 0; i < 12; i++) {
+                const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const month = date.toISOString().slice(0, 7); // YYYY-MM
+                const displayName = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+                
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = displayName;
+                if (i === 0) {
+                    option.selected = true;
+                    currentMonth = month;
+                }
+                selector.appendChild(option);
+            }
+            
+            selector.addEventListener('change', (e) => {
+                currentMonth = e.target.value;
+                loadFinancialData();
+            });
+        }
+
+        // Load financial data for selected month
+        async function loadFinancialData() {
+            try {
+                // Load saved financial data
+                const response = await fetch(`tables/office_financials?search=month:${currentMonth}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const records = data.data || [];
+                    
+                    officeData = {};
+                    records.forEach(record => {
+                        officeData[record.office_name] = record;
+                    });
+                }
+                
+                // If no data exists, calculate it
+                if (Object.keys(officeData).length === 0) {
+                    await calculateFinancials();
+                } else {
+                    renderDashboard();
+                }
+            } catch (error) {
+                console.error('Error loading financial data:', error);
+            }
+        }
+
+        // Calculate financials from orders and tasks
+        async function calculateFinancials() {
+            const offices = ['Yiwu', 'Shenzhen', 'Greece'];
+            officeData = {};
+            
+            for (const office of offices) {
+                const data = await calculateOfficeFinancials(office);
+                officeData[office] = data;
+                
+                // Save to database
+                await saveOfficeFinancials(data);
+            }
+            
+            renderDashboard();
+            alert('✅ Financial data calculated and saved successfully!');
+        }
+
+        // Calculate financials for a single office
+        async function calculateOfficeFinancials(officeName) {
+            // Get all orders for this office this month
+            const ordersResponse = await fetch(`tables/orders?limit=1000`);
+            const ordersData = await ordersResponse.json();
+            const orders = (ordersData.data || []).filter(o => 
+                o.assigned_office === officeName && 
+                o.order_date && 
+                o.order_date.startsWith(currentMonth)
+            );
+            
+            // Calculate revenue
+            let totalRevenue = 0;
+            orders.forEach(order => {
+                const revenue = order.revenue_amount || order.total_value || order.total_value_rmb || 0;
+                totalRevenue += revenue;
+            });
+            
+            // Get staff costs for this office
+            const staffResponse = await fetch(`tables/staff_members?limit=100`);
+            const staffData = await staffResponse.json();
+            const staffMembers = (staffData.data || []).filter(s => 
+                s.office_location === officeName && s.active
+            );
+            
+            let totalSalaries = 0;
+            staffMembers.forEach(staff => {
+                totalSalaries += staff.monthly_salary_rmb || 0;
+            });
+            
+            // Get rent costs
+            const rentCosts = OFFICE_RENT[officeName] || 0;
+            
+            // Calculate other costs (banking, etc.)
+            let otherCosts = 0;
+            if (officeName === 'Yiwu') {
+                otherCosts += 5000; // James banking fees
+            }
+            
+            // Calculate net profit
+            const totalCosts = totalSalaries + rentCosts + otherCosts;
+            const netProfit = totalRevenue - totalCosts;
+            const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+            
+            return {
+                office_name: officeName,
+                month: currentMonth,
+                revenue: totalRevenue,
+                staff_costs: totalSalaries,
+                rent_costs: rentCosts,
+                other_costs: otherCosts,
+                net_profit: netProfit,
+                profit_margin_percent: profitMargin,
+                currency: 'RMB'
+            };
+        }
+
+        // Save office financials to database
+        async function saveOfficeFinancials(data) {
+            try {
+                // Check if record exists
+                const checkResponse = await fetch(`tables/office_financials?search=month:${data.month}&search=office_name:${data.office_name}`);
+                const checkData = await checkResponse.json();
+                
+                if (checkData.data && checkData.data.length > 0) {
+                    // Update existing
+                    const existingId = checkData.data[0].id;
+                    await fetch(`tables/office_financials/${existingId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    // Create new
+                    await fetch('tables/office_financials', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                }
+            } catch (error) {
+                console.error('Error saving financials:', error);
+            }
+        }
+
+        // Render dashboard with data
+        function renderDashboard() {
+            // Calculate company totals
+            let companyRevenue = 0;
+            let companyCosts = 0;
+            let companyProfit = 0;
+            
+            Object.values(officeData).forEach(office => {
+                companyRevenue += office.revenue || 0;
+                companyCosts += (office.staff_costs || 0) + (office.rent_costs || 0) + (office.other_costs || 0);
+                companyProfit += office.net_profit || 0;
+            });
+            
+            const companyMargin = companyRevenue > 0 ? (companyProfit / companyRevenue) * 100 : 0;
+            
+            // Update company summary
+            document.getElementById('totalRevenue').textContent = formatCurrency(companyRevenue, 'RMB');
+            document.getElementById('totalCosts').textContent = formatCurrency(companyCosts, 'RMB');
+            document.getElementById('totalProfit').textContent = formatCurrency(companyProfit, 'RMB');
+            document.getElementById('totalMargin').textContent = companyMargin.toFixed(1) + '%';
+            
+            // Render chart
+            renderChart();
+            
+            // Render office details
+            renderOfficeDetails();
+        }
+
+        // Render comparison chart
+        function renderChart() {
+            const ctx = document.getElementById('officeComparisonChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+            
+            const offices = Object.keys(officeData);
+            const revenues = offices.map(o => officeData[o].revenue || 0);
+            const costs = offices.map(o => (officeData[o].staff_costs || 0) + (officeData[o].rent_costs || 0) + (officeData[o].other_costs || 0));
+            const profits = offices.map(o => officeData[o].net_profit || 0);
+            
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: offices,
+                    datasets: [
+                        {
+                            label: 'Revenue',
+                            data: revenues,
+                            backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Costs',
+                            data: costs,
+                            backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Net Profit',
+                            data: profits,
+                            backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                            borderColor: 'rgba(34, 197, 94, 1)',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '¥' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ¥' + context.parsed.y.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render individual office details
+        function renderOfficeDetails() {
+            const container = document.getElementById('officeDetailsContainer');
+            container.innerHTML = '';
+            
+            const officeIcons = {
+                'Yiwu': 'fa-warehouse',
+                'Shenzhen': 'fa-industry',
+                'Greece': 'fa-landmark'
+            };
+            
+            const officeColors = {
+                'Yiwu': 'from-blue-500 to-blue-600',
+                'Shenzhen': 'from-purple-500 to-purple-600',
+                'Greece': 'from-green-500 to-green-600'
+            };
+            
+            Object.keys(officeData).forEach(officeName => {
+                const data = officeData[officeName];
+                const totalCosts = (data.staff_costs || 0) + (data.rent_costs || 0) + (data.other_costs || 0);
+                
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl shadow-lg overflow-hidden';
+                card.innerHTML = `
+                    <div class="bg-gradient-to-r ${officeColors[officeName]} p-6 text-white">
+                        <h3 class="text-2xl font-bold">
+                            <i class="fas ${officeIcons[officeName]} mr-2"></i>
+                            ${officeName} Office
+                        </h3>
+                        <p class="text-sm opacity-90 mt-1">${getOfficeDescription(officeName)}</p>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-blue-50 rounded-lg p-4">
+                                <div class="text-sm text-blue-600 font-medium">Revenue</div>
+                                <div class="text-2xl font-bold text-blue-900 mt-1">
+                                    ${formatCurrency(data.revenue || 0, data.currency)}
+                                </div>
+                            </div>
+                            
+                            <div class="bg-red-50 rounded-lg p-4">
+                                <div class="text-sm text-red-600 font-medium">Total Costs</div>
+                                <div class="text-2xl font-bold text-red-900 mt-1">
+                                    ${formatCurrency(totalCosts, data.currency)}
+                                </div>
+                            </div>
+                            
+                            <div class="bg-green-50 rounded-lg p-4">
+                                <div class="text-sm text-green-600 font-medium">Net Profit</div>
+                                <div class="text-2xl font-bold text-green-900 mt-1">
+                                    ${formatCurrency(data.net_profit || 0, data.currency)}
+                                </div>
+                            </div>
+                            
+                            <div class="bg-purple-50 rounded-lg p-4">
+                                <div class="text-sm text-purple-600 font-medium">Profit Margin</div>
+                                <div class="text-2xl font-bold text-purple-900 mt-1">
+                                    ${(data.profit_margin_percent || 0).toFixed(1)}%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="border-t pt-4">
+                            <h4 class="font-semibold text-gray-700 mb-3">Cost Breakdown</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">
+                                        <i class="fas fa-users text-blue-500 mr-2"></i>
+                                        Staff Salaries
+                                    </span>
+                                    <span class="font-semibold">${formatCurrency(data.staff_costs || 0, data.currency)}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">
+                                        <i class="fas fa-building text-orange-500 mr-2"></i>
+                                        Rent & Facilities
+                                    </span>
+                                    <span class="font-semibold">${formatCurrency(data.rent_costs || 0, data.currency)}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">
+                                        <i class="fas fa-receipt text-purple-500 mr-2"></i>
+                                        Other Costs
+                                    </span>
+                                    <span class="font-semibold">${formatCurrency(data.other_costs || 0, data.currency)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Get office description
+        function getOfficeDescription(office) {
+            const descriptions = {
+                'Yiwu': 'Zhejiang Province - Warehousing, QC, Logistics',
+                'Shenzhen': 'Guangdong Province - Sourcing, Production, Orders',
+                'Greece': 'Thessaloniki - Client Communication, Accounting'
+            };
+            return descriptions[office] || '';
+        }
+
+        // Format currency
+        function formatCurrency(amount, currency) {
+            const symbols = {
+                'RMB': '¥',
+                'EUR': '€',
+                'USD': '$'
+            };
+            
+            return (symbols[currency] || '¥') + Math.round(amount).toLocaleString();
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

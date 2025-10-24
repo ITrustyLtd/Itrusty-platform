@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Packing List Creator - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/page-protection.js"></script>
+    <style>
+        /* ========== MUJI THEME SYSTEM ========== */
+        :root {
+            --body-bg: #F9FAFB;
+            --card-bg: #FFFFFF;
+            --nav-gradient-from: #8B7355;
+            --nav-gradient-to: #6B5D4F;
+            --text-dark: #111827;
+        }
+
+        [data-theme="elegant"] {
+            --body-bg: #F4F3EE;
+            --card-bg: #FDFCFA;
+        }
+
+        [data-theme="eco"] {
+            --body-bg: #EFEDE0;
+            --card-bg: #F9F8F0;
+            --nav-gradient-from: #4A7C59;
+            --nav-gradient-to: #3A5E45;
+        }
+
+        [data-theme="santorini"] {
+            --body-bg: #F1F1F3;
+            --card-bg: #FAFAFA;
+            --nav-gradient-from: #2A5A8E;
+            --nav-gradient-to: #1E4570;
+        }
+
+        [data-theme="colorful"] {
+            --body-bg: #FBE2B1;
+            --card-bg: #FEF5E7;
+        }
+        
+        body {
+            background-color: var(--body-bg) !important;
+            transition: background-color 0.3s ease;
+        }
+        
+        nav.themed-nav {
+            background: linear-gradient(to right, var(--nav-gradient-from), var(--nav-gradient-to)) !important;
+        }
+
+        /* ========== PINE GREEN THEME (Packing List) ========== */
+        .packing-list-header {
+            background: #2D5016 !important; /* Pine Green */
+            color: white;
+        }
+
+        .packing-list-grid th {
+            background: #4A7C2F !important; /* Light Pine Green */
+            color: white;
+            font-weight: 600;
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 10pt;
+            border: 1px solid #2D5016;
+        }
+
+        .packing-list-box {
+            background: #E8F5E9 !important; /* Very Light Pine Green */
+            border-color: #4A7C2F !important;
+            border: 2px solid;
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 180px;
+        }
+
+        .packing-list-box h3 {
+            color: #2D5016 !important;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .totals-row {
+            background: #4A7C2F !important;
+            color: white;
+            font-weight: 700;
+            font-size: 11pt;
+        }
+
+        /* ========== EDITABLE CELLS ========== */
+        .editable-cell {
+            min-height: 30px;
+            padding: 8px;
+            border: 1px solid #e5e7eb;
+            cursor: text;
+            background: white;
+            transition: all 0.2s;
+        }
+        
+        .editable-cell:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+        
+        .editable-cell:focus {
+            outline: 2px solid #4A7C2F;
+            border-color: #4A7C2F;
+            background: #E8F5E9;
+        }
+
+        .auto-calculated {
+            background: #f3f4f6 !important;
+            color: #4b5563;
+            font-style: italic;
+        }
+
+        /* ========== PRINT STYLES ========== */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            
+            body {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+            
+            @page {
+                size: A4;
+                margin: 1cm;
+            }
+            
+            .packing-list-container {
+                box-shadow: none !important;
+                border: none !important;
+            }
+            
+            /* Hide Image URL column in print */
+            .hide-on-print {
+                display: none !important;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            
+            table th, table td {
+                border: 1px solid #2D5016 !important;
+                padding: 6px !important;
+            }
+
+            .product-image-print {
+                max-width: 60px;
+                max-height: 60px;
+                object-fit: contain;
+            }
+        }
+
+        /* ========== TABLE STYLING ========== */
+        .packing-list-grid {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 9pt;
+        }
+
+        .packing-list-grid td {
+            padding: 8px 6px;
+            border: 1px solid #d1d5db;
+            text-align: center;
+        }
+
+        .packing-list-grid input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            text-align: center;
+            padding: 4px;
+            font-size: 9pt;
+        }
+
+        .packing-list-grid input:focus {
+            outline: 2px solid #4A7C2F;
+            background: #E8F5E9;
+        }
+
+        /* Product image in table */
+        .product-image-cell img {
+            max-width: 50px;
+            max-height: 50px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* ========== BUTTONS ========== */
+        .btn-pine-green {
+            background: #2D5016;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-pine-green:hover {
+            background: #4A7C2F;
+        }
+
+        .btn-outline-pine {
+            background: transparent;
+            color: #2D5016;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            border: 2px solid #2D5016;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-outline-pine:hover {
+            background: #E8F5E9;
+        }
+
+        /* ========== HEADER STYLES ========== */
+        .company-logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2D5016;
+        }
+
+        .packing-list-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2D5016;
+            text-align: center;
+            margin: 1.5rem 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ========== DIMENSION INPUTS ========== */
+        .dimension-group {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dimension-group input {
+            width: 50px;
+            text-align: center;
+            padding: 4px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+        }
+
+        .dimension-group span {
+            color: #6b7280;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation (same as other pages) -->
+    <nav class="themed-nav text-white shadow-lg sticky top-0 z-50 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-boxes text-2xl"></i>
+                    <div>
+                        <h1 class="text-xl font-bold">Packing List Creator</h1>
+                        <p class="text-xs opacity-90">I Trusty Ltd</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="window.location.href='index.html'" class="px-4 py-2 bg-white bg-opacity-20 rounded hover:bg-opacity-30">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        
+        <!-- Action Buttons -->
+        <div class="mb-6 flex flex-wrap gap-3 no-print">
+            <button onclick="addNewRow()" class="btn-pine-green">
+                <i class="fas fa-plus mr-2"></i>Add Product
+            </button>
+            <button onclick="loadFromProducts()" class="btn-outline-pine">
+                <i class="fas fa-book mr-2"></i>Load from Products Library
+            </button>
+            <button onclick="saveDraft()" class="btn-outline-pine">
+                <i class="fas fa-save mr-2"></i>Save Draft
+            </button>
+            <button onclick="generatePDF()" class="btn-pine-green">
+                <i class="fas fa-file-pdf mr-2"></i>Export PDF
+            </button>
+            <button onclick="window.print()" class="btn-outline-pine">
+                <i class="fas fa-print mr-2"></i>Print
+            </button>
+        </div>
+
+        <!-- Packing List Container -->
+        <div class="packing-list-container bg-white rounded-lg shadow-lg p-8" id="packingListContent">
+            
+            <!-- Header Section -->
+            <div class="grid grid-cols-2 gap-8 mb-6">
+                <!-- I Trusty Info -->
+                <div class="packing-list-box">
+                    <h3>From: I Trusty Ltd</h3>
+                    <div class="text-sm space-y-1">
+                        <p><strong>Address:</strong> <span contenteditable="true" class="editable-field">Yiwu, Zhejiang, China</span></p>
+                        <p><strong>Contact:</strong> <span contenteditable="true" class="editable-field">Johny Vlachopoulos</span></p>
+                        <p><strong>Email:</strong> <span contenteditable="true" class="editable-field">info@itrusty.com</span></p>
+                        <p><strong>Phone:</strong> <span contenteditable="true" class="editable-field">+86 XXX XXXX XXXX</span></p>
+                    </div>
+                </div>
+
+                <!-- Customer Info -->
+                <div class="packing-list-box">
+                    <h3>To: Customer</h3>
+                    <div class="text-sm space-y-1">
+                        <p><strong>Company:</strong> <input type="text" id="customerName" class="border-b border-gray-300 w-full px-2 py-1" placeholder="Customer Name"></p>
+                        <p><strong>Address:</strong> <input type="text" id="customerAddress" class="border-b border-gray-300 w-full px-2 py-1" placeholder="Shipping Address"></p>
+                        <p><strong>Contact:</strong> <input type="text" id="customerContact" class="border-b border-gray-300 w-full px-2 py-1" placeholder="Contact Person"></p>
+                        <p><strong>Phone:</strong> <input type="text" id="customerPhone" class="border-b border-gray-300 w-full px-2 py-1" placeholder="Phone Number"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Packing List Title & Details -->
+            <div class="packing-list-title">PACKING LIST</div>
+            
+            <div class="grid grid-cols-3 gap-4 mb-6 text-sm">
+                <div>
+                    <strong>Packing List No:</strong> 
+                    <input type="text" id="packingListNumber" class="border-b border-gray-300 ml-2 px-2 py-1" placeholder="PL-2025-001">
+                </div>
+                <div>
+                    <strong>Date:</strong> 
+                    <input type="date" id="packingListDate" class="border-b border-gray-300 ml-2 px-2 py-1">
+                </div>
+                <div>
+                    <strong>Order Ref:</strong> 
+                    <input type="text" id="orderReference" class="border-b border-gray-300 ml-2 px-2 py-1" placeholder="ORD-1234">
+                </div>
+                <div>
+                    <strong>Destination Port:</strong> 
+                    <input type="text" id="destinationPort" class="border-b border-gray-300 ml-2 px-2 py-1" placeholder="e.g. Piraeus, Greece">
+                </div>
+                <div>
+                    <strong>Container No:</strong> 
+                    <input type="text" id="containerNumber" class="border-b border-gray-300 ml-2 px-2 py-1" placeholder="e.g. MSKU1234567">
+                </div>
+            </div>
+
+            <!-- Products Table -->
+            <table class="packing-list-grid" id="packingListTable">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">#</th>
+                        <th style="width: 8%;" class="hide-on-print">Image</th>
+                        <th style="width: 8%;">Picture</th>
+                        <th style="width: 8%;">Item No.</th>
+                        <th style="width: 15%;">Description</th>
+                        <th style="width: 5%;">CTN</th>
+                        <th style="width: 5%;">QTY</th>
+                        <th style="width: 5%;">Total Qty</th>
+                        <th style="width: 12%;">Packing Size (L×W×H cm)</th>
+                        <th style="width: 6%;">Volume (CBM)</th>
+                        <th style="width: 6%;">Total Vol.</th>
+                        <th style="width: 6%;">Net Wt (KG)</th>
+                        <th style="width: 6%;">Gross Wt (KG)</th>
+                        <th style="width: 6%;">Total Wt</th>
+                        <th style="width: 4%;" class="no-print">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="packingListBody">
+                    <!-- Rows will be added dynamically -->
+                </tbody>
+                <tfoot>
+                    <tr class="totals-row">
+                        <td colspan="5" style="text-align: right; padding-right: 20px;">TOTAL</td>
+                        <td id="totalCTNS">0</td>
+                        <td colspan="2"></td>
+                        <td></td>
+                        <td></td>
+                        <td id="totalVolume">0.00</td>
+                        <td colspan="2"></td>
+                        <td id="totalWeight">0.00</td>
+                        <td class="no-print"></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <!-- Footer Notes -->
+            <div class="mt-8 grid grid-cols-2 gap-8">
+                <div class="packing-list-box">
+                    <h3>Shipping Marks</h3>
+                    <textarea id="shippingMarks" rows="4" class="w-full border border-gray-300 rounded p-2 text-sm" placeholder="Enter shipping marks here..."></textarea>
+                </div>
+                <div class="packing-list-box">
+                    <h3>Notes / Remarks</h3>
+                    <textarea id="notes" rows="4" class="w-full border border-gray-300 rounded p-2 text-sm" placeholder="Enter additional notes here..."></textarea>
+                </div>
+            </div>
+
+            <!-- Signature Section -->
+            <div class="mt-8 grid grid-cols-2 gap-8">
+                <div class="text-center">
+                    <div class="border-t-2 border-gray-300 pt-2 mt-12">
+                        <p class="font-semibold">Prepared By</p>
+                        <p class="text-sm text-gray-600">I Trusty Ltd</p>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <div class="border-t-2 border-gray-300 pt-2 mt-12">
+                        <p class="font-semibold">Received By</p>
+                        <p class="text-sm text-gray-600">Customer Signature</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Initialize with today's date
+        document.getElementById('packingListDate').valueAsDate = new Date();
+
+        let rowCounter = 0;
+
+        // Add new product row
+        function addNewRow() {
+            rowCounter++;
+            const tbody = document.getElementById('packingListBody');
+            const row = document.createElement('tr');
+            row.id = `row-${rowCounter}`;
+            row.innerHTML = `
+                <td>${rowCounter}</td>
+                <td class="hide-on-print">
+                    <input type="text" class="image-url" placeholder="Image URL" style="width: 100%; font-size: 8pt;">
+                </td>
+                <td class="product-image-cell">
+                    <img src="" alt="Product" style="display: none;" class="product-image-display">
+                </td>
+                <td><input type="text" class="item-number" placeholder="Item No."></td>
+                <td><input type="text" class="description" placeholder="Description"></td>
+                <td><input type="number" class="ctn" value="0" min="0" onchange="calculateRow(${rowCounter})"></td>
+                <td><input type="number" class="qty" value="0" min="0" onchange="calculateRow(${rowCounter})"></td>
+                <td class="auto-calculated"><span class="total-qty">0</span></td>
+                <td>
+                    <div class="dimension-group">
+                        <input type="number" class="length" value="0" step="0.01" min="0" onchange="calculateRow(${rowCounter})" placeholder="L">
+                        <span>×</span>
+                        <input type="number" class="width" value="0" step="0.01" min="0" onchange="calculateRow(${rowCounter})" placeholder="W">
+                        <span>×</span>
+                        <input type="number" class="height" value="0" step="0.01" min="0" onchange="calculateRow(${rowCounter})" placeholder="H">
+                    </div>
+                </td>
+                <td><input type="number" class="volume" value="0.00" step="0.01" min="0" onchange="calculateRow(${rowCounter})"></td>
+                <td class="auto-calculated"><span class="total-volume">0.00</span></td>
+                <td><input type="number" class="net-weight" value="0.00" step="0.01" min="0"></td>
+                <td><input type="number" class="gross-weight" value="0.00" step="0.01" min="0" onchange="calculateRow(${rowCounter})"></td>
+                <td class="auto-calculated"><span class="total-weight">0.00</span></td>
+                <td class="no-print">
+                    <button onclick="deleteRow(${rowCounter})" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+
+            // Add event listener for image URL
+            const imageInput = row.querySelector('.image-url');
+            const imageDisplay = row.querySelector('.product-image-display');
+            imageInput.addEventListener('input', function() {
+                if (this.value) {
+                    imageDisplay.src = this.value;
+                    imageDisplay.style.display = 'block';
+                } else {
+                    imageDisplay.style.display = 'none';
+                }
+            });
+        }
+
+        // Calculate row totals
+        function calculateRow(rowId) {
+            const row = document.getElementById(`row-${rowId}`);
+            if (!row) return;
+
+            const ctn = parseFloat(row.querySelector('.ctn').value) || 0;
+            const qty = parseFloat(row.querySelector('.qty').value) || 0;
+            const length = parseFloat(row.querySelector('.length').value) || 0;
+            const width = parseFloat(row.querySelector('.width').value) || 0;
+            const height = parseFloat(row.querySelector('.height').value) || 0;
+            const grossWeight = parseFloat(row.querySelector('.gross-weight').value) || 0;
+
+            // Calculate total quantity
+            const totalQty = ctn * qty;
+            row.querySelector('.total-qty').textContent = totalQty;
+
+            // Calculate volume (CBM) = L × W × H ÷ 1,000,000
+            const volume = (length * width * height) / 1000000;
+            row.querySelector('.volume').value = volume.toFixed(4);
+
+            // Calculate total volume
+            const totalVolume = ctn * volume;
+            row.querySelector('.total-volume').textContent = totalVolume.toFixed(4);
+
+            // Calculate total weight
+            const totalWeight = ctn * grossWeight;
+            row.querySelector('.total-weight').textContent = totalWeight.toFixed(2);
+
+            // Update grand totals
+            updateTotals();
+        }
+
+        // Update grand totals
+        function updateTotals() {
+            let totalCTNS = 0;
+            let totalVolume = 0;
+            let totalWeight = 0;
+
+            const rows = document.querySelectorAll('#packingListBody tr');
+            rows.forEach(row => {
+                const ctn = parseFloat(row.querySelector('.ctn').value) || 0;
+                const vol = parseFloat(row.querySelector('.total-volume').textContent) || 0;
+                const wt = parseFloat(row.querySelector('.total-weight').textContent) || 0;
+
+                totalCTNS += ctn;
+                totalVolume += vol;
+                totalWeight += wt;
+            });
+
+            document.getElementById('totalCTNS').textContent = totalCTNS;
+            document.getElementById('totalVolume').textContent = totalVolume.toFixed(4);
+            document.getElementById('totalWeight').textContent = totalWeight.toFixed(2);
+        }
+
+        // Delete row
+        function deleteRow(rowId) {
+            if (confirm('Delete this product?')) {
+                const row = document.getElementById(`row-${rowId}`);
+                if (row) {
+                    row.remove();
+                    updateTotals();
+                    renumberRows();
+                }
+            }
+        }
+
+        // Renumber rows after deletion
+        function renumberRows() {
+            const rows = document.querySelectorAll('#packingListBody tr');
+            rows.forEach((row, index) => {
+                row.querySelector('td:first-child').textContent = index + 1;
+            });
+        }
+
+        // Load from Products Library
+        async function loadFromProducts() {
+            try {
+                const response = await fetch('tables/invoice_products?limit=100');
+                const data = await response.json();
+                
+                if (data.data && data.data.length > 0) {
+                    // Show product selection modal
+                    showProductSelectionModal(data.data);
+                } else {
+                    alert('No products found in library. Please add products first.');
+                }
+            } catch (error) {
+                console.error('Error loading products:', error);
+                alert('Failed to load products library.');
+            }
+        }
+
+        // Show product selection modal (simplified version)
+        function showProductSelectionModal(products) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-4xl max-h-[80vh] overflow-auto">
+                    <h2 class="text-2xl font-bold mb-4 text-pine-green">Select Products</h2>
+                    <div class="space-y-2">
+                        ${products.map(product => `
+                            <div class="border p-3 rounded hover:bg-gray-50 cursor-pointer" onclick="addProductFromLibrary(${JSON.stringify(product).replace(/"/g, '&quot;')})">
+                                <div class="flex items-center gap-4">
+                                    ${product.image_url ? `<img src="${product.image_url}" class="w-16 h-16 object-contain">` : ''}
+                                    <div>
+                                        <div class="font-semibold">${product.item_number || 'N/A'}</div>
+                                        <div class="text-sm text-gray-600">${product.description || 'No description'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button onclick="this.closest('.fixed').remove()" class="mt-4 btn-outline-pine">Close</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Add product from library
+        function addProductFromLibrary(product) {
+            addNewRow();
+            const row = document.querySelector(`#row-${rowCounter}`);
+            
+            if (product.image_url) row.querySelector('.image-url').value = product.image_url;
+            if (product.item_number) row.querySelector('.item-number').value = product.item_number;
+            if (product.description) row.querySelector('.description').value = product.description;
+            
+            // Trigger image display
+            row.querySelector('.image-url').dispatchEvent(new Event('input'));
+            
+            // Close modal
+            document.querySelector('.fixed.inset-0').remove();
+        }
+
+        // Save draft to database
+        async function saveDraft() {
+            const packingListData = {
+                packing_list_number: document.getElementById('packingListNumber').value,
+                date: document.getElementById('packingListDate').value,
+                order_reference: document.getElementById('orderReference').value,
+                customer_name: document.getElementById('customerName').value,
+                customer_address: document.getElementById('customerAddress').value,
+                destination_port: document.getElementById('destinationPort').value,
+                container_number: document.getElementById('containerNumber').value,
+                shipping_marks: document.getElementById('shippingMarks').value,
+                notes: document.getElementById('notes').value,
+                items: [],
+                total_ctns: parseInt(document.getElementById('totalCTNS').textContent) || 0,
+                total_weight_kg: parseFloat(document.getElementById('totalWeight').textContent) || 0,
+                total_volume_cbm: parseFloat(document.getElementById('totalVolume').textContent) || 0
+            };
+
+            // Collect items
+            const rows = document.querySelectorAll('#packingListBody tr');
+            rows.forEach(row => {
+                packingListData.items.push({
+                    image_url: row.querySelector('.image-url').value,
+                    item_number: row.querySelector('.item-number').value,
+                    description: row.querySelector('.description').value,
+                    ctn: parseFloat(row.querySelector('.ctn').value) || 0,
+                    qty: parseFloat(row.querySelector('.qty').value) || 0,
+                    total_qty: parseFloat(row.querySelector('.total-qty').textContent) || 0,
+                    length_cm: parseFloat(row.querySelector('.length').value) || 0,
+                    width_cm: parseFloat(row.querySelector('.width').value) || 0,
+                    height_cm: parseFloat(row.querySelector('.height').value) || 0,
+                    volume_cbm: parseFloat(row.querySelector('.volume').value) || 0,
+                    total_volume_cbm: parseFloat(row.querySelector('.total-volume').textContent) || 0,
+                    net_weight_kg: parseFloat(row.querySelector('.net-weight').value) || 0,
+                    gross_weight_kg: parseFloat(row.querySelector('.gross-weight').value) || 0,
+                    total_weight_kg: parseFloat(row.querySelector('.total-weight').textContent) || 0
+                });
+            });
+
+            try {
+                // Save to database (you'll need to create this table)
+                const response = await fetch('tables/packing_lists', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(packingListData)
+                });
+
+                if (response.ok) {
+                    alert('✅ Packing list saved successfully!');
+                } else {
+                    throw new Error('Failed to save');
+                }
+            } catch (error) {
+                console.error('Error saving:', error);
+                alert('Failed to save packing list. Data will be stored locally.');
+                localStorage.setItem('packing_list_draft', JSON.stringify(packingListData));
+            }
+        }
+
+        // Generate PDF
+        function generatePDF() {
+            window.print();
+        }
+
+        // Initialize with one empty row
+        addNewRow();
+    </script>
+
+</body>
+</html>

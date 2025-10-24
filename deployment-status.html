@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deployment Status - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen p-8">
+    <div class="max-w-5xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                        🚀 Deployment Status
+                    </h1>
+                    <p class="text-gray-600">I Trusty Ltd - Cloudflare + Supabase Migration</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-gray-500">Project: itrusty-platform</p>
+                    <p class="text-sm text-gray-500">Started: May 17, 2025</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Overview -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 Overall Progress</h2>
+            <div class="mb-4">
+                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                    <span>Phase 1: Database Setup</span>
+                    <span id="overallPercent">80%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-4">
+                    <div id="overallProgress" class="bg-gradient-to-r from-blue-500 to-purple-500 h-4 rounded-full transition-all duration-500" style="width: 80%"></div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">⏱️ Estimated completion: 6 days remaining</p>
+        </div>
+
+        <!-- Phase Breakdown -->
+        <div class="grid md:grid-cols-2 gap-6 mb-6">
+            <!-- Phase 1 -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Phase 1: Database Setup</h3>
+                    <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">In Progress</span>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-3"></i>
+                        <span class="text-gray-700">Supabase account created</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-3"></i>
+                        <span class="text-gray-700">SQL scripts generated (47 tables)</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-3"></i>
+                        <span class="text-gray-700">API wrapper configured</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-spinner fa-spin text-yellow-500 mr-3"></i>
+                        <span class="text-gray-700 font-semibold">Import database tables (pending)</span>
+                    </div>
+                </div>
+                <button onclick="location.href='test-supabase.html'" class="mt-4 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    🧪 Test Connection
+                </button>
+            </div>
+
+            <!-- Phase 2 -->
+            <div class="bg-white rounded-xl shadow-lg p-6 opacity-60">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Phase 2: Code Migration</h3>
+                    <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-semibold">Pending</span>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex items-center">
+                        <i class="fas fa-circle text-gray-300 mr-3"></i>
+                        <span class="text-gray-500">Add API wrapper to pages</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-circle text-gray-300 mr-3"></i>
+                        <span class="text-gray-500">Test core pages (5 pages)</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-circle text-gray-300 mr-3"></i>
+                        <span class="text-gray-500">Test all pages (30 pages)</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-circle text-gray-300 mr-3"></i>
+                        <span class="text-gray-500">Fix bugs and issues</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 3 -->
+            <div class="bg-white rounded-xl shadow-lg p-6 opacity-60">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Phase 3: Cloudflare Deploy</h3>
+                    <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-semibold">Pending</span>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex items-center">
+                        <i class="fas fa-circle text-gray-300 mr-3"></i>
+                        <span class="text-gray-500">Push to GitHub</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-circle text-gray-300 mr-3"></i>
+                        <span class="text-gray-500">Connect Cloudflare Pages</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-circle text-gray-300 mr-3"></i>
+                        <span class="text-gray-500">Test staging URL</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-circle text-gray-300 mr-3"></i>
+                        <span class="text-gray-500">Performance optimization</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 4 -->
+            <div class="bg-white rounded-xl shadow-lg p-6 opacity-60">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Phase 4: Go Live!</h3>
+                    <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-semibold">Pending</span>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex items-center">
+                        <i class="fas fa-circle text-gray-300 mr-3"></i>
+                        <span class="text-gray-500">Final testing</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-circle text-gray-300 mr-3"></i>
+                        <span class="text-gray-500">Team training</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-circle text-gray-300 mr-3"></i>
+                        <span class="text-gray-500">Point domain to Cloudflare</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-circle text-gray-300 mr-3"></i>
+                        <span class="text-gray-500">Monitor for 24 hours</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">⚡ Quick Actions</h2>
+            <div class="grid md:grid-cols-3 gap-4">
+                <button onclick="location.href='test-supabase.html'" class="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg hover:bg-blue-100 transition">
+                    <i class="fas fa-vial text-blue-600 text-2xl mb-2"></i>
+                    <p class="text-gray-800 font-semibold">Test Connection</p>
+                    <p class="text-sm text-gray-600">Check Supabase status</p>
+                </button>
+                <button onclick="location.href='deployment/QUICK_START.md'" class="p-4 bg-green-50 border-2 border-green-200 rounded-lg hover:bg-green-100 transition">
+                    <i class="fas fa-book text-green-600 text-2xl mb-2"></i>
+                    <p class="text-gray-800 font-semibold">Quick Start Guide</p>
+                    <p class="text-sm text-gray-600">10-minute database import</p>
+                </button>
+                <button onclick="location.href='deployment/DEPLOYMENT_GUIDE.md'" class="p-4 bg-purple-50 border-2 border-purple-200 rounded-lg hover:bg-purple-100 transition">
+                    <i class="fas fa-map text-purple-600 text-2xl mb-2"></i>
+                    <p class="text-gray-800 font-semibold">Full Deployment Guide</p>
+                    <p class="text-sm text-gray-600">Complete 7-day plan</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- Technical Details -->
+        <div class="bg-white rounded-xl shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🔧 Technical Details</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-semibold text-gray-700 mb-2">Infrastructure</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Hosting:</span>
+                            <span class="text-gray-800 font-medium">Cloudflare Pages</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Database:</span>
+                            <span class="text-gray-800 font-medium">Supabase PostgreSQL</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Region:</span>
+                            <span class="text-gray-800 font-medium">Americas (North Virginia)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">SSL:</span>
+                            <span class="text-green-600 font-medium">✅ Automatic</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-700 mb-2">Database</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Tables:</span>
+                            <span class="text-gray-800 font-medium">47 tables</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Size:</span>
+                            <span class="text-gray-800 font-medium">~50 MB (estimated)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Project URL:</span>
+                            <span class="text-blue-600 font-medium text-xs">yzesqn...supabase.co</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Cost:</span>
+                            <span class="text-green-600 font-medium">$0/month (FREE tier)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-8 text-center text-gray-600 text-sm">
+            <p>🚀 Deployment Timeline: 7 days (Conservative & Safe)</p>
+            <p class="mt-2">💰 Total Cost: $0/month (FREE forever)</p>
+            <p class="mt-2">📞 Support: Available 24/7</p>
+        </div>
+    </div>
+
+    <script>
+        // Optional: Add real-time progress updates
+        console.log('✅ Deployment Status Page Loaded');
+        console.log('📊 Current Phase: Database Setup (80% complete)');
+        console.log('⏳ Next Step: Import SQL files to Supabase');
+    </script>
+</body>
+</html>

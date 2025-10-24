@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Management - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        .team-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .team-card:hover {
+            shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+            transform: translateY(-4px);
+        }
+        
+        .department-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .dept-management { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .dept-sales { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .dept-sourcing { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .dept-qc { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .dept-warehouse { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .dept-design { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
+        .dept-admin { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .dept-finance { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
+        
+        .member-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            margin: 0 auto 12px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white border-b shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-6">
+                    <a href="index.html" class="flex items-center gap-2 text-blue-600 hover:text-blue-700">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Dashboard
+                    </a>
+                    <h1 class="text-xl font-semibold">Team Management</h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="departmentFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option value="">All Departments</option>
+                        <option value="Management">Management</option>
+                        <option value="Sales">Sales</option>
+                        <option value="Sourcing">Sourcing</option>
+                        <option value="Quality Control">Quality Control</option>
+                        <option value="Warehouse">Warehouse</option>
+                        <option value="Design">Design</option>
+                        <option value="Administrative">Administrative</option>
+                        <option value="Finance">Finance</option>
+                    </select>
+                    <button onclick="showAddMemberModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-user-plus"></i>
+                        Add Team Member
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Team Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                <div class="text-2xl font-bold text-blue-600" id="totalMembers">0</div>
+                <div class="text-sm text-gray-500">Total Team Members</div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                <div class="text-2xl font-bold text-green-600" id="salesTeam">0</div>
+                <div class="text-sm text-gray-500">Sales Team</div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                <div class="text-2xl font-bold text-orange-600" id="totalMonthlyCost">¥0</div>
+                <div class="text-sm text-gray-500">Monthly Cost</div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                <div class="text-2xl font-bold text-purple-600" id="activeProjects">0</div>
+                <div class="text-sm text-gray-500">Active Assignments</div>
+            </div>
+        </div>
+
+        <!-- Team Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="teamGrid">
+            <!-- Team cards will be populated here -->
+        </div>
+    </div>
+
+    <!-- Add/Edit Member Modal -->
+    <div id="memberModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold" id="modalTitle">Add Team Member</h3>
+                        <button onclick="closeMemberModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="memberForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Name (English)</label>
+                                <input type="text" name="name" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Name (Chinese)</label>
+                                <input type="text" name="name_zh" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                                <input type="text" name="role" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Role (Chinese)</label>
+                                <input type="text" name="role_zh" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                                <select name="department" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="Management">Management</option>
+                                    <option value="Sales">Sales</option>
+                                    <option value="Sourcing">Sourcing</option>
+                                    <option value="Quality Control">Quality Control</option>
+                                    <option value="Warehouse">Warehouse</option>
+                                    <option value="Design">Design</option>
+                                    <option value="Administrative">Administrative</option>
+                                    <option value="Finance">Finance</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Office Location</label>
+                                <select name="office_location" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="Yiwu">Yiwu</option>
+                                    <option value="Shenzhen">Shenzhen</option>
+                                    <option value="Greece">Greece</option>
+                                    <option value="Remote">Remote</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input type="email" name="email" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                <input type="tel" name="phone" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">WeChat ID</label>
+                                <input type="text" name="wechat_id" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Base Salary (RMB/month)</label>
+                                <input type="number" name="base_salary_rmb" min="0" step="100" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Hourly Rate (RMB)</label>
+                                <input type="number" name="hourly_rate_rmb" min="0" step="10" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Hire Date</label>
+                                <input type="date" name="hire_date" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-6">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" name="is_sales_person" class="rounded">
+                                <span class="text-sm">Sales Team Member</span>
+                            </label>
+                            <div class="flex-1" id="commissionField" style="display: none;">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Commission Rate (%)</label>
+                                <input type="number" name="commission_rate" min="0" max="100" step="0.5" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-6">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" name="can_receive_notifications" checked class="rounded">
+                                <span class="text-sm">Can Receive Notifications</span>
+                            </label>
+                            <div class="flex-1">
+                                <select name="notification_preference" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                    <option value="WeChat">WeChat</option>
+                                    <option value="Email">Email</option>
+                                    <option value="SMS">SMS</option>
+                                    <option value="System Only">System Only</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end gap-3 pt-4">
+                            <button type="button" onclick="closeMemberModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Save Member</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/team-management.js"></script>
+    <!-- Auto-initialize data on first load -->
+    <script src="auto-initialize.js"></script>
+</body>
+</html>

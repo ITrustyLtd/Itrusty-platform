@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="elegant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theme Test - Click the Buttons!</title>
+    <style>
+        /* THEME SYSTEM */
+        :root {
+            --primary: #1F2A44;
+            --bg: #F4F3EE;
+        }
+        [data-theme="eco"] {
+            --primary: #486349;
+            --bg: #EFEDE0;
+        }
+        [data-theme="santorini"] {
+            --primary: #1A4599;
+            --bg: #F1F1F3;
+        }
+        [data-theme="colorful"] {
+            --primary: #B69030;
+            --bg: #FBE2B1;
+        }
+
+        body {
+            margin: 0;
+            padding: 40px;
+            background: var(--bg);
+            font-family: Arial, sans-serif;
+            transition: all 0.5s ease;
+        }
+
+        .theme-buttons {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .theme-btn {
+            width: 80px;
+            height: 80px;
+            border: 5px solid #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .theme-btn.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 8px rgba(0,0,0,0.1);
+        }
+
+        .big-box {
+            background: var(--primary);
+            color: white;
+            padding: 60px;
+            border-radius: 20px;
+            font-size: 32px;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            width: 80px;
+            height: 80px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            margin: 10px;
+            overflow: hidden;
+        }
+
+        .nav-btn:hover {
+            width: 250px;
+            justify-content: flex-start;
+            padding-left: 30px;
+        }
+
+        .nav-btn span {
+            opacity: 0;
+            margin-left: 10px;
+            transition: opacity 0.3s;
+        }
+
+        .nav-btn:hover span {
+            opacity: 1;
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .instruction {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 THEME TESTER - CLICK THE CIRCLES!</h1>
+    
+    <div class="instruction">
+        <strong>👇 CLICK THESE 4 BUTTONS TO CHANGE COLORS:</strong>
+    </div>
+
+    <div class="theme-buttons">
+        <button class="theme-btn active" style="background: linear-gradient(135deg, #1F2A44, #2C3E5C)" onclick="setTheme('elegant')" title="Elegant - Navy"></button>
+        <button class="theme-btn" style="background: linear-gradient(135deg, #486349, #688C59)" onclick="setTheme('eco')" title="Eco - Green"></button>
+        <button class="theme-btn" style="background: linear-gradient(135deg, #1A4599, #53A8E2)" onclick="setTheme('santorini')" title="Santorini - Blue"></button>
+        <button class="theme-btn" style="background: linear-gradient(135deg, #B69030, #F0AA5C)" onclick="setTheme('colorful')" title="Colorful - Gold"></button>
+    </div>
+
+    <div class="big-box">
+        THIS BOX CHANGES COLOR!<br>
+        <span style="font-size: 20px; opacity: 0.9;">Click the circles above to see the magic ✨</span>
+    </div>
+
+    <div class="instruction">
+        <strong>👇 HOVER OVER THESE BUTTONS TO SEE THEM EXPAND:</strong>
+    </div>
+
+    <div>
+        <button class="nav-btn">📦<span>Orders</span></button>
+        <button class="nav-btn">🚚<span>Suppliers</span></button>
+        <button class="nav-btn">📊<span>Projects</span></button>
+        <button class="nav-btn">👥<span>Team</span></button>
+    </div>
+
+    <script>
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            
+            // Update active button
+            document.querySelectorAll('.theme-btn').forEach((btn, index) => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

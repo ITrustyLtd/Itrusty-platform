@@ -1,0 +1,4 @@
+Item Number,Picture URL,Name,Description,CTN,QTY per CTN,Unit Price EUR,Product URL,Image URL,Notes,Price CNY,FX Rate,Markup %
+1,https://example.com/image1.jpg,LED Bulb E27 12W,220V Warm White Energy Saving LED Bulb,100,500,3.50,https://1688.com/product123,https://example.com/image1.jpg,MOQ: 10000 pcs,100.00,7.8,25
+2,https://example.com/image2.jpg,USB Cable Type-C 1m,Fast Charging USB-C Cable with Nylon Braiding,200,1000,1.20,https://1688.com/product456,https://example.com/image2.jpg,Available in Black/White,35.00,7.8,25
+3,https://example.com/image3.jpg,Bluetooth Speaker 5W,Portable Wireless Speaker with FM Radio,50,100,8.50,https://1688.com/product789,https://example.com/image3.jpg,Battery: 1200mAh,250.00,7.8,25

@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 I Trusty LTD - API Connection Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 32px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+        }
+
+        .test-header {
+            background: #f7f9fc;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .test-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .status-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pending {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+
+        .status-testing {
+            background: #74b9ff;
+            color: #0984e3;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status-success {
+            background: #55efc4;
+            color: #00b894;
+        }
+
+        .status-error {
+            background: #ff7675;
+            color: #d63031;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .test-result {
+            background: #f7f9fc;
+            border-left: 4px solid #ddd;
+            padding: 20px;
+            border-radius: 0 10px 10px 0;
+            margin-bottom: 15px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            display: none;
+        }
+
+        .test-result.show {
+            display: block;
+        }
+
+        .test-result.success {
+            border-left-color: #00b894;
+            background: #f0fff8;
+        }
+
+        .test-result.error {
+            border-left-color: #d63031;
+            background: #fff5f5;
+        }
+
+        .result-line {
+            margin: 5px 0;
+        }
+
+        .result-label {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .result-value {
+            color: #333;
+        }
+
+        .result-success {
+            color: #00b894;
+        }
+
+        .result-error {
+            color: #d63031;
+        }
+
+        .btn-test {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            width: 100%;
+        }
+
+        .btn-test:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-test:active {
+            transform: translateY(0);
+        }
+
+        .btn-test:disabled {
+            background: #ddd;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .summary h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .config-info {
+            background: #f7f9fc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            font-size: 13px;
+        }
+
+        .config-info code {
+            background: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .emoji {
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 I Trusty LTD - API Test</h1>
+        <p class="subtitle">Testing Supabase Database Connection & 47 Tables</p>
+
+        <div class="config-info">
+            <div class="result-line">
+                <span class="result-label">Supabase URL:</span>
+                <code>https://yzesqnawqmlqcxafjqfa.supabase.co</code>
+            </div>
+            <div class="result-line">
+                <span class="result-label">Region:</span>
+                <code>Americas (N. Virginia)</code>
+            </div>
+            <div class="result-line">
+                <span class="result-label">Total Tables:</span>
+                <code>47 tables</code>
+            </div>
+        </div>
+
+        <!-- Test 1: API Reachability -->
+        <div class="test-section">
+            <div class="test-header">
+                <div class="test-title">✅ Test 1: API Reachability</div>
+                <div class="status-badge status-pending" id="status-1">Pending</div>
+            </div>
+            <div class="test-result" id="result-1"></div>
+        </div>
+
+        <!-- Test 2: Core Tables Access -->
+        <div class="test-section">
+            <div class="test-header">
+                <div class="test-title">📊 Test 2: Core Tables Access</div>
+                <div class="status-badge status-pending" id="status-2">Pending</div>
+            </div>
+            <div class="test-result" id="result-2"></div>
+        </div>
+
+        <!-- Test 3: Write Operations -->
+        <div class="test-section">
+            <div class="test-header">
+                <div class="test-title">✍️ Test 3: Write Operations</div>
+                <div class="status-badge status-pending" id="status-3">Pending</div>
+            </div>
+            <div class="test-result" id="result-3"></div>
+        </div>
+
+        <!-- Test 4: Table Count Verification -->
+        <div class="test-section">
+            <div class="test-header">
+                <div class="test-title">🔢 Test 4: All 47 Tables Check</div>
+                <div class="status-badge status-pending" id="status-4">Pending</div>
+            </div>
+            <div class="test-result" id="result-4"></div>
+        </div>
+
+        <button class="btn-test" id="btnTest" onclick="runAllTests()">
+            🚀 Run All Tests
+        </button>
+
+        <div class="summary" id="summary" style="display: none;">
+            <h2 id="summaryTitle">Test Results</h2>
+            <div class="summary-stats">
+                <div class="stat">
+                    <div class="stat-value" id="statPassed">0</div>
+                    <div class="stat-label">Passed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="statFailed">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="statTotal">4</div>
+                    <div class="stat-label">Total Tests</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://yzesqnawqmlqcxafjqfa.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6ZXNxbmF3cW1scWN4YWZqcWZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2NTQ5OTgsImV4cCI6MjA3NjIzMDk5OH0.XTBS4DgvP9f9kBSRHSpssBpTliJ05vhIZsTDbhdgxGM';
+
+        const ALL_TABLES = [
+            'customers', 'suppliers', 'products', 'invoices', 'staff_members',
+            'users', 'user_permissions', 'transactions_customers', 'transactions_suppliers',
+            'sales_commissions', 'orders', 'projects', 'tasks', 'messages',
+            'daily_activities', 'audit_log', 'financial_accounts', 'bank_accounts',
+            'payment_transactions', 'customer_payments', 'supplier_payments', 'salespersons',
+            'company_expenses', 'office_financials', 'packing_lists', 'customer_orders',
+            'supplier_orders', 'order_items', 'workflow_steps', 'order_workflow_steps',
+            'workflow_step_comments', 'workflow_template_steps', 'order_workflow_templates',
+            'project_templates', 'notifications', 'notifications_alerts', 'wechat_notifications',
+            'activity_feed', 'sales_tracking', 'team_members', 'production_tracking',
+            'shipping_tracking', 'project_costs', 'staff_payroll', 'staff_permissions',
+            'user_roles', 'account_transfers'
+        ];
+
+        let testResults = { passed: 0, failed: 0 };
+
+        function setStatus(testNum, status, message = '') {
+            const badge = document.getElementById(`status-${testNum}`);
+            badge.className = `status-badge status-${status}`;
+            badge.textContent = status === 'testing' ? 'Testing...' : 
+                                status === 'success' ? '✅ Passed' : 
+                                status === 'error' ? '❌ Failed' : 'Pending';
+        }
+
+        function showResult(testNum, success, content) {
+            const result = document.getElementById(`result-${testNum}`);
+            result.className = `test-result show ${success ? 'success' : 'error'}`;
+            result.innerHTML = content;
+            
+            if (success) testResults.passed++;
+            else testResults.failed++;
+        }
+
+        async function test1_APIReachability() {
+            setStatus(1, 'testing');
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                const success = response.status === 200 || response.status === 404;
+                setStatus(1, success ? 'success' : 'error');
+                
+                showResult(1, success, `
+                    <div class="result-line ${success ? 'result-success' : 'result-error'}">
+                        <span class="result-label">Status:</span> ${success ? '✅ API is reachable!' : '❌ API unreachable'}
+                    </div>
+                    <div class="result-line">
+                        <span class="result-label">HTTP Status:</span> ${response.status}
+                    </div>
+                    <div class="result-line">
+                        <span class="result-label">URL:</span> ${SUPABASE_URL}
+                    </div>
+                `);
+
+                return success;
+            } catch (error) {
+                setStatus(1, 'error');
+                showResult(1, false, `
+                    <div class="result-line result-error">
+                        <span class="result-label">Error:</span> ${error.message}
+                    </div>
+                `);
+                return false;
+            }
+        }
+
+        async function test2_CoreTablesAccess() {
+            setStatus(2, 'testing');
+            const coreTables = ['customers', 'invoices', 'products', 'orders'];
+            const results = [];
+
+            for (const table of coreTables) {
+                try {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?limit=1`, {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    });
+
+                    results.push({
+                        table,
+                        success: response.ok,
+                        status: response.status
+                    });
+                } catch (error) {
+                    results.push({
+                        table,
+                        success: false,
+                        error: error.message
+                    });
+                }
+            }
+
+            const allSuccess = results.every(r => r.success);
+            setStatus(2, allSuccess ? 'success' : 'error');
+
+            const content = results.map(r => `
+                <div class="result-line ${r.success ? 'result-success' : 'result-error'}">
+                    ${r.success ? '✅' : '❌'} <span class="result-label">${r.table}:</span> 
+                    ${r.success ? `HTTP ${r.status} - Accessible` : `Error: ${r.error || 'Failed'}`}
+                </div>
+            `).join('');
+
+            showResult(2, allSuccess, content);
+            return allSuccess;
+        }
+
+        async function test3_WriteOperations() {
+            setStatus(3, 'testing');
+            
+            try {
+                // Test: Create a customer
+                const testCustomer = {
+                    customer_code: `TEST_${Date.now()}`,
+                    customer_name: 'Test Customer',
+                    company: 'Test Company Ltd',
+                    email: 'test@itrusty.com',
+                    active: true
+                };
+
+                const createResponse = await fetch(`${SUPABASE_URL}/rest/v1/customers`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify(testCustomer)
+                });
+
+                const created = await createResponse.json();
+                const createSuccess = createResponse.status === 201 && created.length > 0;
+
+                if (createSuccess) {
+                    // Test: Delete the test customer
+                    const deleteResponse = await fetch(
+                        `${SUPABASE_URL}/rest/v1/customers?id=eq.${created[0].id}`, 
+                        {
+                            method: 'DELETE',
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            }
+                        }
+                    );
+
+                    const deleteSuccess = deleteResponse.status === 204;
+                    const allSuccess = createSuccess && deleteSuccess;
+
+                    setStatus(3, allSuccess ? 'success' : 'error');
+                    showResult(3, allSuccess, `
+                        <div class="result-line result-success">
+                            ✅ <span class="result-label">CREATE:</span> Successfully created test customer
+                        </div>
+                        <div class="result-line">
+                            <span class="result-label">Customer ID:</span> ${created[0].id}
+                        </div>
+                        <div class="result-line">
+                            <span class="result-label">Customer Code:</span> ${created[0].customer_code}
+                        </div>
+                        <div class="result-line result-success">
+                            ✅ <span class="result-label">DELETE:</span> Successfully cleaned up test data
+                        </div>
+                    `);
+
+                    return allSuccess;
+                } else {
+                    throw new Error(`Create failed with status ${createResponse.status}`);
+                }
+
+            } catch (error) {
+                setStatus(3, 'error');
+                showResult(3, false, `
+                    <div class="result-line result-error">
+                        ❌ <span class="result-label">Error:</span> ${error.message}
+                    </div>
+                `);
+                return false;
+            }
+        }
+
+        async function test4_AllTablesCheck() {
+            setStatus(4, 'testing');
+            
+            const batchSize = 10;
+            const results = [];
+
+            for (let i = 0; i < ALL_TABLES.length; i += batchSize) {
+                const batch = ALL_TABLES.slice(i, i + batchSize);
+                const batchResults = await Promise.all(
+                    batch.map(async (table) => {
+                        try {
+                            const response = await fetch(
+                                `${SUPABASE_URL}/rest/v1/${table}?limit=1`, 
+                                {
+                                    headers: {
+                                        'apikey': SUPABASE_ANON_KEY,
+                                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                                    }
+                                }
+                            );
+                            return { table, success: response.ok };
+                        } catch (error) {
+                            return { table, success: false };
+                        }
+                    })
+                );
+                results.push(...batchResults);
+            }
+
+            const successCount = results.filter(r => r.success).length;
+            const allSuccess = successCount === ALL_TABLES.length;
+
+            setStatus(4, allSuccess ? 'success' : 'error');
+
+            const successTables = results.filter(r => r.success).map(r => r.table);
+            const failedTables = results.filter(r => !r.success).map(r => r.table);
+
+            showResult(4, allSuccess, `
+                <div class="result-line ${allSuccess ? 'result-success' : 'result-error'}">
+                    ${allSuccess ? '✅' : '⚠️'} <span class="result-label">Accessible Tables:</span> ${successCount} / 47
+                </div>
+                ${failedTables.length > 0 ? `
+                    <div class="result-line result-error">
+                        <span class="result-label">Failed Tables:</span> ${failedTables.join(', ')}
+                    </div>
+                ` : ''}
+                <div class="result-line">
+                    <span class="result-label">Sample Tables:</span>
+                    ${successTables.slice(0, 10).join(', ')}${successTables.length > 10 ? '...' : ''}
+                </div>
+            `);
+
+            return allSuccess;
+        }
+
+        async function runAllTests() {
+            const btn = document.getElementById('btnTest');
+            btn.disabled = true;
+            btn.textContent = '⏳ Running Tests...';
+
+            testResults = { passed: 0, failed: 0 };
+
+            await test1_APIReachability();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await test2_CoreTablesAccess();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await test3_WriteOperations();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await test4_AllTablesCheck();
+
+            // Show summary
+            const summary = document.getElementById('summary');
+            const summaryTitle = document.getElementById('summaryTitle');
+            const allPassed = testResults.failed === 0;
+
+            summaryTitle.textContent = allPassed ? '🎉 All Tests Passed!' : '⚠️ Some Tests Failed';
+            document.getElementById('statPassed').textContent = testResults.passed;
+            document.getElementById('statFailed').textContent = testResults.failed;
+            summary.style.display = 'block';
+
+            btn.disabled = false;
+            btn.textContent = '🔄 Run Tests Again';
+        }
+    </script>
+</body>
+</html>

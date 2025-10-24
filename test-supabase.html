@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Connection Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">🧪 Supabase Connection Test</h1>
+        
+        <div id="status" class="mb-6 p-4 rounded-lg bg-blue-50 border border-blue-200">
+            <p class="text-blue-700">⏳ Testing connection...</p>
+        </div>
+        
+        <div id="results" class="space-y-4"></div>
+        
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h2 class="text-lg font-semibold mb-2">📋 Instructions:</h2>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                <li>This page tests if Supabase is connected properly</li>
+                <li>If you see <span class="text-green-600 font-bold">GREEN ✅</span> messages: Connection works!</li>
+                <li>If you see <span class="text-red-600 font-bold">RED ❌</span> errors: Database tables not imported yet</li>
+            </ol>
+        </div>
+        
+        <div class="mt-6">
+            <button onclick="location.reload()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                🔄 Test Again
+            </button>
+            <a href="index.html" class="ml-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 inline-block">
+                ← Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Supabase credentials
+        const SUPABASE_URL = 'https://yzesqnawqmlqcxafjqfa.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6ZXNxbmF3cW1scWN4YWZqcWZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2NTQ5OTgsImV4cCI6MjA3NjIzMDk5OH0.XTBS4DgvP9f9kBSRHSpssBpTliJ05vhIZsTDbhdgxGM';
+
+        const statusDiv = document.getElementById('status');
+        const resultsDiv = document.getElementById('results');
+
+        async function testConnection() {
+            statusDiv.innerHTML = '<p class="text-blue-700">⏳ Testing Supabase connection...</p>';
+            resultsDiv.innerHTML = '';
+
+            try {
+                // Test 1: Check if Supabase is reachable
+                addResult('🌐 Testing Supabase API endpoint...', 'info');
+                
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                });
+
+                if (response.ok || response.status === 404) {
+                    addResult('✅ Supabase API is reachable!', 'success');
+                } else {
+                    throw new Error(`API returned status ${response.status}`);
+                }
+
+                // Test 2: Try to fetch from customers table
+                addResult('📊 Checking if database tables exist...', 'info');
+                
+                const customersResponse = await fetch(`${SUPABASE_URL}/rest/v1/customers?limit=1`, {
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                });
+
+                if (customersResponse.ok) {
+                    const data = await customersResponse.json();
+                    addResult(`✅ customers table exists! (Found ${data.length} records)`, 'success');
+                    
+                    // Test more tables
+                    await testTable('invoices');
+                    await testTable('products');
+                    await testTable('staff_members');
+                    
+                    statusDiv.innerHTML = '<p class="text-green-700 font-bold">🎉 SUCCESS! Supabase is fully connected!</p>';
+                } else if (customersResponse.status === 404) {
+                    addResult('❌ customers table NOT FOUND', 'error');
+                    addResult('⚠️ Database tables have not been imported yet', 'warning');
+                    statusDiv.innerHTML = `
+                        <div class="text-yellow-700">
+                            <p class="font-bold mb-2">⚠️ Database Tables Not Imported</p>
+                            <p class="text-sm">You need to import the SQL files to Supabase:</p>
+                            <ol class="list-decimal list-inside mt-2 text-sm">
+                                <li>Open Supabase Dashboard</li>
+                                <li>Go to SQL Editor</li>
+                                <li>Import deployment/supabase-schema.sql</li>
+                                <li>Import deployment/supabase-schema-part2.sql</li>
+                                <li>Refresh this page</li>
+                            </ol>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(`Database query failed: ${customersResponse.status}`);
+                }
+
+            } catch (error) {
+                console.error('Connection test failed:', error);
+                addResult(`❌ Connection failed: ${error.message}`, 'error');
+                statusDiv.innerHTML = `
+                    <div class="text-red-700">
+                        <p class="font-bold">❌ Connection Test Failed</p>
+                        <p class="text-sm mt-2">Error: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testTable(tableName) {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?limit=1`, {
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`✅ ${tableName} table exists! (${data.length} records)`, 'success');
+                } else {
+                    addResult(`❌ ${tableName} table NOT FOUND`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ ${tableName} test failed: ${error.message}`, 'error');
+            }
+        }
+
+        function addResult(message, type) {
+            const colors = {
+                success: 'bg-green-50 border-green-200 text-green-700',
+                error: 'bg-red-50 border-red-200 text-red-700',
+                warning: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+                info: 'bg-blue-50 border-blue-200 text-blue-700'
+            };
+            
+            const div = document.createElement('div');
+            div.className = `p-3 rounded border ${colors[type] || colors.info}`;
+            div.textContent = message;
+            resultsDiv.appendChild(div);
+        }
+
+        // Run test on page load
+        testConnection();
+    </script>
+</body>
+</html>

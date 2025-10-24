@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products Library - I Trusty Ltd</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <!-- Papa Parse for CSV upload -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/global-navigation.js"></script>
+    <style>
+        /* ========== MUJI THEME SYSTEM ========== */
+        :root {
+            --body-bg: #F9FAFB;
+            --card-bg: #FFFFFF;
+            --text-dark: #111827;
+            --text-muted: #6B7280;
+            --border-color: #E5E7EB;
+            --accent-color: #8B7355;
+        }
+
+        [data-theme="elegant"] {
+            --body-bg: #F4F3EE;
+            --card-bg: #FDFCFA;
+            --text-dark: #1F2A44;
+            --border-color: #DCC9B6;
+            --accent-color: #8B7355;
+        }
+
+        [data-theme="eco"] {
+            --body-bg: #EFEDE0;
+            --card-bg: #F9F8F0;
+            --text-dark: #2C3E2F;
+            --border-color: #688C59;
+            --accent-color: #4A7C59;
+        }
+
+        [data-theme="santorini"] {
+            --body-bg: #F1F1F3;
+            --card-bg: #FAFAFA;
+            --text-dark: #1A3B6B;
+            --border-color: #53A8E2;
+            --accent-color: #2A5A8E;
+        }
+
+        [data-theme="colorful"] {
+            --body-bg: #FBE2B1;
+            --card-bg: #FEF5E7;
+            --text-dark: #5C4A1E;
+            --border-color: #B69030;
+            --accent-color: #B69030;
+        }
+        
+        body {
+            background-color: var(--body-bg);
+            color: var(--text-dark);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            min-height: 100vh;
+        }
+        
+        .product-card {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+        
+        .product-img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            margin: 2rem;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .badge-active {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        
+        /* 🆕 Carousel Styles */
+        .carousel-indicator {
+            cursor: pointer;
+        }
+        
+        .carousel-indicator.active {
+            background: #9333ea !important;
+            width: 8px !important;
+        }
+        
+        #carouselImage.loading {
+            opacity: 0.5;
+        }
+        
+        .badge-inactive {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav style="background-color: var(--card-bg); border-bottom: 1px solid var(--border-color);" class="shadow-md mb-6">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div id="navigationComponent"></div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="max-w-7xl mx-auto px-4 pb-8">
+        <!-- Header -->
+        <div style="background-color: var(--card-bg); border: 1px solid var(--border-color);" class="rounded-lg shadow-lg p-6 mb-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold flex items-center gap-3" style="color: var(--text-dark)">
+                        <i class="fas fa-box-open" style="color: var(--accent-color)"></i>
+                        Products Library
+                    </h1>
+                    <p class="text-gray-600 mt-1">Manage your product catalog and inventory</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="showAddProductModal()" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all flex items-center gap-2 shadow-md">
+                        <i class="fas fa-plus"></i>
+                        <span>Add New Product</span>
+                    </button>
+                    
+                    <!-- 🆕 CSV Upload Button -->
+                    <button onclick="document.getElementById('csvUploadInputProducts').click()" class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center gap-2 shadow-md">
+                        <i class="fas fa-upload"></i>
+                        <span>📤 Bulk Upload CSV</span>
+                    </button>
+                    
+                    <!-- Hidden File Input -->
+                    <input type="file" id="csvUploadInputProducts" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleBulkCSVUpload(event)" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Search & Filters -->
+        <div class="bg-white rounded-lg shadow-lg p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="md:col-span-2">
+                    <input type="text" id="searchInput" placeholder="🔍 Search by SKU, Name, or Supplier..." 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                           oninput="filterProducts()">
+                </div>
+                <div>
+                    <select id="categoryFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" onchange="filterProducts()">
+                        <option value="">All Categories</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="Textiles">Textiles</option>
+                        <option value="Hardware">Hardware</option>
+                        <option value="Orthodox Gifts">Orthodox Gifts</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <select id="statusFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" onchange="filterProducts()">
+                        <option value="">All Status</option>
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Products</p>
+                        <p class="text-2xl font-bold text-gray-900" id="totalProducts">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-box text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Active Products</p>
+                        <p class="text-2xl font-bold text-green-600" id="activeProducts">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Categories</p>
+                        <p class="text-2xl font-bold text-blue-600" id="totalCategories">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-tags text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Suppliers</p>
+                        <p class="text-2xl font-bold text-orange-600" id="totalSuppliers">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-truck text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div id="productsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Products will be loaded here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden bg-white rounded-lg shadow-lg p-12 text-center">
+            <i class="fas fa-box-open text-gray-300 text-6xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-700 mb-2">No Products Found</h3>
+            <p class="text-gray-500 mb-6">Start by adding your first product to the library</p>
+            <button onclick="showAddProductModal()" class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700">
+                <i class="fas fa-plus mr-2"></i> Add Product
+            </button>
+        </div>
+    </div>
+
+    <!-- Add/Edit Product Modal -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-gray-900" id="modalTitle">Add New Product</h2>
+                    <button onclick="closeProductModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <form id="productForm" class="p-6">
+                <input type="hidden" id="productId">
+                
+                <!-- Basic Info -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Product Name *</label>
+                            <input type="text" id="productName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Internal Code</label>
+                            <input type="text" id="internalCode" placeholder="YYYYMMDD-STAFF-CUSTOMER-NN" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                            <select id="category" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <option value="">Select Category</option>
+                                <option value="Electronics">Electronics</option>
+                                <option value="Textiles">Textiles</option>
+                                <option value="Hardware">Hardware</option>
+                                <option value="Orthodox Gifts">Orthodox Gifts</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                            <select id="isActive" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <textarea id="description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"></textarea>
+                    </div>
+                </div>
+
+                <!-- Pricing -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Pricing</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Price RMB *</label>
+                            <input type="number" id="priceRMB" step="0.01" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Price EUR</label>
+                            <input type="number" id="priceEUR" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Price USD</label>
+                            <input type="number" id="priceUSD" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Default Markup %</label>
+                            <input type="number" id="markupPercent" value="25" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Packaging -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Packaging</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Qty per Box</label>
+                            <input type="number" id="qtyPerBox" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Box Dimensions (cm)</label>
+                            <input type="text" id="boxDimensions" placeholder="40x30x25" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Gross Weight (kg)</label>
+                            <input type="number" id="grossWeight" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Supplier Info -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Supplier Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Supplier Name</label>
+                            <input type="text" id="supplierName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Supplier Contact</label>
+                            <input type="text" id="supplierContact" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Supplier Phone</label>
+                            <input type="text" id="supplierPhone" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Supplier Address</label>
+                            <input type="text" id="supplierAddress" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Images with Carousel Preview -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Product Images (URLs only)</h3>
+                    
+                    <!-- 🆕 IMAGE CAROUSEL PREVIEW -->
+                    <div class="mb-6 bg-gray-50 rounded-lg p-4">
+                        <div class="relative" style="max-width: 400px; margin: 0 auto;">
+                            <!-- Main Image Display -->
+                            <div id="carouselMainImage" class="relative bg-white rounded-lg shadow-md overflow-hidden" style="height: 300px; display: flex; align-items: center; justify-content: center;">
+                                <img id="carouselImage" src="" alt="Product Preview" class="max-w-full max-h-full object-contain" style="display: none;">
+                                <div id="carouselPlaceholder" class="text-center text-gray-400">
+                                    <i class="fas fa-image text-6xl mb-2"></i>
+                                    <p class="text-sm">No image yet</p>
+                                    <p class="text-xs">Enter image URLs below</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Carousel Navigation -->
+                            <button type="button" id="carouselPrev" onclick="previousCarouselImage()" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-75 hover:bg-opacity-100 rounded-full p-2 shadow-md transition" style="display: none;">
+                                <i class="fas fa-chevron-left text-gray-700"></i>
+                            </button>
+                            <button type="button" id="carouselNext" onclick="nextCarouselImage()" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-75 hover:bg-opacity-100 rounded-full p-2 shadow-md transition" style="display: none;">
+                                <i class="fas fa-chevron-right text-gray-700"></i>
+                            </button>
+                            
+                            <!-- Carousel Indicators -->
+                            <div id="carouselIndicators" class="flex justify-center gap-2 mt-3" style="display: none;">
+                                <button type="button" onclick="setCarouselImage(0)" class="carousel-indicator w-2 h-2 rounded-full bg-gray-300 transition" data-index="0"></button>
+                                <button type="button" onclick="setCarouselImage(1)" class="carousel-indicator w-2 h-2 rounded-full bg-gray-300 transition" data-index="1"></button>
+                                <button type="button" onclick="setCarouselImage(2)" class="carousel-indicator w-2 h-2 rounded-full bg-gray-300 transition" data-index="2"></button>
+                            </div>
+                        </div>
+                        
+                        <p class="text-xs text-gray-500 text-center mt-2">
+                            <i class="fas fa-info-circle"></i> Preview updates automatically when you enter image URLs
+                        </p>
+                    </div>
+                    
+                    <!-- Image URL Inputs -->
+                    <div class="grid grid-cols-1 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-image text-purple-600"></i> Image URL 1 (Primary)
+                            </label>
+                            <input type="url" id="imageUrl1" placeholder="https://..." 
+                                   oninput="updateCarouselPreview()" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-image text-purple-600"></i> Image URL 2
+                            </label>
+                            <input type="url" id="imageUrl2" placeholder="https://..." 
+                                   oninput="updateCarouselPreview()" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-image text-purple-600"></i> Image URL 3
+                            </label>
+                            <input type="url" id="imageUrl3" placeholder="https://..." 
+                                   oninput="updateCarouselPreview()" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
+                    <div class="grid grid-cols-1 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tags (comma-separated)</label>
+                            <input type="text" id="tags" placeholder="LED, lighting, E27" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Internal Notes</label>
+                            <textarea id="internalNotes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3 justify-end pt-4 border-t border-gray-200">
+                    <button type="button" onclick="closeProductModal()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                        <i class="fas fa-save mr-2"></i>
+                        <span id="saveButtonText">Save Product</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let allProducts = [];
+        let currentEditingProduct = null;
+
+        // Load navigation component
+        async function loadNavigationComponent() {
+            try {
+                const response = await fetch('components/navigation.html');
+                const html = await response.text();
+                document.getElementById('navigationComponent').innerHTML = html;
+            } catch (error) {
+                console.error('Failed to load navigation:', error);
+            }
+        }
+
+        // Load products from database
+        async function loadProducts() {
+            try {
+                const response = await fetch('tables/products?limit=1000');
+                const result = await response.json();
+                allProducts = result.data || [];
+                renderProducts(allProducts);
+                updateStats();
+            } catch (error) {
+                console.error('Error loading products:', error);
+                alert('❌ Failed to load products');
+            }
+        }
+
+        // Render products grid
+        function renderProducts(products) {
+            const grid = document.getElementById('productsGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (!products || products.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            grid.innerHTML = products.map(product => `
+                <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" onclick="editProduct('${product.id}')">
+                    <img src="${product.image_url_1 || 'https://via.placeholder.com/300x150?text=No+Image'}" 
+                         alt="${product.product_name}" 
+                         class="product-img"
+                         onerror="this.src='https://via.placeholder.com/300x150?text=No+Image'">
+                    <div class="p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-mono text-gray-500">${product.sku || 'No SKU'}</span>
+                            <span class="badge ${product.is_active ? 'badge-active' : 'badge-inactive'}">
+                                ${product.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                        <h3 class="font-semibold text-gray-900 mb-1 truncate">${product.product_name}</h3>
+                        <p class="text-xs text-gray-500 mb-3 line-clamp-2">${product.description || 'No description'}</p>
+                        
+                        <div class="flex items-center justify-between mb-2">
+                            <div>
+                                <p class="text-xs text-gray-500">Price</p>
+                                <p class="font-bold text-purple-600">¥${(product.unit_price_rmb || 0).toFixed(2)}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-gray-500">Markup</p>
+                                <p class="font-semibold text-gray-900">${product.default_markup_percent || 0}%</p>
+                            </div>
+                        </div>
+                        
+                        <div class="text-xs text-gray-500 truncate">
+                            <i class="fas fa-truck text-xs"></i> ${product.supplier_name || 'No supplier'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filter products
+        function filterProducts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            let filtered = allProducts.filter(product => {
+                const matchesSearch = !searchTerm || 
+                    (product.product_name && product.product_name.toLowerCase().includes(searchTerm)) ||
+                    (product.sku && product.sku.toLowerCase().includes(searchTerm)) ||
+                    (product.supplier_name && product.supplier_name.toLowerCase().includes(searchTerm));
+
+                const matchesCategory = !categoryFilter || product.category === categoryFilter;
+                const matchesStatus = !statusFilter || String(product.is_active) === statusFilter;
+
+                return matchesSearch && matchesCategory && matchesStatus;
+            });
+
+            renderProducts(filtered);
+        }
+
+        // Update stats
+        function updateStats() {
+            document.getElementById('totalProducts').textContent = allProducts.length;
+            document.getElementById('activeProducts').textContent = allProducts.filter(p => p.is_active).length;
+            
+            const categories = [...new Set(allProducts.map(p => p.category).filter(c => c))];
+            document.getElementById('totalCategories').textContent = categories.length;
+            
+            const suppliers = [...new Set(allProducts.map(p => p.supplier_name).filter(s => s))];
+            document.getElementById('totalSuppliers').textContent = suppliers.length;
+        }
+
+        // Show add product modal
+        function showAddProductModal() {
+            currentEditingProduct = null;
+            document.getElementById('modalTitle').textContent = 'Add New Product';
+            document.getElementById('saveButtonText').textContent = 'Save Product';
+            document.getElementById('productForm').reset();
+            document.getElementById('productId').value = '';
+            document.getElementById('isActive').value = 'true';
+            document.getElementById('markupPercent').value = '25';
+            
+            // Clear carousel preview
+            updateCarouselPreview();
+            
+            document.getElementById('productModal').classList.add('active');
+        }
+
+        // Edit product
+        async function editProduct(productId) {
+            const product = allProducts.find(p => p.id === productId);
+            if (!product) return;
+
+            currentEditingProduct = product;
+            document.getElementById('modalTitle').textContent = 'Edit Product';
+            document.getElementById('saveButtonText').textContent = 'Update Product';
+            
+            // Fill form
+            document.getElementById('productId').value = product.id;
+            document.getElementById('productName').value = product.product_name || '';
+            document.getElementById('internalCode').value = product.internal_code || '';
+            document.getElementById('category').value = product.category || '';
+            document.getElementById('isActive').value = String(product.is_active);
+            document.getElementById('description').value = product.description || '';
+            document.getElementById('priceRMB').value = product.unit_price_rmb || '';
+            document.getElementById('priceEUR').value = product.unit_price_eur || '';
+            document.getElementById('priceUSD').value = product.unit_price_usd || '';
+            document.getElementById('markupPercent').value = product.default_markup_percent || 25;
+            document.getElementById('qtyPerBox').value = product.qty_per_box || '';
+            document.getElementById('boxDimensions').value = product.box_dimensions || '';
+            document.getElementById('grossWeight').value = product.gross_weight || '';
+            document.getElementById('supplierName').value = product.supplier_name || '';
+            document.getElementById('supplierContact').value = product.supplier_contact || '';
+            document.getElementById('supplierPhone').value = product.supplier_phone || '';
+            document.getElementById('supplierAddress').value = product.supplier_address || '';
+            document.getElementById('imageUrl1').value = product.image_url_1 || '';
+            document.getElementById('imageUrl2').value = product.image_url_2 || '';
+            document.getElementById('imageUrl3').value = product.image_url_3 || '';
+            document.getElementById('tags').value = product.tags || '';
+            document.getElementById('internalNotes').value = product.internal_notes || '';
+
+            // Update carousel preview with existing images
+            updateCarouselPreview();
+
+            document.getElementById('productModal').classList.add('active');
+        }
+
+        // Close modal
+        function closeProductModal() {
+            document.getElementById('productModal').classList.remove('active');
+        }
+
+        // Generate SKU
+        function generateSKU() {
+            const year = new Date().getFullYear();
+            const randomNum = Math.floor(Math.random() * 99999).toString().padStart(5, '0');
+            return `SKU-${year}-${randomNum}`;
+        }
+
+        // Save product
+        document.getElementById('productForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const productId = document.getElementById('productId').value;
+            const isEdit = !!productId;
+
+            const productData = {
+                sku: isEdit && currentEditingProduct ? currentEditingProduct.sku : generateSKU(),
+                product_name: document.getElementById('productName').value,
+                internal_code: document.getElementById('internalCode').value,
+                category: document.getElementById('category').value,
+                is_active: document.getElementById('isActive').value === 'true',
+                description: document.getElementById('description').value,
+                unit_price_rmb: parseFloat(document.getElementById('priceRMB').value) || 0,
+                unit_price_eur: parseFloat(document.getElementById('priceEUR').value) || 0,
+                unit_price_usd: parseFloat(document.getElementById('priceUSD').value) || 0,
+                default_markup_percent: parseFloat(document.getElementById('markupPercent').value) || 25,
+                qty_per_box: parseInt(document.getElementById('qtyPerBox').value) || null,
+                box_dimensions: document.getElementById('boxDimensions').value,
+                gross_weight: parseFloat(document.getElementById('grossWeight').value) || null,
+                supplier_name: document.getElementById('supplierName').value,
+                supplier_contact: document.getElementById('supplierContact').value,
+                supplier_phone: document.getElementById('supplierPhone').value,
+                supplier_address: document.getElementById('supplierAddress').value,
+                image_url_1: document.getElementById('imageUrl1').value,
+                image_url_2: document.getElementById('imageUrl2').value,
+                image_url_3: document.getElementById('imageUrl3').value,
+                tags: document.getElementById('tags').value,
+                internal_notes: document.getElementById('internalNotes').value
+            };
+
+            try {
+                let response;
+                if (isEdit) {
+                    response = await fetch(`tables/products/${productId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(productData)
+                    });
+                } else {
+                    response = await fetch('tables/products', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(productData)
+                    });
+                }
+
+                if (response.ok) {
+                    alert(`✅ Product ${isEdit ? 'updated' : 'created'} successfully!`);
+                    closeProductModal();
+                    loadProducts();
+                } else {
+                    throw new Error('Failed to save product');
+                }
+            } catch (error) {
+                console.error('Error saving product:', error);
+                alert('❌ Failed to save product');
+            }
+        });
+
+        // ============================================
+        // 🆕 BULK CSV UPLOAD TO PRODUCTS LIBRARY
+        // ============================================
+        
+        /**
+         * Handles bulk CSV upload directly to Products Library
+         * @param {Event} event - File input change event
+         */
+        async function handleBulkCSVUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            const validTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+            const fileName = file.name.toLowerCase();
+            
+            if (!validTypes.includes(file.type) && !fileName.endsWith('.csv')) {
+                alert('❌ Please select a valid CSV file!');
+                event.target.value = '';
+                return;
+            }
+            
+            // Show loading
+            showBulkUploadLoading();
+            
+            // Parse CSV
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                transformHeader: (header) => header.trim(),
+                complete: async function(results) {
+                    console.log('📊 CSV Parsed:', results);
+                    
+                    if (results.errors.length > 0) {
+                        console.error('❌ CSV Parsing Errors:', results.errors);
+                        alert('⚠️ CSV file has formatting errors. Please check the file.');
+                        hideBulkUploadLoading();
+                        return;
+                    }
+                    
+                    const products = results.data;
+                    
+                    if (products.length === 0) {
+                        alert('⚠️ CSV file is empty!');
+                        hideBulkUploadLoading();
+                        return;
+                    }
+                    
+                    // Validate required columns
+                    const requiredColumns = ['Name', 'Unit Price EUR'];
+                    const headers = Object.keys(products[0]);
+                    const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+                    
+                    if (missingColumns.length > 0) {
+                        alert(`❌ Missing required columns:\n${missingColumns.join(', ')}\n\nPlease use the correct template!`);
+                        hideBulkUploadLoading();
+                        return;
+                    }
+                    
+                    // Fetch existing products for duplicate check
+                    let existingProducts = [];
+                    try {
+                        const response = await fetch('tables/products?limit=10000');
+                        if (response.ok) {
+                            const data = await response.json();
+                            existingProducts = data.data || [];
+                        }
+                    } catch (error) {
+                        console.warn('Could not fetch existing products:', error);
+                    }
+                    
+                    // Process products
+                    const stats = {
+                        total: products.length,
+                        new: 0,
+                        duplicates: 0,
+                        errors: 0
+                    };
+                    
+                    for (const product of products) {
+                        try {
+                            // Skip if missing name or price
+                            if (!product['Name'] || !product['Unit Price EUR']) {
+                                stats.errors++;
+                                continue;
+                            }
+                            
+                            // Check for duplicate
+                            const isDuplicate = existingProducts.some(p => 
+                                p.product_name.toLowerCase().trim() === product['Name'].toLowerCase().trim() &&
+                                Math.abs((p.unit_price_eur || 0) - parseFloat(product['Unit Price EUR'])) < 0.01
+                            );
+                            
+                            if (isDuplicate) {
+                                stats.duplicates++;
+                                console.log(`⏩ Skipping duplicate: ${product['Name']}`);
+                                continue;
+                            }
+                            
+                            // Generate SKU
+                            const generateSKU = () => {
+                                const prefix = product['Name'].substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
+                                const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+                                return `${prefix}-${random}`;
+                            };
+                            
+                            // Map CSV columns to Products Library schema
+                            const productData = {
+                                sku: generateSKU(),
+                                product_name: product['Name'],
+                                internal_code: product['Item Number'] || '',
+                                category: 'CSV Import',
+                                is_active: true,
+                                description: product['Description'] || '',
+                                unit_price_rmb: parseFloat(product['Price CNY']) || 0,
+                                unit_price_eur: parseFloat(product['Unit Price EUR']) || 0,
+                                unit_price_usd: 0,
+                                default_markup_percent: parseFloat(product['Markup %']) || 25,
+                                qty_per_box: parseInt(product['QTY per CTN']) || null,
+                                box_dimensions: '',
+                                gross_weight: null,
+                                supplier_name: '',
+                                supplier_contact: '',
+                                supplier_phone: '',
+                                supplier_address: '',
+                                image_url_1: product['Image URL'] || product['Picture URL'] || '',
+                                image_url_2: '',
+                                image_url_3: '',
+                                tags: 'csv-import',
+                                internal_notes: `Imported from CSV. Product URL: ${product['Product URL'] || 'N/A'}\nNotes: ${product['Notes'] || 'N/A'}`
+                            };
+                            
+                            // Save to database
+                            const saveResponse = await fetch('tables/products', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(productData)
+                            });
+                            
+                            if (saveResponse.ok) {
+                                stats.new++;
+                                console.log(`✅ Saved: ${product['Name']}`);
+                            } else {
+                                stats.errors++;
+                                console.error(`❌ Failed to save: ${product['Name']}`);
+                            }
+                            
+                        } catch (error) {
+                            stats.errors++;
+                            console.error(`❌ Error processing product:`, error);
+                        }
+                    }
+                    
+                    // Hide loading and show results
+                    hideBulkUploadLoading();
+                    
+                    // Show summary
+                    const summary = `
+📦 Bulk Upload Complete!
+
+✅ New products added: ${stats.new}
+⏩ Duplicates skipped: ${stats.duplicates}
+❌ Errors: ${stats.errors}
+📊 Total processed: ${stats.total}
+                    `.trim();
+                    
+                    alert(summary);
+                    
+                    // Reload products list
+                    if (stats.new > 0) {
+                        loadProducts();
+                    }
+                    
+                    // Reset file input
+                    event.target.value = '';
+                },
+                error: function(error) {
+                    console.error('❌ Papa Parse Error:', error);
+                    alert('❌ Error reading CSV file. Please try again.');
+                    hideBulkUploadLoading();
+                    event.target.value = '';
+                }
+            });
+        }
+        
+        /**
+         * Shows loading indicator for bulk upload
+         */
+        function showBulkUploadLoading() {
+            const overlay = document.createElement('div');
+            overlay.id = 'bulkUploadLoading';
+            overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            overlay.innerHTML = `
+                <div class="bg-white rounded-lg p-6 shadow-xl flex items-center space-x-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                    <span class="text-lg font-semibold text-gray-700">Uploading products to library...</span>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        
+        /**
+         * Hides loading indicator
+         */
+        function hideBulkUploadLoading() {
+            const overlay = document.getElementById('bulkUploadLoading');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+        
+        // ============================================
+        // END OF BULK CSV UPLOAD
+        // ============================================
+        
+        // ============================================
+        // 🆕 IMAGE CAROUSEL FUNCTIONALITY
+        // ============================================
+        
+        let carouselImages = [];
+        let currentCarouselIndex = 0;
+        
+        /**
+         * Update carousel preview when image URLs change
+         */
+        function updateCarouselPreview() {
+            const url1 = document.getElementById('imageUrl1').value.trim();
+            const url2 = document.getElementById('imageUrl2').value.trim();
+            const url3 = document.getElementById('imageUrl3').value.trim();
+            
+            // Build array of valid URLs
+            carouselImages = [url1, url2, url3].filter(url => url.length > 0);
+            
+            if (carouselImages.length === 0) {
+                // No images - show placeholder
+                showCarouselPlaceholder();
+            } else {
+                // Show first image
+                currentCarouselIndex = 0;
+                showCarouselImage(currentCarouselIndex);
+                updateCarouselControls();
+            }
+        }
+        
+        /**
+         * Show placeholder when no images
+         */
+        function showCarouselPlaceholder() {
+            document.getElementById('carouselImage').style.display = 'none';
+            document.getElementById('carouselPlaceholder').style.display = 'block';
+            document.getElementById('carouselPrev').style.display = 'none';
+            document.getElementById('carouselNext').style.display = 'none';
+            document.getElementById('carouselIndicators').style.display = 'none';
+        }
+        
+        /**
+         * Show specific carousel image
+         */
+        function showCarouselImage(index) {
+            if (carouselImages.length === 0) {
+                showCarouselPlaceholder();
+                return;
+            }
+            
+            const imgElement = document.getElementById('carouselImage');
+            const placeholder = document.getElementById('carouselPlaceholder');
+            
+            // Show loading state
+            imgElement.classList.add('loading');
+            
+            // Update image source
+            imgElement.src = carouselImages[index];
+            imgElement.style.display = 'block';
+            placeholder.style.display = 'none';
+            
+            // Remove loading state when image loads
+            imgElement.onload = () => {
+                imgElement.classList.remove('loading');
+            };
+            
+            // Handle broken images
+            imgElement.onerror = () => {
+                imgElement.style.display = 'none';
+                placeholder.innerHTML = `
+                    <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-2"></i>
+                    <p class="text-sm text-red-600">Failed to load image</p>
+                    <p class="text-xs text-gray-500">Check URL: ${carouselImages[index].substring(0, 40)}...</p>
+                `;
+                placeholder.style.display = 'block';
+            };
+            
+            // Update indicators
+            updateCarouselIndicators();
+        }
+        
+        /**
+         * Show/hide navigation controls
+         */
+        function updateCarouselControls() {
+            const prevBtn = document.getElementById('carouselPrev');
+            const nextBtn = document.getElementById('carouselNext');
+            const indicators = document.getElementById('carouselIndicators');
+            
+            if (carouselImages.length > 1) {
+                prevBtn.style.display = 'block';
+                nextBtn.style.display = 'block';
+                indicators.style.display = 'flex';
+            } else {
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+                indicators.style.display = 'none';
+            }
+        }
+        
+        /**
+         * Update indicator dots
+         */
+        function updateCarouselIndicators() {
+            const indicators = document.querySelectorAll('.carousel-indicator');
+            indicators.forEach((indicator, index) => {
+                if (index < carouselImages.length) {
+                    indicator.style.display = 'block';
+                    if (index === currentCarouselIndex) {
+                        indicator.classList.add('active');
+                    } else {
+                        indicator.classList.remove('active');
+                    }
+                } else {
+                    indicator.style.display = 'none';
+                }
+            });
+        }
+        
+        /**
+         * Navigate to previous image
+         */
+        function previousCarouselImage() {
+            if (carouselImages.length === 0) return;
+            
+            currentCarouselIndex--;
+            if (currentCarouselIndex < 0) {
+                currentCarouselIndex = carouselImages.length - 1;
+            }
+            
+            showCarouselImage(currentCarouselIndex);
+        }
+        
+        /**
+         * Navigate to next image
+         */
+        function nextCarouselImage() {
+            if (carouselImages.length === 0) return;
+            
+            currentCarouselIndex++;
+            if (currentCarouselIndex >= carouselImages.length) {
+                currentCarouselIndex = 0;
+            }
+            
+            showCarouselImage(currentCarouselIndex);
+        }
+        
+        /**
+         * Set carousel to specific image
+         */
+        function setCarouselImage(index) {
+            if (index >= 0 && index < carouselImages.length) {
+                currentCarouselIndex = index;
+                showCarouselImage(currentCarouselIndex);
+            }
+        }
+        
+        // ============================================
+        // END OF IMAGE CAROUSEL
+        // ============================================
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadNavigationComponent();
+            loadProducts();
+        });
+    </script>
+</body>
+</html>

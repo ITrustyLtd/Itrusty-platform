@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Trusty - Comprehensive Order Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        .currency-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .currency-cny { background: linear-gradient(135deg, #EF4444, #DC2626); color: white; }
+        .currency-eur { background: linear-gradient(135deg, #3B82F6, #2563EB); color: white; }
+        .currency-usd { background: linear-gradient(135deg, #10B981, #059669); color: white; }
+        
+        .order-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .order-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+        
+        .supplier-order-mini {
+            border-left: 3px solid #EF4444;
+            padding-left: 12px;
+            margin-left: 8px;
+        }
+
+        .fx-rate-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #F59E0B, #D97706);
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white border-b shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-shopping-cart text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">Comprehensive Order Management</h1>
+                        <p class="text-sm text-gray-500">Customer Sales → Supplier Purchases</p>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 items-center">
+                    <!-- FX Rates Display -->
+                    <div id="fxRatesDisplay" class="flex gap-2">
+                        <div class="fx-rate-badge">
+                            <i class="fas fa-exchange-alt"></i>
+                            <span id="fxEURCNY">1 EUR = ¥0.00</span>
+                        </div>
+                        <div class="fx-rate-badge">
+                            <i class="fas fa-exchange-alt"></i>
+                            <span id="fxUSDCNY">1 USD = ¥0.00</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Currency View Toggle -->
+                    <select id="viewCurrency" class="px-4 py-2 border border-gray-300 rounded-lg bg-white">
+                        <option value="original">Original Currencies</option>
+                        <option value="EUR">View All in EUR</option>
+                        <option value="CNY">View All in CNY</option>
+                        <option value="USD">View All in USD</option>
+                    </select>
+                    
+                    <a href="index.html" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </a>
+                    <button onclick="showCreateCustomerOrderModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-plus mr-2"></i>New Customer Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
+                <div class="text-sm text-gray-500 mb-1">Customer Orders (Sales)</div>
+                <div class="text-3xl font-bold text-blue-600" id="totalCustomerOrders">0</div>
+                <div class="text-xs text-gray-400 mt-2" id="customerOrdersValue">€0.00</div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-red-500">
+                <div class="text-sm text-gray-500 mb-1">Supplier Orders (Purchases)</div>
+                <div class="text-3xl font-bold text-red-600" id="totalSupplierOrders">0</div>
+                <div class="text-xs text-gray-400 mt-2" id="supplierOrdersValue">¥0.00</div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
+                <div class="text-sm text-gray-500 mb-1">Expected Profit</div>
+                <div class="text-3xl font-bold text-green-600" id="expectedProfit">€0.00</div>
+                <div class="text-xs text-gray-400 mt-2">Calculated after conversion</div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-purple-500">
+                <div class="text-sm text-gray-500 mb-1">Active Orders</div>
+                <div class="text-3xl font-bold text-purple-600" id="activeOrders">0</div>
+                <div class="text-xs text-gray-400 mt-2">In progress</div>
+            </div>
+        </div>
+
+        <!-- Customer Orders List -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fas fa-shopping-bag text-blue-600"></i>
+                    Customer Orders (Sales to Customers)
+                </h2>
+                <div class="flex gap-2">
+                    <input type="text" id="searchCustomerOrders" placeholder="Search orders..." class="px-4 py-2 border rounded-lg">
+                    <select id="filterCustomerStatus" class="px-4 py-2 border rounded-lg">
+                        <option value="">All Statuses</option>
+                        <option value="inquiry">Inquiry</option>
+                        <option value="proforma_sent">Proforma Sent</option>
+                        <option value="deposit_received">Deposit Received</option>
+                        <option value="in_production">In Production</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+            </div>
+            <div id="customerOrdersList" class="space-y-4">
+                <!-- Customer orders will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Order Details Modal -->
+    <div id="orderDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold">
+                            <i class="fas fa-file-invoice text-blue-600 mr-2"></i>
+                            Order Details
+                        </h3>
+                        <button onclick="closeOrderDetailsModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div id="orderDetailsContent">
+                        <!-- Order details will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Customer Order Modal -->
+    <div id="createCustomerOrderModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold">
+                            <i class="fas fa-plus-circle text-blue-600 mr-2"></i>
+                            Create Customer Order
+                        </h3>
+                        <button onclick="closeCreateCustomerOrderModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <form id="createCustomerOrderForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Order Number *</label>
+                                <input type="text" name="order_number" required class="w-full border rounded-lg px-3 py-2" placeholder="CO-2025-001">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Customer *</label>
+                                <select name="customer_code" required class="w-full border rounded-lg px-3 py-2" id="customerCodeSelect">
+                                    <option value="">Select customer...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Order Date *</label>
+                                <input type="date" name="order_date" required class="w-full border rounded-lg px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Expected Delivery</label>
+                                <input type="date" name="expected_delivery_date" class="w-full border rounded-lg px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Currency *</label>
+                                <select name="currency" required class="w-full border rounded-lg px-3 py-2">
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="USD">USD ($)</option>
+                                    <option value="GBP">GBP (£)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Total Amount *</label>
+                                <input type="number" name="total_amount" step="0.01" required class="w-full border rounded-lg px-3 py-2" placeholder="0.00">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Deposit Amount</label>
+                                <input type="number" name="deposit_amount" step="0.01" class="w-full border rounded-lg px-3 py-2" placeholder="0.00">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                                <input type="number" name="quantity" class="w-full border rounded-lg px-3 py-2" placeholder="0">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                                <select name="assigned_to" class="w-full border rounded-lg px-3 py-2">
+                                    <option value="">Select staff...</option>
+                                    <option value="Peng">Peng</option>
+                                    <option value="Lily">Lily</option>
+                                    <option value="Ruby">Ruby</option>
+                                    <option value="Johny">Johny</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Office</label>
+                                <select name="office" class="w-full border rounded-lg px-3 py-2">
+                                    <option value="Yiwu">Yiwu</option>
+                                    <option value="Shenzhen">Shenzhen</option>
+                                    <option value="Greece">Greece</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Product Description</label>
+                                <textarea name="product_description" rows="3" class="w-full border rounded-lg px-3 py-2"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-4 border-t">
+                            <button type="button" onclick="closeCreateCustomerOrderModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                                <i class="fas fa-save mr-2"></i>Create Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let customerOrders = [];
+        let supplierOrders = [];
+        let customers = [];
+        let fxRates = {
+            EUR_CNY: 7.85,
+            USD_CNY: 7.25,
+            EUR_USD: 1.08,
+            USD_EUR: 0.93,
+            CNY_EUR: 0.127,
+            CNY_USD: 0.138
+        };
+        let currentViewCurrency = 'original';
+
+        // Fetch real-time FX rates
+        async function fetchFXRates() {
+            try {
+                // Using exchangerate-api.com (free tier)
+                const response = await fetch('https://api.exchangerate-api.com/v4/latest/EUR');
+                const data = await response.json();
+                
+                fxRates.EUR_CNY = data.rates.CNY || 7.85;
+                fxRates.EUR_USD = data.rates.USD || 1.08;
+                fxRates.USD_CNY = fxRates.EUR_CNY / fxRates.EUR_USD;
+                fxRates.CNY_EUR = 1 / fxRates.EUR_CNY;
+                fxRates.CNY_USD = 1 / fxRates.USD_CNY;
+                fxRates.USD_EUR = 1 / fxRates.EUR_USD;
+                
+                // Update display
+                document.getElementById('fxEURCNY').textContent = `1 EUR = ¥${fxRates.EUR_CNY.toFixed(2)}`;
+                document.getElementById('fxUSDCNY').textContent = `1 USD = ¥${fxRates.USD_CNY.toFixed(2)}`;
+                
+                console.log('FX Rates updated:', fxRates);
+            } catch (error) {
+                console.error('Error fetching FX rates:', error);
+                // Use default rates
+            }
+        }
+
+        // Convert amount between currencies
+        function convertCurrency(amount, fromCurrency, toCurrency) {
+            if (fromCurrency === toCurrency) return amount;
+            
+            const key = `${fromCurrency}_${toCurrency}`;
+            const rate = fxRates[key];
+            
+            if (rate) {
+                return amount * rate;
+            }
+            
+            // If direct rate not available, convert through EUR
+            if (fromCurrency === 'CNY' && toCurrency === 'USD') {
+                return amount * fxRates.CNY_EUR * fxRates.EUR_USD;
+            }
+            if (fromCurrency === 'USD' && toCurrency === 'EUR') {
+                return amount * fxRates.USD_EUR;
+            }
+            
+            return amount;
+        }
+
+        function formatCurrency(amount, currency) {
+            const symbols = {
+                'CNY': '¥',
+                'EUR': '€',
+                'USD': '$',
+                'GBP': '£'
+            };
+            
+            return symbols[currency] + amount.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        async function loadCustomers() {
+            try {
+                const response = await fetch('tables/customers');
+                const data = await response.json();
+                customers = data.data || [];
+                
+                // Populate customer dropdown
+                const select = document.getElementById('customerCodeSelect');
+                select.innerHTML = '<option value="">Select customer...</option>' +
+                    customers.map(c => `<option value="${c.customer_code}">${c.customer_code} - ${c.customer_name}</option>`).join('');
+            } catch (error) {
+                console.error('Error loading customers:', error);
+            }
+        }
+
+        async function loadCustomerOrders() {
+            try {
+                const response = await fetch('tables/customer_orders');
+                const data = await response.json();
+                customerOrders = data.data || [];
+                
+                renderCustomerOrders();
+                updateSummary();
+            } catch (error) {
+                console.error('Error loading customer orders:', error);
+            }
+        }
+
+        async function loadSupplierOrders() {
+            try {
+                const response = await fetch('tables/supplier_orders');
+                const data = await response.json();
+                supplierOrders = data.data || [];
+            } catch (error) {
+                console.error('Error loading supplier orders:', error);
+            }
+        }
+
+        function renderCustomerOrders() {
+            const container = document.getElementById('customerOrdersList');
+            
+            if (customerOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fas fa-inbox text-5xl mb-3"></i>
+                        <p>No customer orders yet</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = customerOrders.map(order => {
+                const relatedSupplierOrders = supplierOrders.filter(so => so.related_customer_order_id === order.id);
+                const displayAmount = currentViewCurrency === 'original' ? order.total_amount : convertCurrency(order.total_amount, order.currency, currentViewCurrency);
+                const displayCurrency = currentViewCurrency === 'original' ? order.currency : currentViewCurrency;
+                
+                return `
+                    <div class="order-card border rounded-lg p-4" onclick="viewOrderDetails('${order.id}')">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900">${order.order_number}</h3>
+                                <p class="text-sm text-gray-500">${order.customer_code} - ${order.customer_name || ''}</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-bold text-blue-600">${formatCurrency(displayAmount, displayCurrency)}</div>
+                                <span class="currency-badge currency-${order.currency.toLowerCase()}">${order.currency}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-4 text-sm text-gray-600 mb-3">
+                            <span><i class="fas fa-calendar mr-1"></i>${new Date(order.order_date).toLocaleDateString()}</span>
+                            <span><i class="fas fa-user mr-1"></i>${order.assigned_to || 'Unassigned'}</span>
+                            <span><i class="fas fa-building mr-1"></i>${order.office || '-'}</span>
+                        </div>
+                        
+                        ${relatedSupplierOrders.length > 0 ? `
+                            <div class="mt-3 pt-3 border-t">
+                                <div class="text-xs font-semibold text-gray-500 mb-2">
+                                    <i class="fas fa-link mr-1"></i>
+                                    ${relatedSupplierOrders.length} Related Supplier Order(s)
+                                </div>
+                                ${relatedSupplierOrders.slice(0, 2).map(so => `
+                                    <div class="supplier-order-mini text-xs text-gray-600 mb-1">
+                                        ${so.order_number}: ${formatCurrency(so.total_amount, so.currency)} from ${so.supplier_name}
+                                    </div>
+                                `).join('')}
+                                ${relatedSupplierOrders.length > 2 ? `<div class="text-xs text-blue-600 ml-5">+${relatedSupplierOrders.length - 2} more</div>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateSummary() {
+            document.getElementById('totalCustomerOrders').textContent = customerOrders.length;
+            document.getElementById('totalSupplierOrders').textContent = supplierOrders.length;
+            
+            const customerTotal = customerOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+            document.getElementById('customerOrdersValue').textContent = formatCurrency(customerTotal, 'EUR');
+            
+            const supplierTotal = supplierOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+            document.getElementById('supplierOrdersValue').textContent = formatCurrency(supplierTotal, 'CNY');
+            
+            const activeCount = customerOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length;
+            document.getElementById('activeOrders').textContent = activeCount;
+        }
+
+        function viewOrderDetails(orderId) {
+            const order = customerOrders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const relatedSupplierOrders = supplierOrders.filter(so => so.related_customer_order_id === orderId);
+            
+            const content = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-bold text-lg mb-4 text-blue-600">Customer Order Details</h4>
+                        <div class="space-y-3">
+                            <div><strong>Order Number:</strong> ${order.order_number}</div>
+                            <div><strong>Customer:</strong> ${order.customer_code} - ${order.customer_name || ''}</div>
+                            <div><strong>Total Amount:</strong> <span class="text-2xl font-bold">${formatCurrency(order.total_amount, order.currency)}</span></div>
+                            <div><strong>Order Date:</strong> ${new Date(order.order_date).toLocaleDateString()}</div>
+                            <div><strong>Status:</strong> ${order.status}</div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-bold text-lg mb-4 text-red-600">Related Supplier Orders</h4>
+                        ${relatedSupplierOrders.length === 0 ? '<p class="text-gray-400">No supplier orders yet</p>' : ''}
+                        ${relatedSupplierOrders.map(so => `
+                            <div class="bg-gray-50 p-3 rounded mb-2">
+                                <div class="font-semibold">${so.order_number}</div>
+                                <div class="text-sm text-gray-600">${so.supplier_name}</div>
+                                <div class="text-lg font-bold text-red-600">${formatCurrency(so.total_amount, so.currency)}</div>
+                            </div>
+                        `).join('')}
+                        <button onclick="addSupplierOrder('${orderId}')" class="mt-3 w-full bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                            <i class="fas fa-plus mr-2"></i>Add Supplier Order
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('orderDetailsContent').innerHTML = content;
+            document.getElementById('orderDetailsModal').classList.remove('hidden');
+        }
+
+        function closeOrderDetailsModal() {
+            document.getElementById('orderDetailsModal').classList.add('hidden');
+        }
+
+        function showCreateCustomerOrderModal() {
+            document.getElementById('createCustomerOrderModal').classList.remove('hidden');
+            document.querySelector('input[name="order_date"]').valueAsDate = new Date();
+        }
+
+        function closeCreateCustomerOrderModal() {
+            document.getElementById('createCustomerOrderModal').classList.add('hidden');
+            document.getElementById('createCustomerOrderForm').reset();
+        }
+
+        // Form submission
+        document.getElementById('createCustomerOrderForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const orderData = {
+                order_number: formData.get('order_number'),
+                customer_code: formData.get('customer_code'),
+                customer_name: customers.find(c => c.customer_code === formData.get('customer_code'))?.customer_name || '',
+                order_date: formData.get('order_date'),
+                expected_delivery_date: formData.get('expected_delivery_date'),
+                currency: formData.get('currency'),
+                total_amount: parseFloat(formData.get('total_amount')),
+                deposit_amount: parseFloat(formData.get('deposit_amount') || 0),
+                balance_amount: parseFloat(formData.get('total_amount')) - parseFloat(formData.get('deposit_amount') || 0),
+                quantity: parseInt(formData.get('quantity') || 0),
+                product_description: formData.get('product_description'),
+                assigned_to: formData.get('assigned_to'),
+                office: formData.get('office'),
+                status: 'inquiry'
+            };
+            
+            try {
+                const response = await fetch('tables/customer_orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
+                
+                if (response.ok) {
+                    closeCreateCustomerOrderModal();
+                    loadCustomerOrders();
+                    alert('Customer order created successfully!');
+                } else {
+                    alert('Error creating order');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error creating order');
+            }
+        });
+
+        // Currency view toggle
+        document.getElementById('viewCurrency').addEventListener('change', (e) => {
+            currentViewCurrency = e.target.value;
+            renderCustomerOrders();
+        });
+
+        // Initialize
+        fetchFXRates();
+        loadCustomers();
+        loadCustomerOrders();
+        loadSupplierOrders();
+        
+        // Refresh FX rates every 30 minutes
+        setInterval(fetchFXRates, 30 * 60 * 1000);
+    </script>
+</body>
+</html>

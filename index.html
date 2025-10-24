@@ -1,0 +1,2768 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Trusty Ltd - Project Execution Timeline Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="js/supabase-config.js"></script>
+    <script src="js/i18n-system.js"></script>
+    <script src="js/global-navigation.js"></script>
+    <style>
+        /* ========== THEME SYSTEM (Discrete) ========== */
+        :root {
+            /* Default - Original Colors */
+            --header-bg: #FFFFFF;
+            --body-bg: #F9FAFB;
+            --text-dark: #111827;
+            --border-color: #E5E7EB;
+        }
+
+        [data-theme="elegant"] {
+            --header-bg: #F4F3EE;
+            --body-bg: #F4F3EE;
+            --text-dark: #1F2A44;
+            --border-color: #DCC9B6;
+        }
+
+        [data-theme="eco"] {
+            --header-bg: #EFEDE0;
+            --body-bg: #EFEDE0;
+            --text-dark: #2C3E2F;
+            --border-color: #688C59;
+        }
+
+        [data-theme="santorini"] {
+            --header-bg: #F1F1F3;
+            --body-bg: #F1F1F3;
+            --text-dark: #1A3B6B;
+            --border-color: #53A8E2;
+        }
+
+        [data-theme="colorful"] {
+            --header-bg: #FBE2B1;
+            --body-bg: #FBE2B1;
+            --text-dark: #5C4A1E;
+            --border-color: #B69030;
+        }
+
+        body {
+            background-color: var(--body-bg);
+            color: var(--text-dark);
+            transition: background-color 0.3s ease;
+        }
+
+        header {
+            background-color: var(--header-bg);
+            border-color: var(--border-color);
+            transition: background-color 0.3s ease;
+        }
+
+        /* ========== THEME DROPDOWN (Small & Discrete) ========== */
+        .theme-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .theme-label {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+            font-size: 13px;
+            color: #6B7280;
+        }
+
+        .theme-label:hover {
+            background: #F3F4F6;
+        }
+
+        .theme-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 8px;
+            z-index: 1000;
+            min-width: 140px;
+        }
+
+        .theme-dropdown:hover .theme-menu {
+            display: block;
+        }
+
+        .theme-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 13px;
+        }
+
+        .theme-option:hover {
+            background: #F3F4F6;
+        }
+
+        .theme-color-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid #E5E7EB;
+        }
+
+        /* ========== ORIGINAL STYLES ========== */
+        .priority-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .priority-low { background-color: #9ca3af; }
+        .priority-medium { background-color: #f59e0b; }
+        .priority-high { background-color: #ea580c; }
+        .priority-critical { background-color: #dc2626; }
+        
+        .staff-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            margin-right: 8px;
+        }
+        
+        .workload-bar {
+            height: 4px;
+            background: linear-gradient(90deg, #10b981 0%, #f59e0b 70%, #ef4444 100%);
+            border-radius: 2px;
+        }
+        
+        .fc-event-draggable {
+            cursor: grab;
+        }
+        
+        .fc-event-draggable:active {
+            cursor: grabbing;
+        }
+        
+        .calendar-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .task-card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #3b82f6;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .task-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .office-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .yiwu-badge {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .shenzhen-badge {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .greece-badge {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        /* ========== COLLAPSIBLE NAVIGATION TABS ========== */
+        .nav-tab {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: width 0.3s ease, transform 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            z-index: 1;
+        }
+
+        .nav-tab:hover {
+            width: 165px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 100;
+        }
+
+        /* First row (1-5): Expand upward */
+        .nav-tabs-container a:nth-child(1):hover,
+        .nav-tabs-container a:nth-child(2):hover,
+        .nav-tabs-container a:nth-child(3):hover,
+        .nav-tabs-container a:nth-child(4):hover,
+        .nav-tabs-container a:nth-child(5):hover {
+            transform: translateY(-2px);
+        }
+
+        /* Second row (6-10): Expand downward */
+        .nav-tabs-container a:nth-child(6):hover,
+        .nav-tabs-container a:nth-child(7):hover,
+        .nav-tabs-container a:nth-child(8):hover,
+        .nav-tabs-container a:nth-child(9):hover,
+        .nav-tabs-container a:nth-child(10):hover {
+            transform: translateY(2px);
+        }
+
+        .nav-tab-icon {
+            position: absolute;
+            left: 12px;
+            font-size: 16px;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab-text {
+            opacity: 0;
+            margin-left: 36px;
+            whitespace: nowrap;
+            font-weight: 500;
+            transition: opacity 0.3s ease 0.1s;
+            font-size: 13px;
+        }
+
+        .nav-tab:hover .nav-tab-text {
+            opacity: 1;
+        }
+
+        /* Navigation container - Two rows for stability */
+        .nav-tabs-container {
+            display: grid;
+            grid-template-columns: repeat(5, 42px);
+            gap: 6px;
+            max-width: fit-content;
+            padding: 4px 0; /* Extra breathing room for expansion */
+        }
+        
+        /* Force last 5 items to second row */
+        .nav-tabs-container a:nth-child(6),
+        .nav-tabs-container a:nth-child(7),
+        .nav-tabs-container a:nth-child(8),
+        .nav-tabs-container a:nth-child(9),
+        .nav-tabs-container a:nth-child(10) {
+            grid-column: span 1;
+        }
+
+        /* Activity filter button styles */
+        .activity-filter-btn {
+            transition: all 0.2s ease;
+        }
+
+        .activity-filter-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="border-b shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-calendar-alt text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900" data-i18n="navigation.appTitle">I Trusty Project Timeline Manager</h1>
+                        <p class="text-sm text-gray-500" data-i18n="navigation.appSubtitle">Calendar-Based Execution Planning & Staff Assignment</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <!-- Language Toggle Button -->
+                    <button onclick="window.i18n.toggleLanguage()" class="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition flex items-center gap-2">
+                        <i class="fas fa-language"></i>
+                        <span id="languageLabel">中文</span>
+                    </button>
+                    
+                    <!-- Theme Dropdown (Small & Discrete) -->
+                    <div class="theme-dropdown">
+                        <div class="theme-label">
+                            <i class="fas fa-palette"></i> <span data-i18n="navigation.theme">Theme</span>
+                        </div>
+                        <div class="theme-menu">
+                            <div class="theme-option" onclick="changeTheme('default')">
+                                <div class="theme-color-dot" style="background: linear-gradient(135deg, #667eea, #764ba2)"></div>
+                                <span>Default</span>
+                            </div>
+                            <div class="theme-option" onclick="changeTheme('elegant')">
+                                <div class="theme-color-dot" style="background: linear-gradient(135deg, #1F2A44, #2C3E5C)"></div>
+                                <span>Elegant</span>
+                            </div>
+                            <div class="theme-option" onclick="changeTheme('eco')">
+                                <div class="theme-color-dot" style="background: linear-gradient(135deg, #486349, #688C59)"></div>
+                                <span>Eco</span>
+                            </div>
+                            <div class="theme-option" onclick="changeTheme('santorini')">
+                                <div class="theme-color-dot" style="background: linear-gradient(135deg, #1A4599, #53A8E2)"></div>
+                                <span>Santorini</span>
+                            </div>
+                            <div class="theme-option" onclick="changeTheme('colorful')">
+                                <div class="theme-color-dot" style="background: linear-gradient(135deg, #B69030, #F0AA5C)"></div>
+                                <span>Colorful</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NEW DROPDOWN NAVIGATION -->
+                    <div id="navigationComponent"></div>
+                    
+                    <!-- Quick Action Buttons (Compact) -->
+                    <div class="flex gap-2 mt-3 flex-wrap">
+                        <button onclick="showCreateProjectModal()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all flex items-center gap-2 shadow-sm text-sm">
+                            <i class="fas fa-plus"></i>
+                            <span data-i18n="navigation.newProject">New Project</span>
+                        </button>
+                        
+                        <button onclick="showCreateTaskModal()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all flex items-center gap-2 shadow-sm text-sm">
+                            <i class="fas fa-tasks"></i>
+                            <span data-i18n="navigation.newTask">New Task</span>
+                        </button>
+                        
+                        <button onclick="toggleView()" id="viewToggle" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-3 py-2 rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all flex items-center gap-2 shadow-sm text-sm">
+                            <i class="fas fa-list"></i>
+                            <span data-i18n="navigation.listView">List View</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Dashboard Stats -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-sm border cursor-pointer hover:shadow-lg transition" onclick="showStatDetailsModal('activeProjects')">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500" data-i18n="dashboard.activeProjects">Active Projects</p>
+                        <p class="text-2xl font-bold text-gray-900" id="activeProjectsCount">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-project-diagram text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-sm border cursor-pointer hover:shadow-lg transition" onclick="showStatDetailsModal('pendingTasks')">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500" data-i18n="dashboard.pendingTasks">Pending Tasks</p>
+                        <p class="text-2xl font-bold text-gray-900" id="pendingTasksCount">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-hourglass-half text-yellow-600"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-sm border cursor-pointer hover:shadow-lg transition" onclick="showStatDetailsModal('staffUtilization')">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500" data-i18n="dashboard.staffUtilization">Staff Utilization</p>
+                        <p class="text-2xl font-bold text-gray-900" id="staffUtilization">0%</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-users text-green-600"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-sm border cursor-pointer hover:shadow-lg transition" onclick="showStatDetailsModal('overdueItems')">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500" data-i18n="dashboard.overdueItems">Overdue Items</p>
+                        <p class="text-2xl font-bold text-red-600" id="overdueCount">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-red-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Staff Panel -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-users text-blue-600"></i>
+                    <span data-i18n="dashboard.staffWorkload">Staff Workload</span>
+                </h3>
+                <div id="staffWorkloadList" class="space-y-3">
+                    <!-- Staff workload will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Calendar/List View -->
+            <div class="lg:col-span-3">
+                <!-- Calendar View -->
+                <div id="calendarView" class="calendar-container">
+                    <div id="calendar"></div>
+                </div>
+                
+                <!-- List View -->
+                <div id="listView" class="hidden bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold" data-i18n="dashboard.tasksProjectsList">Tasks & Projects List</h3>
+                        
+                        <!-- Selection Toolbar -->
+                        <div class="flex items-center gap-3">
+                            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer hover:text-gray-900">
+                                <input type="checkbox" id="selectAllTasksList" class="w-4 h-4 rounded border-gray-300" onchange="window.app.toggleSelectAllTasksList(this.checked)">
+                                <span>Select All</span>
+                            </label>
+                            <button id="deleteSelectedTasksBtn" onclick="window.app.deleteSelectedTasksList()" class="hidden bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition flex items-center gap-2 text-sm">
+                                <i class="fas fa-trash"></i>
+                                <span>Delete Selected (<span id="selectedTasksCount">0</span>)</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="tasksList" class="space-y-3">
+                        <!-- Tasks list will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Project Modal -->
+    <div id="createProjectModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold" data-i18n="projects.createNew">Create New Project</h3>
+                        <button onclick="closeCreateProjectModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="createProjectForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="projects.title">Project Title</label>
+                                <input type="text" name="title" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="projects.clientName">Client Name</label>
+                                <input type="text" name="client_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="common.priority">Priority</label>
+                                <select name="priority" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="Low" data-i18n="common.priorityLow">Low</option>
+                                    <option value="Medium" selected data-i18n="common.priorityMedium">Medium</option>
+                                    <option value="High" data-i18n="common.priorityHigh">High</option>
+                                    <option value="Critical" data-i18n="common.priorityCritical">Critical</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="projects.manager">Project Manager</label>
+                                <select name="project_manager_id" id="projectManagerSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                                <input type="date" name="start_date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                                <input type="date" name="due_date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Hours</label>
+                                <input type="number" name="estimated_hours" min="0" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="projects.budget">Budget (RMB)</label>
+                                <input type="number" name="budget_rmb" min="0" step="0.01" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="common.description">Description</label>
+                            <textarea name="description" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+                        
+                        <!-- File Attachments Section -->
+                        <div class="border-t pt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-paperclip mr-1"></i>
+                                Attachments (Images & Files)
+                                <span class="text-xs text-gray-500 ml-2">Max 20MB per file</span>
+                            </label>
+                            <div class="flex items-center gap-3">
+                                <label class="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg border border-blue-300 transition flex items-center gap-2">
+                                    <i class="fas fa-upload"></i>
+                                    <span>Choose Files</span>
+                                    <input type="file" id="createProjectFileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" class="hidden" onchange="handleCreateProjectFiles(this.files)">
+                                </label>
+                                <span class="text-xs text-gray-500">Supports: Images, PDF, Word, Excel, Text</span>
+                            </div>
+                            <div id="createProjectFilesList" class="mt-3 space-y-2">
+                                <!-- Uploaded files will appear here -->
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end gap-3 pt-4">
+                            <button type="button" onclick="closeCreateProjectModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Create Project</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Task Modal -->
+    <div id="createTaskModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold" data-i18n="tasks.createNew">Create New Task</h3>
+                        <button onclick="closeCreateTaskModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="createTaskForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="tasks.title">Task Title</label>
+                                <input type="text" name="title" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="tasks.project">Project</label>
+                                <select name="project_id" id="taskProjectSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="tasks.assignedTo">Assigned To</label>
+                                <select name="assigned_to_id" id="taskAssigneeSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="common.priority">Priority</label>
+                                <select name="priority" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="Low" data-i18n="common.priorityLow">Low</option>
+                                    <option value="Medium" selected data-i18n="common.priorityMedium">Medium</option>
+                                    <option value="High" data-i18n="common.priorityHigh">High</option>
+                                    <option value="Critical" data-i18n="common.priorityCritical">Critical</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                                <input type="date" name="start_date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                                <input type="date" name="due_date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Hours</label>
+                                <input type="number" name="estimated_hours" min="0" step="0.5" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="common.description">Description</label>
+                            <textarea name="description" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+                        
+                        <!-- File Attachments Section -->
+                        <div class="border-t pt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-paperclip mr-1"></i>
+                                Attachments (Images & Files)
+                                <span class="text-xs text-gray-500 ml-2">Max 20MB per file</span>
+                            </label>
+                            <div class="flex items-center gap-3">
+                                <label class="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg border border-blue-300 transition flex items-center gap-2">
+                                    <i class="fas fa-upload"></i>
+                                    <span>Choose Files</span>
+                                    <input type="file" id="createTaskFileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" class="hidden" onchange="handleCreateTaskFiles(this.files)">
+                                </label>
+                                <span class="text-xs text-gray-500">Supports: Images, PDF, Word, Excel, Text</span>
+                            </div>
+                            <div id="createTaskFilesList" class="mt-3 space-y-2">
+                                <!-- Uploaded files will appear here -->
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end gap-3 pt-4">
+                            <button type="button" onclick="closeCreateTaskModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800" data-i18n="common.cancel">Cancel</button>
+                            <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700" data-i18n="tasks.createButton">Create Task</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Activities Modal -->
+    <div id="dailyActivitiesModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-4">
+                            <h3 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-calendar-day text-blue-600 mr-2"></i>
+                                Daily Activities
+                            </h3>
+                            <div class="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
+                                <button onclick="navigateActivityDate(-1)" class="text-gray-600 hover:text-blue-600 transition" title="Previous Day">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span id="modalDateDisplay" class="font-semibold text-gray-900 min-w-[200px] text-center"></span>
+                                <button onclick="navigateActivityDate(1)" class="text-gray-600 hover:text-blue-600 transition" title="Next Day">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button onclick="closeDailyActivitiesModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <!-- Activity Type Tabs -->
+                    <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+                        <button onclick="filterActivities('all')" class="activity-filter-btn active px-4 py-2 rounded-lg bg-blue-600 text-white whitespace-nowrap">
+                            <i class="fas fa-list"></i> All
+                        </button>
+                        <button onclick="filterActivities('new_request')" class="activity-filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 whitespace-nowrap">
+                            <i class="fas fa-plus-circle"></i> New Requests
+                        </button>
+                        <button onclick="filterActivities('inspection')" class="activity-filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 whitespace-nowrap">
+                            <i class="fas fa-search"></i> Inspections
+                        </button>
+                        <button onclick="filterActivities('shipment')" class="activity-filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 whitespace-nowrap">
+                            <i class="fas fa-shipping-fast"></i> Shipments
+                        </button>
+                        <button onclick="filterActivities('qc_check')" class="activity-filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 whitespace-nowrap">
+                            <i class="fas fa-check-circle"></i> QC Checks
+                        </button>
+                        <button onclick="filterActivities('payment')" class="activity-filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 whitespace-nowrap">
+                            <i class="fas fa-money-bill-wave"></i> Payments
+                        </button>
+                        <button onclick="filterActivities('meeting')" class="activity-filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 whitespace-nowrap">
+                            <i class="fas fa-handshake"></i> Meetings
+                        </button>
+                    </div>
+
+                    <!-- Activities List -->
+                    <div id="activitiesList" class="space-y-4 mb-6" style="max-height: 50vh; overflow-y: auto;">
+                        <!-- Activities will be populated here -->
+                        <div class="text-center py-12 text-gray-400">
+                            <i class="fas fa-calendar-times text-5xl mb-3"></i>
+                            <p>No activities recorded for this date</p>
+                        </div>
+                    </div>
+
+                    <!-- Add New Activity Button -->
+                    <div class="border-t pt-4">
+                        <button onclick="showAddActivityForm()" class="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                            <i class="fas fa-plus"></i>
+                            Add New Activity
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Activity Modal -->
+    <div id="addActivityModal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-900">
+                            <i class="fas fa-plus-circle text-green-600 mr-2"></i>
+                            Add Activity
+                        </h3>
+                        <button onclick="closeAddActivityModal()" class="text-gray-400 hover:text-gray-600 text-xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <form id="addActivityForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Activity Type *</label>
+                                <select name="activity_type" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select type...</option>
+                                    <option value="new_request">New Request</option>
+                                    <option value="inspection">Inspection</option>
+                                    <option value="shipment">Shipment</option>
+                                    <option value="qc_check">QC Check</option>
+                                    <option value="payment">Payment</option>
+                                    <option value="meeting">Meeting</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                                <input type="date" name="activity_date" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                                <input type="text" name="title" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Brief activity title">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+                                <select name="customer_code" id="customerSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select customer...</option>
+                                    <option value="AGL">AGL</option>
+                                    <option value="AGR">AGR</option>
+                                    <option value="AKRT">AKRT</option>
+                                    <option value="ALC">ALC</option>
+                                    <option value="ARX">ARX</option>
+                                    <option value="AVG">AVG</option>
+                                    <option value="AVS">AVS</option>
+                                    <option value="BDS">BDS</option>
+                                    <option value="BRS">BRS</option>
+                                    <option value="BSK">BSK</option>
+                                    <option value="CCC">CCC</option>
+                                    <option value="CLCT">CLCT</option>
+                                    <option value="CHS">CHS</option>
+                                    <option value="CTC">CTC</option>
+                                    <option value="DML">DML</option>
+                                    <option value="EXM">EXM</option>
+                                    <option value="GRD">GRD</option>
+                                    <option value="GSS">GSS</option>
+                                    <option value="GST">GST</option>
+                                    <option value="IMAR">IMAR</option>
+                                    <option value="IRED">IRED</option>
+                                    <option value="KLO">KLO</option>
+                                    <option value="KRG">KRG</option>
+                                    <option value="KTS">KTS</option>
+                                    <option value="MAP">MAP</option>
+                                    <option value="MST">MST</option>
+                                    <option value="NEDEL">NEDEL</option>
+                                    <option value="PMS">PMS</option>
+                                    <option value="PVL">PVL</option>
+                                    <option value="RAA">RAA</option>
+                                    <option value="SBS">SBS</option>
+                                    <option value="SME">SME</option>
+                                    <option value="SRP">SRP</option>
+                                    <option value="VES">VES</option>
+                                    <option value="VVS">VVS</option>
+                                    <option value="XAR">XAR</option>
+                                    <option value="TEO">TEO</option>
+                                    <option value="TSN">TSN</option>
+                                    <option value="DAM">DAM</option>
+                                    <option value="DTR">DTR</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Related Order ID</label>
+                                <input type="text" name="related_order_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., ORD-2024-001">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                                <select name="assigned_to" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select staff...</option>
+                                    <option value="Peng">Peng (Yiwu)</option>
+                                    <option value="Zheng">Zheng (Yiwu)</option>
+                                    <option value="Lin Yi">Lin Yi (Yiwu)</option>
+                                    <option value="James">James (Yiwu)</option>
+                                    <option value="Lily">Lily (Shenzhen)</option>
+                                    <option value="Ruby">Ruby (Shenzhen)</option>
+                                    <option value="Xiao Min">Xiao Min (Shenzhen)</option>
+                                    <option value="Silent Artist">Silent Artist (Shenzhen)</option>
+                                    <option value="Johny">Johny (CEO)</option>
+                                    <option value="Nikos">Nikos (Greece)</option>
+                                    <option value="Chrysanthi">Chrysanthi (Greece)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Office</label>
+                                <select name="office" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select office...</option>
+                                    <option value="Yiwu">Yiwu</option>
+                                    <option value="Shenzhen">Shenzhen</option>
+                                    <option value="Greece">Greece</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select name="status" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="pending">Pending</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="common.priority">Priority</label>
+                                <select name="priority" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="critical">Critical</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="common.description">Description</label>
+                                <textarea name="description" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Detailed description of the activity"></textarea>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                <textarea name="notes" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Additional notes"></textarea>
+                            </div>
+                            
+                            <!-- File Attachments Section -->
+                            <div class="md:col-span-2 border-t pt-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-paperclip mr-1"></i>
+                                    Attachments (Images & Files)
+                                    <span class="text-xs text-gray-500 ml-2">Max 20MB per file</span>
+                                </label>
+                                <div class="flex items-center gap-3">
+                                    <label class="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg border border-blue-300 transition flex items-center gap-2">
+                                        <i class="fas fa-upload"></i>
+                                        <span>Choose Files</span>
+                                        <input type="file" id="addActivityFileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" class="hidden" onchange="handleAddActivityFiles(this.files)">
+                                    </label>
+                                    <span class="text-xs text-gray-500">Supports: Images, PDF, Word, Excel, Text</span>
+                                </div>
+                                <div id="addActivityFilesList" class="mt-3 space-y-2">
+                                    <!-- Uploaded files will appear here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-4 border-t">
+                            <button type="button" onclick="closeAddActivityModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                            <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                                <i class="fas fa-save"></i>
+                                Save Activity
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Activity Modal -->
+    <div id="editActivityModal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-900">
+                            <i class="fas fa-edit text-blue-600 mr-2"></i>
+                            Edit Activity
+                        </h3>
+                        <button onclick="closeEditActivityModal()" class="text-gray-400 hover:text-gray-600 text-xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <form id="editActivityForm" class="space-y-4">
+                        <input type="hidden" id="editActivityId" name="id">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Activity Type *</label>
+                                <select name="activity_type" id="editActivityType" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select type...</option>
+                                    <option value="new_request">New Request</option>
+                                    <option value="inspection">Inspection</option>
+                                    <option value="shipment">Shipment</option>
+                                    <option value="qc_check">QC Check</option>
+                                    <option value="payment">Payment</option>
+                                    <option value="meeting">Meeting</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                                <input type="date" name="activity_date" id="editActivityDate" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                                <input type="text" name="title" id="editActivityTitle" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Brief activity title">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+                                <select name="customer_code" id="editCustomerCode" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select customer...</option>
+                                    <option value="AGL">AGL</option>
+                                    <option value="AGR">AGR</option>
+                                    <option value="AKRT">AKRT</option>
+                                    <option value="ALC">ALC</option>
+                                    <option value="ARX">ARX</option>
+                                    <option value="AVG">AVG</option>
+                                    <option value="AVS">AVS</option>
+                                    <option value="BDS">BDS</option>
+                                    <option value="BRS">BRS</option>
+                                    <option value="BSK">BSK</option>
+                                    <option value="CCC">CCC</option>
+                                    <option value="CLCT">CLCT</option>
+                                    <option value="CHS">CHS</option>
+                                    <option value="CTC">CTC</option>
+                                    <option value="DML">DML</option>
+                                    <option value="EXM">EXM</option>
+                                    <option value="GRD">GRD</option>
+                                    <option value="GSS">GSS</option>
+                                    <option value="GST">GST</option>
+                                    <option value="IMAR">IMAR</option>
+                                    <option value="IRED">IRED</option>
+                                    <option value="KLO">KLO</option>
+                                    <option value="KRG">KRG</option>
+                                    <option value="KTS">KTS</option>
+                                    <option value="MAP">MAP</option>
+                                    <option value="MST">MST</option>
+                                    <option value="NEDEL">NEDEL</option>
+                                    <option value="PMS">PMS</option>
+                                    <option value="PVL">PVL</option>
+                                    <option value="RAA">RAA</option>
+                                    <option value="SBS">SBS</option>
+                                    <option value="SME">SME</option>
+                                    <option value="SRP">SRP</option>
+                                    <option value="VES">VES</option>
+                                    <option value="VVS">VVS</option>
+                                    <option value="XAR">XAR</option>
+                                    <option value="TEO">TEO</option>
+                                    <option value="TSN">TSN</option>
+                                    <option value="DAM">DAM</option>
+                                    <option value="DTR">DTR</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Related Order ID</label>
+                                <input type="text" name="related_order_id" id="editRelatedOrderId" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., ORD-2024-001">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                                <select name="assigned_to" id="editAssignedTo" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select staff...</option>
+                                    <option value="Peng">Peng (Yiwu)</option>
+                                    <option value="Zheng">Zheng (Yiwu)</option>
+                                    <option value="Lin Yi">Lin Yi (Yiwu)</option>
+                                    <option value="James">James (Yiwu)</option>
+                                    <option value="Lily">Lily (Shenzhen)</option>
+                                    <option value="Ruby">Ruby (Shenzhen)</option>
+                                    <option value="Xiao Min">Xiao Min (Shenzhen)</option>
+                                    <option value="Silent Artist">Silent Artist (Shenzhen)</option>
+                                    <option value="Johny">Johny (CEO)</option>
+                                    <option value="Nikos">Nikos (Greece)</option>
+                                    <option value="Chrysanthi">Chrysanthi (Greece)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Office</label>
+                                <select name="office" id="editOffice" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select office...</option>
+                                    <option value="Yiwu">Yiwu</option>
+                                    <option value="Shenzhen">Shenzhen</option>
+                                    <option value="Greece">Greece</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select name="status" id="editStatus" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="pending">Pending</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="common.priority">Priority</label>
+                                <select name="priority" id="editPriority" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="critical">Critical</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="common.description">Description</label>
+                                <textarea name="description" id="editDescription" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Detailed description of the activity"></textarea>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                <textarea name="notes" id="editNotes" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Additional notes"></textarea>
+                            </div>
+                            
+                            <!-- File Attachments Section -->
+                            <div class="md:col-span-2 border-t pt-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-paperclip mr-1"></i>
+                                    Attachments (Images & Files)
+                                    <span class="text-xs text-gray-500 ml-2">Max 20MB per file</span>
+                                </label>
+                                <div class="flex items-center gap-3 mb-3">
+                                    <label class="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg border border-blue-300 transition flex items-center gap-2">
+                                        <i class="fas fa-upload"></i>
+                                        <span>Add More Files</span>
+                                        <input type="file" id="editActivityFileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" class="hidden" onchange="handleEditActivityFiles(this.files)">
+                                    </label>
+                                    <span class="text-xs text-gray-500">Supports: Images, PDF, Word, Excel, Text</span>
+                                </div>
+                                <div id="editActivityFilesList" class="space-y-2">
+                                    <!-- Existing and new files will appear here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between gap-3 pt-4 border-t">
+                            <button type="button" onclick="deleteActivity()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2">
+                                <i class="fas fa-trash"></i>
+                                Delete
+                            </button>
+                            <div class="flex gap-3">
+                                <button type="button" onclick="closeEditActivityModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                                    <i class="fas fa-save"></i>
+                                    Update Activity
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Detail Modal (Editable) -->
+    <div id="projectDetailModal" class="fixed inset-0 bg-black bg-opacity-50 z-[100] hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-800" id="projectDetailTitle">Project Details</h3>
+                        <button onclick="window.projectsManager?.closeProjectDetailModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div id="projectDetailContent">
+                        <!-- Project details will be populated here by js/projects.js -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div id="addTaskModal" class="fixed inset-0 bg-black bg-opacity-50 z-[100] hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-900">
+                            <i class="fas fa-plus text-green-600 mr-2"></i>
+                            Add Task to Project
+                        </h3>
+                        <button onclick="window.projectsManager?.closeAddTaskModal()" class="text-gray-400 hover:text-gray-600 text-xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="addTaskForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Task Title *</label>
+                                <input type="text" id="addTaskTitle" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                                <select id="addTaskAssignee" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select staff...</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="common.priority">Priority</label>
+                                <select id="addTaskPriority" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="Low" data-i18n="common.priorityLow">Low</option>
+                                    <option value="Medium" selected data-i18n="common.priorityMedium">Medium</option>
+                                    <option value="High" data-i18n="common.priorityHigh">High</option>
+                                    <option value="Critical" data-i18n="common.priorityCritical">Critical</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select id="addTaskStatus" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="Pending" selected>Pending</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="On Hold">On Hold</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                                <input type="date" id="addTaskDueDate" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Hours</label>
+                                <input type="number" id="addTaskEstimatedHours" min="0" step="0.5" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="common.description">Description</label>
+                                <textarea id="addTaskDescription" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                            </div>
+                            
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                <textarea id="addTaskNotes" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                            </div>
+                            
+                            <!-- File Attachments Section -->
+                            <div class="md:col-span-2 border-t pt-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-paperclip mr-1"></i>
+                                    Attachments (Images & Files)
+                                    <span class="text-xs text-gray-500 ml-2">Max 20MB per file</span>
+                                </label>
+                                <div class="flex items-center gap-3">
+                                    <label class="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg border border-blue-300 transition flex items-center gap-2">
+                                        <i class="fas fa-upload"></i>
+                                        <span>Choose Files</span>
+                                        <input type="file" id="addTaskFileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" class="hidden" onchange="handleAddTaskFiles(this.files)">
+                                    </label>
+                                    <span class="text-xs text-gray-500">Supports: Images, PDF, Word, Excel, Text</span>
+                                </div>
+                                <div id="addTaskFilesList" class="mt-3 space-y-2">
+                                    <!-- Uploaded files will appear here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end gap-3 pt-4 border-t">
+                            <button type="button" onclick="window.projectsManager?.closeAddTaskModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                            <button type="button" onclick="window.projectsManager?.saveNewTask()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                                <i class="fas fa-save"></i>
+                                Add Task
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Task Modal -->
+    <div id="editTaskModal" class="fixed inset-0 bg-black bg-opacity-50 z-[100] hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-900">
+                            <i class="fas fa-edit text-blue-600 mr-2"></i>
+                            Edit Task
+                        </h3>
+                        <button onclick="window.closeEditTaskModal()" class="text-gray-400 hover:text-gray-600 text-xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="editTaskForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Task Title *</label>
+                                <input type="text" id="editTaskTitle" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                                <select id="editTaskAssignee" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select staff...</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="common.priority">Priority</label>
+                                <select id="editTaskPriority" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="Low" data-i18n="common.priorityLow">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High" data-i18n="common.priorityHigh">High</option>
+                                    <option value="Critical" data-i18n="common.priorityCritical">Critical</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select id="editTaskStatus" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="Pending">Pending</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="On Hold">On Hold</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                                <input type="date" id="editTaskDueDate" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Hours</label>
+                                <input type="number" id="editTaskEstimatedHours" min="0" step="0.5" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Actual Hours</label>
+                                <input type="number" id="editTaskActualHours" min="0" step="0.5" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="common.description">Description</label>
+                                <textarea id="editTaskDescription" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                            </div>
+                            
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                <textarea id="editTaskNotes" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                            </div>
+                            
+                            <!-- File Attachments Section -->
+                            <div class="md:col-span-2 border-t pt-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-paperclip mr-1"></i>
+                                    Attachments (Images & Files)
+                                    <span class="text-xs text-gray-500 ml-2">Max 20MB per file</span>
+                                </label>
+                                <div class="flex items-center gap-3 mb-3">
+                                    <label class="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg border border-blue-300 transition flex items-center gap-2">
+                                        <i class="fas fa-upload"></i>
+                                        <span>Add More Files</span>
+                                        <input type="file" id="editTaskFileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" class="hidden" onchange="handleEditTaskFiles(this.files)">
+                                    </label>
+                                    <span class="text-xs text-gray-500">Supports: Images, PDF, Word, Excel, Text</span>
+                                </div>
+                                <div id="editTaskFilesList" class="space-y-2">
+                                    <!-- Existing and new files will appear here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between gap-3 pt-4 border-t">
+                            <button type="button" onclick="window.deleteTask()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2">
+                                <i class="fas fa-trash"></i>
+                                Delete Task
+                            </button>
+                            <div class="flex gap-3">
+                                <button type="button" onclick="window.closeEditTaskModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                                <button type="button" onclick="window.saveTaskEdits()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                                    <i class="fas fa-save"></i>
+                                    Update Task
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme switching (discrete)
+        function changeTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('i-trusty-theme', theme);
+        }
+
+        // Load saved theme
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('i-trusty-theme') || 'default';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
+            // Load navigation component
+            loadNavigationComponent();
+        });
+        
+        // Load navigation component dynamically
+        async function loadNavigationComponent() {
+            try {
+                const response = await fetch('components/navigation.html');
+                const html = await response.text();
+                document.getElementById('navigationComponent').innerHTML = html;
+            } catch (error) {
+                console.error('Failed to load navigation:', error);
+                // Fallback: Show basic links
+                document.getElementById('navigationComponent').innerHTML = `
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <a href="index.html" class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700">Dashboard</a>
+                        <a href="projects.html" class="bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700">Projects</a>
+                        <a href="customers.html" class="bg-pink-600 text-white px-3 py-2 rounded hover:bg-pink-700">Customers</a>
+                        <a href="finance.html" class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700">Finance</a>
+                        <a href="invoices-creator.html" class="bg-emerald-600 text-white px-3 py-2 rounded hover:bg-emerald-700">📄 Invoices NEW</a>
+                    </div>
+                `;
+            }
+        }
+
+        // ========== DAILY ACTIVITIES MODAL FUNCTIONS ==========
+        let currentSelectedDate = null;
+        let currentActivityFilter = 'all';
+
+        function showDailyActivitiesModal(dateStr) {
+            currentSelectedDate = dateStr;
+            const modal = document.getElementById('dailyActivitiesModal');
+            const dateDisplay = document.getElementById('modalDateDisplay');
+            
+            // Format date for display
+            const date = new Date(dateStr);
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateDisplay.textContent = date.toLocaleDateString('en-US', options);
+            
+            modal.classList.remove('hidden');
+            loadDailyActivities(dateStr);
+        }
+
+        function closeDailyActivitiesModal() {
+            document.getElementById('dailyActivitiesModal').classList.add('hidden');
+        }
+
+        async function loadDailyActivities(dateStr) {
+            const activitiesList = document.getElementById('activitiesList');
+            activitiesList.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-blue-600"></i><p class="text-gray-500 mt-2">Loading activities...</p></div>';
+
+            try {
+                // Fetch ALL activities first
+                const response = await fetch(`tables/daily_activities`);
+                const data = await response.json();
+                
+                let activities = data.data || [];
+                
+                // ✅ NEW: Fetch customer payments and convert to activities
+                try {
+                    const customerPaymentsResponse = await fetch(`tables/customer_transactions`);
+                    if (customerPaymentsResponse.ok) {
+                        const paymentsData = await customerPaymentsResponse.json();
+                        const payments = paymentsData.data || [];
+                        
+                        // Convert customer payments to activities
+                        payments.forEach(payment => {
+                            if (payment.payment_date && parseFloat(payment.total_paid || 0) > 0) {
+                                const paymentDate = payment.payment_date.split('T')[0];
+                                if (paymentDate === dateStr) {
+                                    activities.push({
+                                        id: `customer_payment_${payment.id}`,
+                                        activity_type: 'payment',
+                                        activity_date: payment.payment_date,
+                                        title: `Customer Payment: ${payment.customer_code}`,
+                                        description: `Invoice ${payment.invoice_number || 'N/A'} - Received ${payment.currency || '€'}${parseFloat(payment.total_paid).toFixed(2)}`,
+                                        customer_code: payment.customer_code,
+                                        related_order_id: payment.invoice_number,
+                                        status: 'completed',
+                                        priority: 'high',
+                                        notes: `Bank: ${payment.bank_account || 'N/A'}`,
+                                        source: 'customer_transaction'
+                                    });
+                                }
+                            }
+                        });
+                    }
+                } catch (err) {
+                    console.warn('Could not fetch customer payments:', err);
+                }
+                
+                // ✅ NEW: Fetch supplier payments and convert to activities
+                try {
+                    const supplierPaymentsResponse = await fetch(`tables/supplier_transactions`);
+                    if (supplierPaymentsResponse.ok) {
+                        const supplierData = await supplierPaymentsResponse.json();
+                        const supplierPayments = supplierData.data || [];
+                        
+                        // Convert supplier payments to activities
+                        supplierPayments.forEach(payment => {
+                            if (payment.payment_date && parseFloat(payment.amount || 0) > 0) {
+                                const paymentDate = payment.payment_date.split('T')[0];
+                                if (paymentDate === dateStr) {
+                                    activities.push({
+                                        id: `supplier_payment_${payment.id}`,
+                                        activity_type: 'payment',
+                                        activity_date: payment.payment_date,
+                                        title: `Supplier Payment: ${payment.supplier_name || 'Unknown'}`,
+                                        description: `Paid ${payment.currency || '€'}${parseFloat(payment.amount).toFixed(2)} - ${payment.payment_method || 'N/A'}`,
+                                        assigned_to: payment.paid_by || '',
+                                        status: payment.status === 'Paid' ? 'completed' : 'pending',
+                                        priority: 'medium',
+                                        notes: `Bank: ${payment.bank_account || 'N/A'}`,
+                                        source: 'supplier_transaction'
+                                    });
+                                }
+                            }
+                        });
+                    }
+                } catch (err) {
+                    console.warn('Could not fetch supplier payments:', err);
+                }
+                
+                // ✅ FIX 1: Filter by EXACT date match only
+                activities = activities.filter(activity => {
+                    if (!activity.activity_date) return false;
+                    
+                    // Extract date part (YYYY-MM-DD) from activity_date
+                    const activityDate = activity.activity_date.split('T')[0];
+                    
+                    return activityDate === dateStr;
+                });
+                
+                // ✅ FIX 2: Exclude completed activities (they shouldn't show in future dates)
+                // Only show if status is NOT completed, OR if it's the actual date
+                // But keep financial payments regardless of status
+                activities = activities.filter(activity => {
+                    if (activity.source === 'customer_transaction' || activity.source === 'supplier_transaction') {
+                        return true; // Always show financial activities on their date
+                    }
+                    return activity.status !== 'completed' || activity.activity_date.split('T')[0] === dateStr;
+                });
+                
+                // ✅ DEDUPLICATION: Remove duplicates based on unique identifier
+                const seen = new Set();
+                activities = activities.filter(activity => {
+                    // Create unique key based on: id, title, and date
+                    const uniqueKey = `${activity.id}_${activity.title}_${activity.activity_date}`;
+                    
+                    if (seen.has(uniqueKey)) {
+                        console.warn('Duplicate activity found:', activity.title);
+                        return false; // Skip duplicate
+                    }
+                    
+                    seen.add(uniqueKey);
+                    return true;
+                });
+                
+                // Filter by type if needed
+                if (currentActivityFilter !== 'all') {
+                    activities = activities.filter(a => a.activity_type === currentActivityFilter);
+                }
+
+                if (activities.length === 0) {
+                    activitiesList.innerHTML = `
+                        <div class="text-center py-12 text-gray-400">
+                            <i class="fas fa-calendar-times text-5xl mb-3"></i>
+                            <p>No activities recorded for this date</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Sort by time (newest first)
+                activities.sort((a, b) => {
+                    const aTime = new Date(a.created_at || a.activity_date);
+                    const bTime = new Date(b.created_at || b.activity_date);
+                    return bTime - aTime;
+                });
+
+                // Display activities
+                activitiesList.innerHTML = activities.map(activity => {
+                    const typeIcons = {
+                        'new_request': 'fa-plus-circle text-green-600',
+                        'inspection': 'fa-search text-blue-600',
+                        'shipment': 'fa-shipping-fast text-purple-600',
+                        'qc_check': 'fa-check-circle text-teal-600',
+                        'payment': 'fa-money-bill-wave text-yellow-600',
+                        'meeting': 'fa-handshake text-orange-600',
+                        'other': 'fa-ellipsis-h text-gray-600'
+                    };
+
+                    const statusColors = {
+                        'pending': 'bg-yellow-100 text-yellow-800',
+                        'in_progress': 'bg-blue-100 text-blue-800',
+                        'completed': 'bg-green-100 text-green-800',
+                        'cancelled': 'bg-red-100 text-red-800'
+                    };
+
+                    const priorityColors = {
+                        'low': 'bg-gray-100 text-gray-800',
+                        'medium': 'bg-orange-100 text-orange-800',
+                        'high': 'bg-red-100 text-red-800',
+                        'critical': 'bg-purple-100 text-purple-800'
+                    };
+                    
+                    // Check if this is a financial transaction (not editable)
+                    const isFinancial = activity.source === 'customer_transaction' || activity.source === 'supplier_transaction';
+                    const borderColor = isFinancial ? 'border-yellow-300 bg-yellow-50' : 'border-gray-200';
+                    const clickHandler = isFinancial ? '' : `onclick="openEditActivityModal('${activity.id}')"`;
+                    const cursorClass = isFinancial ? 'cursor-default' : 'cursor-pointer';
+                    const badge = isFinancial ? '<span class="px-2 py-1 rounded text-xs font-semibold bg-yellow-200 text-yellow-800"><i class="fas fa-coins mr-1"></i>Financial</span>' : '';
+
+                    return `
+                        <div class="bg-white border ${borderColor} rounded-lg p-4 hover:shadow-md transition-shadow ${cursorClass}" ${clickHandler}>
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas ${typeIcons[activity.activity_type] || typeIcons['other']} text-2xl"></i>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900">${activity.title}</h4>
+                                        <p class="text-sm text-gray-500">${activity.activity_type.replace('_', ' ').toUpperCase()}</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 flex-wrap">
+                                    ${badge}
+                                    <span class="px-2 py-1 rounded text-xs font-medium ${statusColors[activity.status] || statusColors['pending']}">${activity.status}</span>
+                                    <span class="px-2 py-1 rounded text-xs font-medium ${priorityColors[activity.priority] || priorityColors['medium']}">${activity.priority}</span>
+                                </div>
+                            </div>
+                            
+                            ${activity.description ? `<p class="text-gray-700 text-sm mb-3">${activity.description}</p>` : ''}
+                            
+                            <div class="flex flex-wrap gap-4 text-xs text-gray-500">
+                                ${activity.customer_code ? `<span><i class="fas fa-briefcase mr-1 text-purple-600"></i><strong>${activity.customer_code}</strong></span>` : ''}
+                                ${activity.assigned_to ? `<span><i class="fas fa-user mr-1"></i>${activity.assigned_to}</span>` : ''}
+                                ${activity.office ? `<span><i class="fas fa-building mr-1"></i>${activity.office}</span>` : ''}
+                                ${activity.related_order_id ? `<span><i class="fas fa-shopping-cart mr-1"></i>${activity.related_order_id}</span>` : ''}
+                                ${activity.related_project_id ? `<span><i class="fas fa-project-diagram mr-1"></i>${activity.related_project_id}</span>` : ''}
+                            </div>
+                            
+                            ${activity.notes ? `<div class="mt-3 pt-3 border-t border-gray-100"><p class="text-xs text-gray-600"><i class="fas fa-sticky-note mr-1"></i> ${activity.notes}</p></div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error loading activities:', error);
+                activitiesList.innerHTML = `
+                    <div class="text-center py-12 text-red-400">
+                        <i class="fas fa-exclamation-triangle text-5xl mb-3"></i>
+                        <p>Error loading activities</p>
+                    </div>
+                `;
+            }
+        }
+
+        function filterActivities(type) {
+            currentActivityFilter = type;
+            
+            // Update button styles
+            document.querySelectorAll('.activity-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white', 'active');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            event.target.closest('button').classList.remove('bg-gray-200', 'text-gray-700');
+            event.target.closest('button').classList.add('bg-blue-600', 'text-white', 'active');
+            
+            // Reload activities with filter
+            loadDailyActivities(currentSelectedDate);
+        }
+
+        function navigateActivityDate(days) {
+            if (!currentSelectedDate) return;
+            
+            // Parse current date and add/subtract days
+            const currentDate = new Date(currentSelectedDate);
+            currentDate.setDate(currentDate.getDate() + days);
+            
+            // Format as YYYY-MM-DD
+            const newDate = currentDate.toISOString().split('T')[0];
+            
+            // Update selected date and reload
+            currentSelectedDate = newDate;
+            
+            // Update date display
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('modalDateDisplay').textContent = currentDate.toLocaleDateString('en-US', options);
+            
+            // Reload activities for new date
+            loadDailyActivities(newDate);
+        }
+
+        function showAddActivityForm() {
+            const modal = document.getElementById('addActivityModal');
+            const form = document.getElementById('addActivityForm');
+            
+            // Pre-fill date
+            form.querySelector('input[name="activity_date"]').value = currentSelectedDate;
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeAddActivityModal() {
+            // Clear uploaded files
+            if (window.clearActivityFiles) {
+                window.clearActivityFiles('add');
+            }
+            document.getElementById('addActivityModal').classList.add('hidden');
+            document.getElementById('addActivityForm').reset();
+        }
+
+        // Open edit activity modal (MOVED OUTSIDE DOMContentLoaded FOR GLOBAL ACCESS)
+        async function openEditActivityModal(activityId) {
+            try {
+                // ✅ Check if this is a financial transaction (not editable)
+                if (activityId.startsWith('customer_payment_') || activityId.startsWith('supplier_payment_')) {
+                    alert('ℹ️ Financial transactions cannot be edited from here.\n\nPlease go to the Transactions page to edit payment records.');
+                    return;
+                }
+                
+                const response = await fetch(`tables/daily_activities/${activityId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch activity: ${response.status}`);
+                }
+                
+                const activity = await response.json();
+                
+                // Store current activity globally for attachment merging
+                window.currentEditingActivity = activity;
+                
+                // Populate form fields
+                document.getElementById('editActivityId').value = activity.id;
+                document.getElementById('editActivityType').value = activity.activity_type || '';
+                document.getElementById('editActivityDate').value = activity.activity_date || '';
+                document.getElementById('editActivityTitle').value = activity.title || '';
+                document.getElementById('editCustomerCode').value = activity.customer_code || '';
+                document.getElementById('editRelatedOrderId').value = activity.related_order_id || '';
+                document.getElementById('editAssignedTo').value = activity.assigned_to || '';
+                document.getElementById('editOffice').value = activity.office || '';
+                document.getElementById('editStatus').value = activity.status || 'pending';
+                document.getElementById('editPriority').value = activity.priority || 'medium';
+                document.getElementById('editDescription').value = activity.description || '';
+                document.getElementById('editNotes').value = activity.notes || '';
+                
+                // Display existing attachments
+                if (window.displayExistingActivityFiles && activity.attachments && activity.attachments.length > 0) {
+                    window.displayExistingActivityFiles(activity.attachments);
+                }
+                
+                // Show modal
+                document.getElementById('editActivityModal').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading activity:', error);
+                alert('Error loading activity details. Please try again.');
+            }
+        }
+
+        // ======== PAGE PROTECTION ========
+        // Check page access before loading content
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Load protection scripts if not already loaded
+            if (!window.PageProtection) {
+                const script = document.createElement('script');
+                script.src = 'js/page-protection.js';
+                document.head.appendChild(script);
+                
+                await new Promise(resolve => {
+                    script.onload = resolve;
+                });
+            }
+            
+            // Check access to dashboard
+            const hasAccess = await PageProtection.checkPageAccess('dashboard');
+            if (!hasAccess) return; // Will redirect if no access
+        });
+        
+        // Handle form submission
+        document.addEventListener('DOMContentLoaded', () => {
+            const addActivityForm = document.getElementById('addActivityForm');
+            if (addActivityForm) {
+                addActivityForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(e.target);
+                    const activityData = {
+                        activity_type: formData.get('activity_type'),
+                        activity_date: formData.get('activity_date'),
+                        title: formData.get('title'),
+                        description: formData.get('description'),
+                        customer_code: formData.get('customer_code'),
+                        related_order_id: formData.get('related_order_id'),
+                        related_project_id: formData.get('related_project_id'),
+                        assigned_to: formData.get('assigned_to'),
+                        office: formData.get('office'),
+                        status: formData.get('status') || 'pending',
+                        priority: formData.get('priority') || 'medium',
+                        notes: formData.get('notes'),
+                        attachments: window.activityFilesTemp && window.activityFilesTemp.add ? window.activityFilesTemp.add : []
+                    };
+
+                    try {
+                        const response = await fetch('tables/daily_activities', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(activityData)
+                        });
+
+                        if (response.ok) {
+                            // Clear uploaded files
+                            if (window.clearActivityFiles) {
+                                window.clearActivityFiles('add');
+                            }
+                            closeAddActivityModal();
+                            loadDailyActivities(currentSelectedDate);
+                            alert('Activity added successfully!');
+                        } else {
+                            alert('Error adding activity. Please try again.');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Error adding activity. Please try again.');
+                    }
+                });
+            }
+
+            // Edit Activity Modal functions
+            const editActivityForm = document.getElementById('editActivityForm');
+            if (editActivityForm) {
+                editActivityForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const activityId = document.getElementById('editActivityId').value;
+                    const formData = new FormData(e.target);
+                    
+                    // Merge existing attachments with new ones
+                    const existingAttachments = window.currentEditingActivity && window.currentEditingActivity.attachments ? window.currentEditingActivity.attachments : [];
+                    const newAttachments = window.activityFilesTemp && window.activityFilesTemp.edit ? window.activityFilesTemp.edit : [];
+                    const allAttachments = [...existingAttachments, ...newAttachments];
+                    
+                    const activityData = {
+                        activity_type: formData.get('activity_type'),
+                        activity_date: formData.get('activity_date'),
+                        title: formData.get('title'),
+                        description: formData.get('description'),
+                        customer_code: formData.get('customer_code'),
+                        related_order_id: formData.get('related_order_id'),
+                        assigned_to: formData.get('assigned_to'),
+                        office: formData.get('office'),
+                        status: formData.get('status'),
+                        priority: formData.get('priority'),
+                        notes: formData.get('notes'),
+                        attachments: allAttachments
+                    };
+
+                    try {
+                        const response = await fetch(`tables/daily_activities/${activityId}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(activityData)
+                        });
+
+                        if (response.ok) {
+                            // Clear uploaded files
+                            if (window.clearActivityFiles) {
+                                window.clearActivityFiles('edit');
+                            }
+                            closeEditActivityModal();
+                            loadDailyActivities(currentSelectedDate);
+                            alert('Activity updated successfully!');
+                        } else {
+                            alert('Error updating activity. Please try again.');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Error updating activity. Please try again.');
+                    }
+                });
+            }
+        });
+
+        // Close edit activity modal
+        function closeEditActivityModal() {
+            // Clear uploaded files
+            if (window.clearActivityFiles) {
+                window.clearActivityFiles('edit');
+            }
+            // Clear current editing activity
+            window.currentEditingActivity = null;
+            document.getElementById('editActivityModal').classList.add('hidden');
+            document.getElementById('editActivityForm').reset();
+        }
+
+        // ========== STAT DETAILS MODAL FUNCTIONS ==========
+        let currentModalType = null;
+        let selectedItems = new Set();
+
+        function showStatDetailsModal(statType) {
+            currentModalType = statType;
+            selectedItems.clear();
+            const modal = document.getElementById('statDetailsModal');
+            const title = document.getElementById('statModalTitle');
+            const content = document.getElementById('statModalContent');
+            
+            // Set title and load data based on stat type
+            switch(statType) {
+                case 'activeProjects':
+                    title.innerHTML = `
+                        <div class="flex items-center justify-between w-full">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="selectAllItems" onchange="toggleSelectAll()" class="w-4 h-4 text-blue-600 rounded">
+                                <i class="fas fa-project-diagram text-blue-600 mr-2"></i>Active Projects
+                            </div>
+                            <button onclick="deleteSelectedItems()" id="deleteBtn" class="hidden px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition">
+                                <i class="fas fa-trash mr-1"></i>Delete Selected
+                            </button>
+                        </div>
+                    `;
+                    loadActiveProjectsDetails(content);
+                    break;
+                case 'pendingTasks':
+                    title.innerHTML = `
+                        <div class="flex items-center justify-between w-full">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="selectAllItems" onchange="toggleSelectAll()" class="w-4 h-4 text-blue-600 rounded">
+                                <i class="fas fa-hourglass-half text-yellow-600 mr-2"></i>Pending Tasks
+                            </div>
+                            <button onclick="deleteSelectedItems()" id="deleteBtn" class="hidden px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition">
+                                <i class="fas fa-trash mr-1"></i>Delete Selected
+                            </button>
+                        </div>
+                    `;
+                    loadPendingTasksDetails(content);
+                    break;
+                case 'staffUtilization':
+                    title.innerHTML = '<i class="fas fa-users text-green-600 mr-2"></i>Staff Utilization Breakdown';
+                    loadStaffUtilizationDetails(content);
+                    break;
+                case 'overdueItems':
+                    title.innerHTML = `
+                        <div class="flex items-center justify-between w-full">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="selectAllItems" onchange="toggleSelectAll()" class="w-4 h-4 text-blue-600 rounded">
+                                <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>Overdue Items
+                            </div>
+                            <button onclick="deleteSelectedItems()" id="deleteBtn" class="hidden px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition">
+                                <i class="fas fa-trash mr-1"></i>Delete Selected
+                            </button>
+                        </div>
+                    `;
+                    loadOverdueItemsDetails(content);
+                    break;
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeStatDetailsModal() {
+            document.getElementById('statDetailsModal').classList.add('hidden');
+        }
+
+        function loadActiveProjectsDetails(container) {
+            container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-blue-600"></i></div>';
+            
+            // Access the global app instance projects
+            setTimeout(() => {
+                if (window.app && window.app.projects) {
+                    const activeProjects = window.app.projects.filter(p => p.status === 'In Progress' || p.status === 'Planning');
+                    
+                    if (activeProjects.length === 0) {
+                        container.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fas fa-inbox text-5xl mb-3"></i><p>No active projects</p></div>';
+                        return;
+                    }
+                    
+                    container.innerHTML = activeProjects.map(project => `
+                        <div class="bg-white border border-gray-200 rounded-lg p-4 mb-3 hover:shadow-md transition flex items-start gap-3">
+                            <input type="checkbox" class="item-checkbox w-4 h-4 text-blue-600 rounded mt-1" data-id="${project.id}" onchange="updateDeleteButton()">
+                            <div class="flex-1 cursor-pointer" onclick="window.app.showProjectDetails({id: '${project.id}', title: '${project.title.replace(/'/g, "\\'")}'})">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900">${project.title}</h4>
+                                        <p class="text-sm text-gray-500">${project.client_name || 'No client'}</p>
+                                    </div>
+                                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">${project.status}</span>
+                                </div>
+                                <div class="flex items-center gap-4 text-sm text-gray-600">
+                                    <span><i class="fas fa-calendar mr-1"></i>${project.start_date || 'No date'}</span>
+                                    <span><i class="fas fa-user mr-1"></i>${project.assigned_to || 'Unassigned'}</span>
+                                    ${project.priority ? `<span class="px-2 py-1 text-xs rounded-full bg-${project.priority === 'High' ? 'red' : project.priority === 'Medium' ? 'yellow' : 'gray'}-100 text-${project.priority === 'High' ? 'red' : project.priority === 'Medium' ? 'yellow' : 'gray'}-800">${project.priority}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="text-center py-8 text-gray-400"><p>Loading projects...</p></div>';
+                }
+            }, 300);
+        }
+
+        function loadPendingTasksDetails(container) {
+            container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-yellow-600"></i></div>';
+            
+            setTimeout(() => {
+                if (window.app && window.app.tasks) {
+                    const pendingTasks = window.app.tasks.filter(t => t.status === 'Not Started' || t.status === 'In Progress');
+                    
+                    if (pendingTasks.length === 0) {
+                        container.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fas fa-inbox text-5xl mb-3"></i><p>No pending tasks</p></div>';
+                        return;
+                    }
+                    
+                    container.innerHTML = pendingTasks.map(task => `
+                        <div class="bg-white border border-gray-200 rounded-lg p-4 mb-3 hover:shadow-md transition flex items-start gap-3">
+                            <input type="checkbox" class="item-checkbox w-4 h-4 text-blue-600 rounded mt-1" data-id="${task.id}" onchange="updateDeleteButton()">
+                            <div class="flex-1 cursor-pointer" onclick="window.app.showTaskDetails({id: '${task.id}'})">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900">${task.title}</h4>
+                                        <p class="text-sm text-gray-500">${task.description || 'No description'}</p>
+                                    </div>
+                                    <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">${task.status}</span>
+                                </div>
+                                <div class="flex items-center gap-4 text-sm text-gray-600">
+                                    <span><i class="fas fa-calendar mr-1"></i>${task.due_date || 'No due date'}</span>
+                                    <span><i class="fas fa-user mr-1"></i>${task.assigned_to || 'Unassigned'}</span>
+                                    ${task.estimated_hours ? `<span><i class="fas fa-clock mr-1"></i>${task.estimated_hours}h</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="text-center py-8 text-gray-400"><p>Loading tasks...</p></div>';
+                }
+            }, 300);
+        }
+
+        function loadStaffUtilizationDetails(container) {
+            container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-green-600"></i></div>';
+            
+            setTimeout(() => {
+                if (window.app && window.app.staff) {
+                    if (window.app.staff.length === 0) {
+                        container.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fas fa-users text-5xl mb-3"></i><p>No staff members</p></div>';
+                        return;
+                    }
+                    
+                    container.innerHTML = window.app.staff.map(member => {
+                        const assignedTasks = window.app.tasks.filter(t => t.assigned_to_id === member.id);
+                        const totalHours = assignedTasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
+                        const utilization = member.capacity_hours_per_week ? Math.round((totalHours / member.capacity_hours_per_week) * 100) : 0;
+                        
+                        return `
+                        <div class="bg-white border border-gray-200 rounded-lg p-4 mb-3">
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                                        ${member.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900">${member.name}</h4>
+                                        <p class="text-sm text-gray-500">${member.role || 'Staff'} - ${member.office_location || 'No office'}</p>
+                                    </div>
+                                </div>
+                                <span class="text-lg font-bold ${utilization > 100 ? 'text-red-600' : utilization > 80 ? 'text-yellow-600' : 'text-green-600'}">
+                                    ${utilization}%
+                                </span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                                <div class="${utilization > 100 ? 'bg-red-600' : utilization > 80 ? 'bg-yellow-500' : 'bg-green-500'} h-2 rounded-full" style="width: ${Math.min(utilization, 100)}%"></div>
+                            </div>
+                            <div class="flex items-center gap-4 text-sm text-gray-600">
+                                <span><i class="fas fa-tasks mr-1"></i>${assignedTasks.length} tasks</span>
+                                <span><i class="fas fa-clock mr-1"></i>${totalHours}h / ${member.capacity_hours_per_week || 0}h</span>
+                            </div>
+                        </div>
+                        `;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<div class="text-center py-8 text-gray-400"><p>Loading staff data...</p></div>';
+                }
+            }, 300);
+        }
+
+        function loadOverdueItemsDetails(container) {
+            container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-red-600"></i></div>';
+            
+            setTimeout(() => {
+                if (window.app && window.app.tasks) {
+                    const overdueTasks = window.app.tasks.filter(t => {
+                        if (!t.due_date) return false;
+                        const dueDate = new Date(t.due_date);
+                        return dueDate < new Date() && t.status !== 'Completed';
+                    });
+                    
+                    if (overdueTasks.length === 0) {
+                        container.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fas fa-check-circle text-5xl mb-3 text-green-500"></i><p>No overdue items! Great job!</p></div>';
+                        return;
+                    }
+                    
+                    // Sort by most overdue first
+                    overdueTasks.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+                    
+                    container.innerHTML = overdueTasks.map(task => {
+                        const dueDate = new Date(task.due_date);
+                        const today = new Date();
+                        const daysOverdue = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
+                        
+                        return `
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-3 hover:shadow-md transition flex items-start gap-3">
+                            <input type="checkbox" class="item-checkbox w-4 h-4 text-blue-600 rounded mt-1" data-id="${task.id}" onchange="updateDeleteButton()">
+                            <div class="flex-1 cursor-pointer" onclick="window.app.showTaskDetails({id: '${task.id}'})">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-gray-900">${task.title}</h4>
+                                        <p class="text-sm text-gray-600">${task.description || 'No description'}</p>
+                                    </div>
+                                    <span class="px-2 py-1 text-xs rounded-full bg-red-600 text-white ml-3">
+                                        ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''} overdue
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-4 text-sm text-gray-600">
+                                    <span><i class="fas fa-calendar-times text-red-600 mr-1"></i>Due: ${task.due_date}</span>
+                                    <span><i class="fas fa-user mr-1"></i>${task.assigned_to || 'Unassigned'}</span>
+                                    <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">${task.status}</span>
+                                </div>
+                            </div>
+                        </div>
+                        `;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<div class="text-center py-8 text-gray-400"><p>Loading overdue items...</p></div>';
+                }
+            }, 300);
+        }
+
+        // Bulk delete functions
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllItems');
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            
+            checkboxes.forEach(cb => {
+                cb.checked = selectAllCheckbox.checked;
+                if (cb.checked) {
+                    selectedItems.add(cb.dataset.id);
+                } else {
+                    selectedItems.delete(cb.dataset.id);
+                }
+            });
+            
+            updateDeleteButton();
+        }
+
+        function updateDeleteButton() {
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            selectedItems.clear();
+            
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    selectedItems.add(cb.dataset.id);
+                }
+            });
+            
+            const deleteBtn = document.getElementById('deleteBtn');
+            const selectAllCheckbox = document.getElementById('selectAllItems');
+            
+            if (selectedItems.size > 0) {
+                deleteBtn.classList.remove('hidden');
+                deleteBtn.innerHTML = `<i class="fas fa-trash mr-1"></i>Delete Selected (${selectedItems.size})`;
+            } else {
+                deleteBtn.classList.add('hidden');
+            }
+            
+            // Update select all checkbox state
+            if (selectAllCheckbox) {
+                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                const someChecked = Array.from(checkboxes).some(cb => cb.checked);
+                selectAllCheckbox.checked = allChecked;
+                selectAllCheckbox.indeterminate = someChecked && !allChecked;
+            }
+        }
+
+        async function deleteSelectedItems() {
+            if (selectedItems.size === 0) return;
+            
+            console.log('🗑️ Attempting to delete items:', Array.from(selectedItems));
+            console.log('📋 Modal type:', currentModalType);
+            
+            const confirmed = confirm(`Are you sure you want to delete ${selectedItems.size} item(s)? This action cannot be undone.`);
+            if (!confirmed) return;
+            
+            const deleteBtn = document.getElementById('deleteBtn');
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Deleting...';
+            
+            try {
+                let successCount = 0;
+                let failCount = 0;
+                const failedIds = [];
+                
+                for (const itemId of selectedItems) {
+                    try {
+                        let response;
+                        let endpoint;
+                        
+                        if (currentModalType === 'activeProjects') {
+                            endpoint = `tables/projects/${itemId}`;
+                            response = await fetch(endpoint, { method: 'DELETE' });
+                        } else {
+                            // pendingTasks or overdueItems
+                            endpoint = `tables/tasks/${itemId}`;
+                            response = await fetch(endpoint, { method: 'DELETE' });
+                        }
+                        
+                        console.log(`DELETE ${endpoint}:`, response.status, response.statusText);
+                        
+                        // Check if delete was successful (204 No Content or 200 OK)
+                        if (response.ok || response.status === 204) {
+                            successCount++;
+                            console.log(`✅ Successfully deleted ${itemId}`);
+                        } else {
+                            const errorText = await response.text();
+                            console.error(`❌ Failed to delete item ${itemId}:`, response.status, response.statusText, errorText);
+                            failCount++;
+                            failedIds.push(itemId);
+                        }
+                    } catch (itemError) {
+                        console.error(`❌ Error deleting item ${itemId}:`, itemError);
+                        failCount++;
+                        failedIds.push(itemId);
+                    }
+                }
+                
+                console.log(`✅ Success: ${successCount}, ❌ Failed: ${failCount}`);
+                
+                // Show result message
+                if (successCount > 0 && failCount === 0) {
+                    alert(`✅ Successfully deleted ${successCount} item(s)!`);
+                } else if (successCount > 0 && failCount > 0) {
+                    alert(`⚠️ Deleted ${successCount} item(s), but ${failCount} failed.\n\nFailed IDs: ${failedIds.join(', ')}\n\nCheck browser console (F12) for details.`);
+                } else {
+                    alert(`❌ Failed to delete ${failCount} item(s).\n\nFailed IDs: ${failedIds.join(', ')}\n\nCheck browser console (F12) for details.`);
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = '<i class="fas fa-trash mr-1"></i>Delete Selected';
+                    return;
+                }
+                
+                // Reload the modal content
+                selectedItems.clear();
+                if (window.app) {
+                    console.log('🔄 Reloading data...');
+                    await window.app.loadData();  // Fixed: use loadData() instead
+                    window.app.updateDashboard();
+                    console.log('✅ Data reloaded');
+                }
+                
+                // Small delay to ensure data is refreshed
+                setTimeout(() => {
+                    showStatDetailsModal(currentModalType);
+                }, 500);  // Increased delay to 500ms
+                
+            } catch (error) {
+                console.error('❌ Error deleting items:', error);
+                alert('❌ Error deleting items. Please try again.\n\nCheck browser console (F12) for details.');
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = '<i class="fas fa-trash mr-1"></i>Delete Selected';
+            }
+        }
+
+        // Delete activity
+        async function deleteActivity() {
+            if (!confirm('Are you sure you want to delete this activity?')) {
+                return;
+            }
+
+            const activityId = document.getElementById('editActivityId').value;
+
+            try {
+                const response = await fetch(`tables/daily_activities/${activityId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok || response.status === 204) {
+                    closeEditActivityModal();
+                    loadDailyActivities(currentSelectedDate);
+                    alert('Activity deleted successfully!');
+                } else {
+                    alert('Error deleting activity. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error deleting activity. Please try again.');
+            }
+        }
+
+        // ========================
+        // FILE UPLOAD FUNCTIONS FOR TASKS
+        // ========================
+
+        // Global storage for uploaded files (temporary before save)
+        window.taskFilesTemp = {
+            create: [],
+            add: [],
+            edit: []
+        };
+
+        // File upload handler for Create Task Modal
+        function handleCreateTaskFiles(files) {
+            processTaskFiles(files, 'create', 'createTaskFilesList');
+        }
+
+        // File upload handler for Add Task Modal
+        function handleAddTaskFiles(files) {
+            processTaskFiles(files, 'add', 'addTaskFilesList');
+        }
+
+        // File upload handler for Edit Task Modal
+        function handleEditTaskFiles(files) {
+            processTaskFiles(files, 'edit', 'editTaskFilesList');
+        }
+
+        // Process files with 20MB limit and base64 conversion
+        async function processTaskFiles(files, modalType, listElementId) {
+            const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB in bytes
+            const listElement = document.getElementById(listElementId);
+
+            for (let file of files) {
+                // Check file size
+                if (file.size > MAX_FILE_SIZE) {
+                    alert(`File "${file.name}" exceeds 20MB limit. Please choose a smaller file.`);
+                    continue;
+                }
+
+                try {
+                    // Convert to base64
+                    const base64Data = await fileToBase64(file);
+                    
+                    // Create file object
+                    const fileObj = {
+                        filename: file.name,
+                        filesize: file.size,
+                        filetype: file.type,
+                        data: base64Data,
+                        uploaded_at: new Date().toISOString()
+                    };
+
+                    // Add to temporary storage
+                    window.taskFilesTemp[modalType].push(fileObj);
+
+                    // Display file in list
+                    displayFileInList(fileObj, modalType, listElement, window.taskFilesTemp[modalType].length - 1);
+                    
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    alert(`Error processing file "${file.name}". Please try again.`);
+                }
+            }
+        }
+
+        // Convert file to base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Display file in list with preview and delete button
+        function displayFileInList(fileObj, modalType, listElement, fileIndex) {
+            const isImage = fileObj.filetype.startsWith('image/');
+            const fileSize = (fileObj.filesize / 1024).toFixed(2); // KB
+            const fileSizeMB = (fileObj.filesize / (1024 * 1024)).toFixed(2); // MB
+            const displaySize = fileObj.filesize > 1024 * 1024 ? fileSizeMB + ' MB' : fileSize + ' KB';
+
+            const fileCard = document.createElement('div');
+            fileCard.className = 'flex items-center gap-3 p-3 bg-gray-50 border rounded-lg hover:bg-gray-100 transition';
+            fileCard.innerHTML = `
+                ${isImage ? `
+                    <img src="${fileObj.data}" class="w-16 h-16 object-cover rounded border" alt="Preview">
+                ` : `
+                    <div class="w-16 h-16 flex items-center justify-center bg-blue-100 rounded border">
+                        <i class="fas fa-file text-2xl text-blue-600"></i>
+                    </div>
+                `}
+                <div class="flex-1">
+                    <div class="font-semibold text-sm text-gray-900">${fileObj.filename}</div>
+                    <div class="text-xs text-gray-500">${displaySize} • ${fileObj.filetype || 'Unknown type'}</div>
+                </div>
+                <button type="button" onclick="removeTaskFile('${modalType}', ${fileIndex})" class="text-red-600 hover:text-red-800 p-2">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            listElement.appendChild(fileCard);
+        }
+
+        // Remove file from temporary storage
+        function removeTaskFile(modalType, fileIndex) {
+            const listElementId = modalType === 'create' ? 'createTaskFilesList' : 
+                                 modalType === 'add' ? 'addTaskFilesList' : 
+                                 'editTaskFilesList';
+            
+            // Remove from array
+            window.taskFilesTemp[modalType].splice(fileIndex, 1);
+            
+            // Clear and rebuild list
+            const listElement = document.getElementById(listElementId);
+            listElement.innerHTML = '';
+            
+            window.taskFilesTemp[modalType].forEach((fileObj, index) => {
+                displayFileInList(fileObj, modalType, listElement, index);
+            });
+        }
+
+        // Clear files when modal closes
+        function clearTaskFiles(modalType) {
+            window.taskFilesTemp[modalType] = [];
+            const listElementId = modalType === 'create' ? 'createTaskFilesList' : 
+                                 modalType === 'add' ? 'addTaskFilesList' : 
+                                 'editTaskFilesList';
+            document.getElementById(listElementId).innerHTML = '';
+        }
+
+        // Download file from base64
+        function downloadTaskFile(fileObj) {
+            const link = document.createElement('a');
+            link.href = fileObj.data;
+            link.download = fileObj.filename;
+            link.click();
+        }
+
+        // Display existing files when editing task
+        function displayExistingTaskFiles(attachments) {
+            const listElement = document.getElementById('editTaskFilesList');
+            listElement.innerHTML = '';
+            
+            if (!attachments || attachments.length === 0) {
+                return;
+            }
+
+            attachments.forEach((fileObj, index) => {
+                const isImage = fileObj.filetype && fileObj.filetype.startsWith('image/');
+                const fileSize = fileObj.filesize ? (fileObj.filesize / 1024).toFixed(2) : 'Unknown';
+                const fileSizeMB = fileObj.filesize ? (fileObj.filesize / (1024 * 1024)).toFixed(2) : 'Unknown';
+                const displaySize = fileObj.filesize && fileObj.filesize > 1024 * 1024 ? fileSizeMB + ' MB' : fileSize + ' KB';
+
+                const fileCard = document.createElement('div');
+                fileCard.className = 'flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition';
+                fileCard.innerHTML = `
+                    ${isImage && fileObj.data ? `
+                        <img src="${fileObj.data}" class="w-16 h-16 object-cover rounded border" alt="Preview">
+                    ` : `
+                        <div class="w-16 h-16 flex items-center justify-center bg-blue-100 rounded border">
+                            <i class="fas fa-file text-2xl text-blue-600"></i>
+                        </div>
+                    `}
+                    <div class="flex-1">
+                        <div class="font-semibold text-sm text-gray-900">${fileObj.filename}</div>
+                        <div class="text-xs text-gray-500">${displaySize} • ${fileObj.filetype || 'Unknown type'}</div>
+                        <div class="text-xs text-blue-600 mt-1">
+                            <i class="fas fa-check-circle mr-1"></i>Existing file
+                        </div>
+                    </div>
+                    <button type="button" onclick="downloadTaskFile(${JSON.stringify(fileObj).replace(/"/g, '&quot;')})" class="text-blue-600 hover:text-blue-800 p-2" title="Download">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button type="button" onclick="removeExistingTaskFile(${index})" class="text-red-600 hover:text-red-800 p-2" title="Remove">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+
+                listElement.appendChild(fileCard);
+            });
+        }
+
+        // Remove existing file from task
+        function removeExistingTaskFile(index) {
+            // Get current task being edited
+            if (window.projectsManager && window.projectsManager.currentEditingTask) {
+                const task = window.projectsManager.currentEditingTask;
+                if (task.attachments && task.attachments[index]) {
+                    task.attachments.splice(index, 1);
+                    displayExistingTaskFiles(task.attachments);
+                }
+            }
+        }
+
+        console.log('✅ Task file upload system initialized - 20MB limit per file');
+
+        // ========================
+        // FILE UPLOAD FUNCTIONS FOR ACTIVITIES
+        // ========================
+
+        // Global storage for activity files (temporary before save)
+        window.activityFilesTemp = {
+            add: [],
+            edit: []
+        };
+
+        // File upload handler for Add Activity Modal
+        function handleAddActivityFiles(files) {
+            processActivityFiles(files, 'add', 'addActivityFilesList');
+        }
+
+        // File upload handler for Edit Activity Modal
+        function handleEditActivityFiles(files) {
+            processActivityFiles(files, 'edit', 'editActivityFilesList');
+        }
+
+        // Process activity files with 20MB limit and base64 conversion
+        async function processActivityFiles(files, modalType, listElementId) {
+            const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB in bytes
+            const listElement = document.getElementById(listElementId);
+
+            for (let file of files) {
+                // Check file size
+                if (file.size > MAX_FILE_SIZE) {
+                    alert(`File "${file.name}" exceeds 20MB limit. Please choose a smaller file.`);
+                    continue;
+                }
+
+                try {
+                    // Convert to base64
+                    const base64Data = await fileToBase64(file);
+                    
+                    // Create file object
+                    const fileObj = {
+                        filename: file.name,
+                        filesize: file.size,
+                        filetype: file.type,
+                        data: base64Data,
+                        uploaded_at: new Date().toISOString()
+                    };
+
+                    // Add to temporary storage
+                    window.activityFilesTemp[modalType].push(fileObj);
+
+                    // Display file in list
+                    displayActivityFileInList(fileObj, modalType, listElement, window.activityFilesTemp[modalType].length - 1);
+                    
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    alert(`Error processing file "${file.name}". Please try again.`);
+                }
+            }
+        }
+
+        // Display activity file in list with preview and delete button
+        function displayActivityFileInList(fileObj, modalType, listElement, fileIndex) {
+            const isImage = fileObj.filetype.startsWith('image/');
+            const fileSize = (fileObj.filesize / 1024).toFixed(2); // KB
+            const fileSizeMB = (fileObj.filesize / (1024 * 1024)).toFixed(2); // MB
+            const displaySize = fileObj.filesize > 1024 * 1024 ? fileSizeMB + ' MB' : fileSize + ' KB';
+
+            const fileCard = document.createElement('div');
+            fileCard.className = 'flex items-center gap-3 p-3 bg-gray-50 border rounded-lg hover:bg-gray-100 transition';
+            fileCard.innerHTML = `
+                ${isImage ? `
+                    <img src="${fileObj.data}" class="w-16 h-16 object-cover rounded border" alt="Preview">
+                ` : `
+                    <div class="w-16 h-16 flex items-center justify-center bg-blue-100 rounded border">
+                        <i class="fas fa-file text-2xl text-blue-600"></i>
+                    </div>
+                `}
+                <div class="flex-1">
+                    <div class="font-semibold text-sm text-gray-900">${fileObj.filename}</div>
+                    <div class="text-xs text-gray-500">${displaySize} • ${fileObj.filetype || 'Unknown type'}</div>
+                </div>
+                <button type="button" onclick="removeActivityFile('${modalType}', ${fileIndex})" class="text-red-600 hover:text-red-800 p-2">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            listElement.appendChild(fileCard);
+        }
+
+        // Remove activity file from temporary storage
+        function removeActivityFile(modalType, fileIndex) {
+            const listElementId = modalType === 'add' ? 'addActivityFilesList' : 'editActivityFilesList';
+            
+            // Remove from array
+            window.activityFilesTemp[modalType].splice(fileIndex, 1);
+            
+            // Clear and rebuild list
+            const listElement = document.getElementById(listElementId);
+            listElement.innerHTML = '';
+            
+            window.activityFilesTemp[modalType].forEach((fileObj, index) => {
+                displayActivityFileInList(fileObj, modalType, listElement, index);
+            });
+        }
+
+        // Clear activity files when modal closes
+        function clearActivityFiles(modalType) {
+            window.activityFilesTemp[modalType] = [];
+            const listElementId = modalType === 'add' ? 'addActivityFilesList' : 'editActivityFilesList';
+            const listElement = document.getElementById(listElementId);
+            if (listElement) {
+                listElement.innerHTML = '';
+            }
+        }
+
+        // Display existing activity files when editing
+        function displayExistingActivityFiles(attachments) {
+            const listElement = document.getElementById('editActivityFilesList');
+            if (!listElement) return;
+            
+            listElement.innerHTML = '';
+            
+            if (!attachments || attachments.length === 0) {
+                return;
+            }
+
+            attachments.forEach((fileObj, index) => {
+                const isImage = fileObj.filetype && fileObj.filetype.startsWith('image/');
+                const fileSize = fileObj.filesize ? (fileObj.filesize / 1024).toFixed(2) : 'Unknown';
+                const fileSizeMB = fileObj.filesize ? (fileObj.filesize / (1024 * 1024)).toFixed(2) : 'Unknown';
+                const displaySize = fileObj.filesize && fileObj.filesize > 1024 * 1024 ? fileSizeMB + ' MB' : fileSize + ' KB';
+
+                const fileCard = document.createElement('div');
+                fileCard.className = 'flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition';
+                fileCard.innerHTML = `
+                    ${isImage && fileObj.data ? `
+                        <img src="${fileObj.data}" class="w-16 h-16 object-cover rounded border" alt="Preview">
+                    ` : `
+                        <div class="w-16 h-16 flex items-center justify-center bg-blue-100 rounded border">
+                            <i class="fas fa-file text-2xl text-blue-600"></i>
+                        </div>
+                    `}
+                    <div class="flex-1">
+                        <div class="font-semibold text-sm text-gray-900">${fileObj.filename}</div>
+                        <div class="text-xs text-gray-500">${displaySize} • ${fileObj.filetype || 'Unknown type'}</div>
+                        <div class="text-xs text-blue-600 mt-1">
+                            <i class="fas fa-check-circle mr-1"></i>Existing file
+                        </div>
+                    </div>
+                    <button type="button" onclick="downloadActivityFile(${JSON.stringify(fileObj).replace(/"/g, '&quot;')})" class="text-blue-600 hover:text-blue-800 p-2" title="Download">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button type="button" onclick="removeExistingActivityFile(${index})" class="text-red-600 hover:text-red-800 p-2" title="Remove">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+
+                listElement.appendChild(fileCard);
+            });
+        }
+
+        // Download activity file from base64
+        function downloadActivityFile(fileObj) {
+            const link = document.createElement('a');
+            link.href = fileObj.data;
+            link.download = fileObj.filename;
+            link.click();
+        }
+
+        // Remove existing file from activity
+        function removeExistingActivityFile(index) {
+            // Get current activity being edited
+            if (window.currentEditingActivity) {
+                const activity = window.currentEditingActivity;
+                if (activity.attachments && activity.attachments[index]) {
+                    activity.attachments.splice(index, 1);
+                    displayExistingActivityFiles(activity.attachments);
+                }
+            }
+        }
+
+        console.log('✅ Activity file upload system initialized - 20MB limit per file');
+
+        // ========== PROJECT FILE UPLOAD FUNCTIONS ==========
+        
+        // Global storage for project files
+        window.projectFilesTemp = {
+            create: [],
+            edit: []
+        };
+
+        // Handle file selection from Create Project Modal
+        function handleCreateProjectFiles(files) {
+            processProjectFiles(files, 'create', 'createProjectFilesList');
+        }
+
+        // Handle file selection from Edit Project Modal
+        function handleEditProjectFiles(files) {
+            processProjectFiles(files, 'edit', 'editProjectFilesList');
+        }
+
+        // Process project files (with 20MB validation)
+        async function processProjectFiles(files, modalType, listElementId) {
+            const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+            const listElement = document.getElementById(listElementId);
+
+            if (!listElement) {
+                console.error('File list element not found:', listElementId);
+                return;
+            }
+
+            for (let file of files) {
+                // Validate file size
+                if (file.size > MAX_FILE_SIZE) {
+                    alert(`File "${file.name}" exceeds 20MB limit. Please choose a smaller file.`);
+                    continue;
+                }
+
+                try {
+                    // Convert file to base64
+                    const base64Data = await fileToBase64(file);
+                    
+                    // Create file object
+                    const fileObj = {
+                        filename: file.name,
+                        filesize: file.size,
+                        filetype: file.type,
+                        data: base64Data,
+                        uploaded_at: new Date().toISOString()
+                    };
+                    
+                    // Store in temporary array
+                    window.projectFilesTemp[modalType].push(fileObj);
+                    
+                    // Display in UI
+                    displayProjectFileInList(fileObj, modalType, listElement, window.projectFilesTemp[modalType].length - 1);
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    alert(`Error processing file "${file.name}". Please try again.`);
+                }
+            }
+        }
+
+        // Display project file in list with preview
+        function displayProjectFileInList(fileObj, modalType, listElement, fileIndex) {
+            const isImage = fileObj.filetype.startsWith('image/');
+            const fileSize = fileObj.filesize ? (fileObj.filesize / 1024).toFixed(2) : 'Unknown';
+            const fileSizeMB = fileObj.filesize ? (fileObj.filesize / (1024 * 1024)).toFixed(2) : 'Unknown';
+            const displaySize = fileObj.filesize && fileObj.filesize > 1024 * 1024 ? fileSizeMB + ' MB' : fileSize + ' KB';
+
+            const fileCard = document.createElement('div');
+            fileCard.className = 'flex items-center gap-3 p-3 bg-gray-50 border rounded-lg hover:bg-gray-100 transition';
+            fileCard.innerHTML = `
+                ${isImage ? `
+                    <img src="${fileObj.data}" class="w-16 h-16 object-cover rounded border" alt="Preview">
+                ` : `
+                    <div class="w-16 h-16 flex items-center justify-center bg-blue-100 rounded border">
+                        <i class="fas fa-file text-2xl text-blue-600"></i>
+                    </div>
+                `}
+                <div class="flex-1">
+                    <div class="font-semibold text-sm text-gray-900">${fileObj.filename}</div>
+                    <div class="text-xs text-gray-500">${displaySize} • ${fileObj.filetype || 'Unknown type'}</div>
+                </div>
+                <button type="button" onclick="removeProjectFile('${modalType}', ${fileIndex})" class="text-red-600 hover:text-red-800 p-2" title="Remove">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            listElement.appendChild(fileCard);
+        }
+
+        // Remove project file from temporary storage
+        function removeProjectFile(modalType, fileIndex) {
+            const listElementId = modalType === 'create' ? 'createProjectFilesList' : 'editProjectFilesList';
+            
+            // Remove from array
+            window.projectFilesTemp[modalType].splice(fileIndex, 1);
+            
+            // Clear and rebuild list
+            const listElement = document.getElementById(listElementId);
+            listElement.innerHTML = '';
+            
+            window.projectFilesTemp[modalType].forEach((fileObj, index) => {
+                displayProjectFileInList(fileObj, modalType, listElement, index);
+            });
+        }
+
+        // Clear project files when modal closes
+        function clearProjectFiles(modalType) {
+            window.projectFilesTemp[modalType] = [];
+            const listElementId = modalType === 'create' ? 'createProjectFilesList' : 'editProjectFilesList';
+            const listElement = document.getElementById(listElementId);
+            if (listElement) {
+                listElement.innerHTML = '';
+            }
+        }
+
+        console.log('✅ Project file upload system initialized - 20MB limit per file');
+    </script>
+
+    <!-- Stat Details Modal -->
+    <div id="statDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] overflow-hidden">
+                <div class="flex justify-between items-center p-6 border-b">
+                    <h3 class="text-xl font-bold text-gray-900" id="statModalTitle">Details</h3>
+                    <button onclick="closeStatDetailsModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto max-h-[60vh]" id="statModalContent">
+                    <!-- Content will be dynamically loaded here -->
+                </div>
+                
+                <div class="p-4 border-t bg-gray-50 flex justify-end">
+                    <button onclick="closeStatDetailsModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition">
+                        <i class="fas fa-times mr-2"></i>Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projects management module - MUST load before dashboard-main -->
+    <script src="js/projects.js"></script>
+    <!-- Task synchronization module - handles task editing and daily activities sync -->
+    <script src="js/task-sync.js"></script>
+    <!-- Dashboard management module - handles create project/task functionality -->
+    <script src="js/dashboard-main.js"></script>
+    <!-- Main calendar and timeline app -->
+    <script src="js/app.js"></script>
+    <!-- Auto-initialize data on first load -->
+    <script src="auto-initialize.js"></script>
+    
+    <!-- Initialize Internationalization System -->
+    <script>
+        // Initialize i18n on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            window.i18n = new I18nSystem();
+            window.i18n.translatePage();
+            
+            // Update language label
+            const label = document.getElementById('languageLabel');
+            if (label) {
+                label.textContent = window.i18n.currentLanguage === 'en' ? '中文' : 'English';
+            }
+        });
+    </script>
+</body>
+</html>
