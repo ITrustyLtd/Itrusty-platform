@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Trusty - Customers Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/page-protection.js"></script>
+    <script src="js/global-navigation.js"></script>
+</head>
+<body>
+    <main class="container mx-auto px-6 py-8">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <button onclick="openAddCustomerModal()" class="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg">
+                <i class="fas fa-plus-circle"></i> Add Customer
+            </button>
+            <button onclick="loadHybridData()" class="px-6 py-2 bg-green-600 text-white rounded-lg">
+                <i class="fas fa-sync"></i> Reload
+            </button>
+        </div>
+        <div id="customersContainer"></div>
+    </main>
+    
+    <script>
+        let allCustomers = [];
+        
+        async function loadHybridData() {
+            console.log('Loading hybrid data...');
+            allCustomers = [];
+            alert('Data loaded! (This is a simplified version for testing)');
+        }
+        
+        function openAddCustomerModal() {
+            alert('Add customer modal - To be implemented');
+        }
+        
+        document.addEventListener('DOMContentLoaded', loadHybridData);
+    </script>
+</body>
+</html>
