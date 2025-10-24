@@ -47,26 +47,17 @@ class SupabaseAPIWrapper {
     }
 
     /**
-     * Translate old API path to Supabase format
+     * Translate old API path to Supabase REST API path
      * OLD: tables/customers?page=1&limit=100
      * NEW: /rest/v1/customers?limit=100&offset=0
      */
-    translatePath(oldPath) {
-        // Remove 'tables/' prefix
-        let path = oldPath.replace(/^tables\//, '');
+    translatePath(fullPath) {
+        const [tablePath, queryString] = fullPath.split('?');
         
-        // Split table name and ID if present
-        const parts = path.split('?');
-        const tablePath = parts[0];
-        const queryString = parts[1] || '';
-        
-        // Check if it's a single record request (has UUID)
-        const uuidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
-        const match = tablePath.match(uuidPattern);
-        
-        if (match) {
-            // Single record: tables/customers/{id}
-            const id = match[0];
+        // Single record: tables/customers/123
+        if (tablePath.includes('/') && tablePath.split('/').length > 2) {
+            const parts = tablePath.split('/');
+            const id = parts[parts.length - 1];
             const table = tablePath.split('/')[0];
             return {
                 path: `/rest/v1/${table}?id=eq.${id}`,
@@ -74,7 +65,16 @@ class SupabaseAPIWrapper {
             };
         }
         
-        // List request: tables/customers?page=1&limit=100
+        // If no query string, return simple path (for POST/PUT/PATCH)
+        if (!queryString) {
+            const table = tablePath;
+            return {
+                path: `/rest/v1/${table}`,
+                isSingle: false
+            };
+        }
+        
+        // List request with query params: tables/customers?page=1&limit=100
         const params = new URLSearchParams(queryString);
         const supabaseParams = new URLSearchParams();
         
@@ -89,7 +89,6 @@ class SupabaseAPIWrapper {
         // Translate sorting
         const sort = params.get('sort');
         if (sort) {
-            // OLD: sort=-created_at or sort=name
             const descending = sort.startsWith('-');
             const field = descending ? sort.substring(1) : sort;
             supabaseParams.set('order', `${field}.${descending ? 'desc' : 'asc'}`);
@@ -98,12 +97,10 @@ class SupabaseAPIWrapper {
         // Translate search
         const search = params.get('search');
         if (search) {
-            // OLD: search=name:John or search=John
             if (search.includes(':')) {
                 const [field, value] = search.split(':');
                 supabaseParams.set(field, `ilike.%${value}%`);
             } else {
-                // Full-text search on common fields
                 supabaseParams.set('or', `(name.ilike.%${search}%,customer_name.ilike.%${search}%,description.ilike.%${search}%)`);
             }
         }
@@ -114,8 +111,6 @@ class SupabaseAPIWrapper {
             isSingle: false
         };
     }
-
-    /**
      * Transform Supabase response to match old API format
      */
     transformResponse(supabaseData, isSingle, tableName) {
