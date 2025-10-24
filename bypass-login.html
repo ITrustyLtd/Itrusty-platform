@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Login Bypass</title>
+</head>
+<body>
+    <h1>Setting up authentication...</h1>
+    <script>
+        localStorage.setItem('authToken', 'admin-token-2025');
+        localStorage.setItem('currentUser', JSON.stringify({
+            username: 'Johny',
+            role: 'admin',
+            email: 'johny@itrusty.com',
+            fullName: 'Ioannis Vlachopoulos'
+        }));
+        
+        alert('✅ Auth set! Redirecting to homepage...');
+        window.location.href = 'index.html';
+    </script>
+</body>
+</html>
