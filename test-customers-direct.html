@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Direct Customer Access</title>
+</head>
+<body>
+    <script>
+        // Set fake auth to bypass protection
+        localStorage.setItem('authToken', 'test-token-12345');
+        localStorage.setItem('currentUser', JSON.stringify({
+            username: 'Johny',
+            role: 'admin',
+            email: 'johny@itrusty.com'
+        }));
+        
+        // Redirect to customers page
+        window.location.href = 'customers.html';
+    </script>
+</body>
+</html>
