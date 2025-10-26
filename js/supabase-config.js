@@ -53,6 +53,7 @@ class SupabaseAPIWrapper {
      */
     translatePath(oldPath, method = 'GET') {
         // Remove 'tables/' prefix
+        // Fixed: Added method parameter to prevent pagination on POST/PUT/PATCH
         let path = oldPath.replace(/^tables\//, '');
         
         // Split table name and ID if present
