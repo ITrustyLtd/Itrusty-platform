@@ -51,7 +51,7 @@ class SupabaseAPIWrapper {
      * OLD: tables/customers?page=1&limit=100
      * NEW: /rest/v1/customers?limit=100&offset=0
      */
-    translatePath(oldPath) {
+    translatePath(oldPath, method = 'GET') {
         // Remove 'tables/' prefix
         let path = oldPath.replace(/^tables\//, '');
         
