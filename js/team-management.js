@@ -19,7 +19,7 @@ class TeamManagement {
 
     async loadTeamMembers() {
         try {
-            const response = await fetch('tables/team_members');
+            const response = await fetch('tables/staff_members');
             if (response.ok) {
                 const data = await response.json();
                 this.teamMembers = data.data || [];
@@ -162,14 +162,14 @@ class TeamManagement {
             let response;
             if (this.currentEditingId) {
                 // Update existing member
-                response = await fetch(`tables/team_members/${this.currentEditingId}`, {
+                response = await fetch(`tables/staff_members/${this.currentEditingId}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(memberData)
                 });
             } else {
                 // Create new member
-                response = await fetch('tables/team_members', {
+                response = await fetch('tables/staff_members', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(memberData)
