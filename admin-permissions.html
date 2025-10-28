@@ -7,71 +7,82 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <!-- CRITICAL: Inline Supabase API Wrapper -->
-    <script>
+<script>
+    // Supabase Configuration
+    const SUPABASE_CONFIG = {
+        url: 'https://yzesqnawqmlqcxafjqfa.supabase.co',
+        anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6ZXNxbmF3cW1scWN4YWZqcWZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2NTQ5OTgsImV4cCI6MjA3NjIzMDk5OH0.XTBS4DgvP9f9kBSRHSpssBpTliJ05vhIZsTDbhdgxGM'
+    };
+    
+    // Store original fetch
+    const originalFetch = window.fetch;
+    
     // Override fetch globally for tables/* API calls
-window.fetch = async function(url, options = {}) {
-    if (typeof url === 'string' && url.includes('tables/')) {
-        console.log(`🎯 Intercepted: ${url}`);
-        
-        // Parse URL
-        const path = url.replace(/^.*?tables\//, '');
-        const [table, queryString] = path.split('?');
-        
-        // Parse query parameters
-        const params = new URLSearchParams(queryString || '');
-        const page = parseInt(params.get('page')) || 1;
-        const limit = parseInt(params.get('limit')) || 100;
-        
-        // Remove page/limit from query string (Supabase doesn't use them)
-        params.delete('page');
-        params.delete('limit');
-        
-        // Calculate Range header for pagination
-        const from = (page - 1) * limit;
-        const to = from + limit - 1;
-        
-        // Build Supabase URL (without page/limit)
-        const cleanQuery = params.toString();
-        const supabaseUrl = `${SUPABASE_CONFIG.url}/rest/v1/${table}${cleanQuery ? '?' + cleanQuery : ''}`;
-        console.log(`🔄 Proxying to: ${supabaseUrl} [Range: ${from}-${to}]`);
-        
-        const response = await originalFetch(supabaseUrl, {
-            ...options,
-            headers: {
-                'apikey': SUPABASE_CONFIG.anonKey,
-                'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=representation',
-                'Range': `${from}-${to}`, // ← PAGINATION VIA HEADER
-                ...(options.headers || {})
+    window.fetch = async function(url, options = {}) {
+        if (typeof url === 'string' && url.includes('tables/')) {
+            console.log(`🎯 Intercepted: ${url}`);
+            
+            // Parse URL
+            const path = url.replace(/^.*?tables\//, '');
+            const [table, queryString] = path.split('?');
+            
+            // Parse query parameters
+            const params = new URLSearchParams(queryString || '');
+            const page = parseInt(params.get('page')) || 1;
+            const limit = parseInt(params.get('limit')) || 100;
+            
+            // Remove page/limit from query string (Supabase doesn't use them)
+            params.delete('page');
+            params.delete('limit');
+            
+            // Calculate Range header for pagination
+            const from = (page - 1) * limit;
+            const to = from + limit - 1;
+            
+            // Build Supabase URL (without page/limit)
+            const cleanQuery = params.toString();
+            const supabaseUrl = `${SUPABASE_CONFIG.url}/rest/v1/${table}${cleanQuery ? '?' + cleanQuery : ''}`;
+            console.log(`🔄 Proxying to: ${supabaseUrl} [Range: ${from}-${to}]`);
+            
+            const response = await originalFetch(supabaseUrl, {
+                ...options,
+                headers: {
+                    'apikey': SUPABASE_CONFIG.anonKey,
+                    'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation',
+                    'Range': `${from}-${to}`,
+                    ...(options.headers || {})
+                }
+            });
+            
+            if (!response.ok) {
+                console.error(`❌ Supabase error: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Error details:', errorText);
+                throw new Error(`API Error: ${response.status}`);
             }
-        });
-        
-        if (!response.ok) {
-            console.error(`❌ Supabase error: ${response.status}`);
-            const errorText = await response.text();
-            console.error('Error details:', errorText);
-            throw new Error(`API Error: ${response.status}`);
+            
+            const data = await response.json();
+            console.log(`✅ Success: ${url} (${Array.isArray(data) ? data.length : 1} records)`);
+            
+            // Wrap response for compatibility
+            const wrapped = {
+                data: Array.isArray(data) ? data : [data],
+                total: Array.isArray(data) ? data.length : 1
+            };
+            
+            return {
+                ok: true,
+                status: response.status,
+                json: async () => wrapped,
+                text: async () => JSON.stringify(wrapped)
+            };
         }
-        
-        const data = await response.json();
-        console.log(`✅ Success: ${url} (${Array.isArray(data) ? data.length : 1} records)`);
-        
-        // Wrap response for compatibility
-        const wrapped = {
-            data: Array.isArray(data) ? data : [data],
-            total: Array.isArray(data) ? data.length : 1
-        };
-        
-        return {
-            ok: true,
-            status: response.status,
-            json: async () => wrapped,
-            text: async () => JSON.stringify(wrapped)
-        };
-    }
-    return originalFetch.call(this, url, options);
-};
+        return originalFetch.call(this, url, options);
+    };
+    
+    console.log('✅ Supabase API Wrapper Active (Inline Version)');
     </script>
     
     <style>
