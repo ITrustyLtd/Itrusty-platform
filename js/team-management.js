@@ -53,7 +53,8 @@ class TeamManagement {
 
         container.innerHTML = filteredMembers.map(member => {
             const avatar = this.generateAvatar(member.name);
-            const deptClass = `dept-${member.department.toLowerCase().replace(' ', '-')}`;
+            const department = member.department || member.role || 'General';
+            const deptClass = `dept-${(department || 'general').toLowerCase().replace(/ /g, '-')}`;
             
             return `
                 <div class="team-card" onclick="editTeamMember('${member.id}')">
@@ -63,20 +64,20 @@ class TeamManagement {
                     <div class="text-center mb-3">
                         <h3 class="font-semibold text-gray-900">${member.name}</h3>
                         ${member.name_zh ? `<p class="text-sm text-gray-600">${member.name_zh}</p>` : ''}
-                        <p class="text-xs text-gray-500 mt-1">${member.role}</p>
+                        <p class="text-xs text-gray-500 mt-1">${member.role || 'Staff Member'}</p>
                     </div>
                     <div class="flex justify-center mb-3">
-                        <span class="department-badge ${deptClass}">${member.department}</span>
+                        <span class="department-badge ${deptClass}">${department}</span>
                     </div>
                     <div class="text-center text-sm text-gray-600 space-y-1">
                         <div class="flex items-center justify-center gap-2">
                             <i class="fas fa-map-marker-alt text-xs"></i>
                             <span>${member.office_location}</span>
                         </div>
-                        ${member.base_salary_rmb ? `
+                        ${member.monthly_salary_rmb ? `
                         <div class="flex items-center justify-center gap-2">
                             <i class="fas fa-money-bill text-xs"></i>
-                            <span>¥${member.base_salary_rmb.toLocaleString()}/mo</span>
+                            <span>¥${member.monthly_salary_rmb.toLocaleString()}/mo</span>
                         </div>
                         ` : ''}
                         ${member.is_sales_person ? `
@@ -107,7 +108,7 @@ class TeamManagement {
         const salesTeam = this.teamMembers.filter(m => m.is_sales_person && m.active).length;
         const totalMonthlyCost = this.teamMembers
             .filter(m => m.active)
-            .reduce((sum, m) => sum + (m.base_salary_rmb || 0), 0);
+            .reduce((sum, m) => sum + (m.monthly_salary_rmb || 0), 0);
 
         document.getElementById('totalMembers').textContent = totalMembers;
         document.getElementById('salesTeam').textContent = salesTeam;
@@ -124,7 +125,6 @@ class TeamManagement {
             await this.saveMember(e.target);
         });
 
-        // Show/hide commission field based on sales person checkbox
         document.querySelector('input[name="is_sales_person"]').addEventListener('change', (e) => {
             document.getElementById('commissionField').style.display = e.target.checked ? 'block' : 'none';
         });
@@ -133,7 +133,7 @@ class TeamManagement {
     async saveMember(form) {
         const formData = new FormData(form);
         
-        const memberData = {
+        const frontendData = {
             name: formData.get('name'),
             name_zh: formData.get('name_zh') || '',
             role: formData.get('role'),
@@ -155,20 +155,20 @@ class TeamManagement {
         };
 
         if (formData.get('hire_date')) {
-            memberData.hire_date = new Date(formData.get('hire_date')).toISOString();
+            frontendData.hire_date = new Date(formData.get('hire_date')).toISOString();
         }
+
+        const memberData = mapStaffDataToSupabase(frontendData);
 
         try {
             let response;
             if (this.currentEditingId) {
-                // Update existing member
                 response = await fetch(`tables/staff_members/${this.currentEditingId}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(memberData)
                 });
             } else {
-                // Create new member
                 response = await fetch('tables/staff_members', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -200,7 +200,6 @@ class TeamManagement {
 
         this.currentEditingId = memberId;
         
-        // Populate form
         const form = document.getElementById('memberForm');
         form.elements['name'].value = member.name || '';
         form.elements['name_zh'].value = member.name_zh || '';
@@ -211,7 +210,7 @@ class TeamManagement {
         form.elements['email'].value = member.email || '';
         form.elements['phone'].value = member.phone || '';
         form.elements['wechat_id'].value = member.wechat_id || '';
-        form.elements['base_salary_rmb'].value = member.base_salary_rmb || '';
+        form.elements['base_salary_rmb'].value = member.monthly_salary_rmb || '';
         form.elements['hourly_rate_rmb'].value = member.hourly_rate_rmb || '';
         form.elements['is_sales_person'].checked = member.is_sales_person || false;
         form.elements['commission_rate'].value = member.commission_rate || '';
@@ -259,7 +258,6 @@ class TeamManagement {
     }
 }
 
-// Global functions
 function showAddMemberModal() {
     if (window.teamManagement) {
         window.teamManagement.currentEditingId = null;
@@ -280,7 +278,6 @@ function editTeamMember(memberId) {
     }
 }
 
-// Initialize
 document.addEventListener('DOMContentLoaded', () => {
     window.teamManagement = new TeamManagement();
-});/* Updated Tue Oct 28 14:00:46 CST 2025 */
+});
