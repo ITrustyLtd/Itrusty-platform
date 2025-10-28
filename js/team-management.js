@@ -283,4 +283,4 @@ function editTeamMember(memberId) {
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     window.teamManagement = new TeamManagement();
-});
+});/* Updated Tue Oct 28 14:00:46 CST 2025 */
