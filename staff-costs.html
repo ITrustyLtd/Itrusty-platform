@@ -869,7 +869,38 @@
             if (message && message.trim()) {
                 // In a real system, this would send to a messaging API
                 alert(`Message sent to ${staff.name}: "${message}"\n\n(This is a demo - integrate with your messaging system)`);
-                console.log(`Message to ${staff.name} (${staffId}): ${message}`);
+                // Send message to Supabase
+(async function sendMessageToStaff() {
+    try {
+        const messageData = {
+            sender_id: 'ab79e6af-e454-46bf-a037-8e66af2daa22', // Johny's ID
+            recipient_id: staffId,
+            subject: 'Message from Staff Costs Page',
+            body: message,
+            thread_id: null,
+            read: false,
+            created_at: new Date().toISOString()
+        };
+        
+        const response = await fetch('tables/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(messageData)
+        });
+        
+        if (response.ok) {
+            console.log(`✅ Message sent to ${staff.name}`);
+            alert('Message sent successfully! ✅');
+        } else {
+            const errorText = await response.text();
+            console.error('❌ Failed to send message:', errorText);
+            alert('Failed to send message ❌');
+        }
+    } catch (error) {
+        console.error('Error sending message:', error);
+        alert('Error sending message ❌');
+    }
+})();
             }
         }
 

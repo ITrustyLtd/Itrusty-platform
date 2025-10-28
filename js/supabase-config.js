@@ -53,7 +53,6 @@ class SupabaseAPIWrapper {
      */
     translatePath(oldPath, method = 'GET') {
         // Remove 'tables/' prefix
-        // Fixed: Added method parameter to prevent pagination on POST/PUT/PATCH
         let path = oldPath.replace(/^tables\//, '');
         
         // Split table name and ID if present
@@ -75,43 +74,47 @@ class SupabaseAPIWrapper {
             };
         }
         
-        // List request: tables/customers?page=1&limit=100
+        // ⚠️ CRITICAL FIX: Only add pagination for GET requests!
         const params = new URLSearchParams(queryString);
         const supabaseParams = new URLSearchParams();
         
-        // Translate pagination
-        const page = parseInt(params.get('page')) || 1;
-        const limit = parseInt(params.get('limit')) || 100;
-        const offset = (page - 1) * limit;
-        
-        supabaseParams.set('limit', limit);
-        supabaseParams.set('offset', offset);
-        
-        // Translate sorting
-        const sort = params.get('sort');
-        if (sort) {
-            // OLD: sort=-created_at or sort=name
-            const descending = sort.startsWith('-');
-            const field = descending ? sort.substring(1) : sort;
-            supabaseParams.set('order', `${field}.${descending ? 'desc' : 'asc'}`);
-        }
-        
-        // Translate search
-        const search = params.get('search');
-        if (search) {
-            // OLD: search=name:John or search=John
-            if (search.includes(':')) {
-                const [field, value] = search.split(':');
-                supabaseParams.set(field, `ilike.%${value}%`);
-            } else {
-                // Full-text search on common fields
-                supabaseParams.set('or', `(name.ilike.%${search}%,customer_name.ilike.%${search}%,description.ilike.%${search}%)`);
+        // Only add pagination for GET requests
+        if (method.toUpperCase() === 'GET') {
+            // Translate pagination
+            const page = parseInt(params.get('page')) || 1;
+            const limit = parseInt(params.get('limit')) || 100;
+            const offset = (page - 1) * limit;
+            
+            supabaseParams.set('limit', limit);
+            supabaseParams.set('offset', offset);
+            
+            // Translate sorting
+            const sort = params.get('sort');
+            if (sort) {
+                // OLD: sort=-created_at or sort=name
+                const descending = sort.startsWith('-');
+                const field = descending ? sort.substring(1) : sort;
+                supabaseParams.set('order', `${field}.${descending ? 'desc' : 'asc'}`);
+            }
+            
+            // Translate search
+            const search = params.get('search');
+            if (search) {
+                // OLD: search=name:John or search=John
+                if (search.includes(':')) {
+                    const [field, value] = search.split(':');
+                    supabaseParams.set(field, `ilike.%${value}%`);
+                } else {
+                    // Full-text search on common fields
+                    supabaseParams.set('or', `(name.ilike.%${search}%,customer_name.ilike.%${search}%,description.ilike.%${search}%)`);
+                }
             }
         }
         
         const table = tablePath;
+        const queryStr = supabaseParams.toString();
         return {
-            path: `/rest/v1/${table}?${supabaseParams.toString()}`,
+            path: `/rest/v1/${table}${queryStr ? '?' + queryStr : ''}`,
             isSingle: false
         };
     }
@@ -140,8 +143,11 @@ class SupabaseAPIWrapper {
      */
     async fetch(path, options = {}) {
         try {
-            // Translate path
-            const { path: supabasePath, isSingle } = this.translatePath(path);
+            // Get method BEFORE translating path
+            const method = options.method || 'GET';
+            
+            // Translate path with method awareness
+            const { path: supabasePath, isSingle } = this.translatePath(path, method);
             const fullUrl = `${this.baseUrl}${supabasePath}`;
             
             // Merge headers
@@ -154,7 +160,7 @@ class SupabaseAPIWrapper {
             };
             
             // Handle POST/PUT/PATCH
-            if (options.method === 'POST' || options.method === 'PUT' || options.method === 'PATCH') {
+            if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
                 // Supabase uses JSON body directly
                 if (options.body && typeof options.body === 'string') {
                     fetchOptions.body = options.body;
@@ -162,10 +168,12 @@ class SupabaseAPIWrapper {
             }
             
             // Execute fetch
-            console.log(`🔄 API Call: ${options.method || 'GET'} ${path} → ${supabasePath}`);
+            console.log(`🔄 API Call: ${method} ${path} → ${supabasePath}`);
             const response = await fetch(fullUrl, fetchOptions);
             
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`❌ Supabase Error: ${response.status}`, errorText);
                 throw new Error(`API Error: ${response.status} ${response.statusText}`);
             }
             
