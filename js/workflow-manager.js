@@ -142,10 +142,11 @@ async function selectWorkflow(workflowId) {
         const result = await response.json();
         currentWorkflow = result.data ? result.data[0] : result;
         
-        // Load workflow steps
-        const stepsResponse = await fetch(`tables/workflow_steps?workflow_id=eq.${workflowId}`);
+        // Load workflow steps - fetch all and filter locally
+        const stepsResponse = await fetch(`tables/workflow_steps?limit=1000`);
         const stepsResult = await stepsResponse.json();
-        workflowSteps = stepsResult.data || [];
+        const allSteps = stepsResult.data || [];
+        workflowSteps = allSteps.filter(step => step.workflow_id === workflowId);
         
         renderWorkflowDetails();
     } catch (error) {
