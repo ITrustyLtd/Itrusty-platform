@@ -205,7 +205,7 @@ function renderWorkflowSteps() {
                     <span class="text-2xl font-bold text-gray-300">${index + 1}</span>
                     <div>
                         <h4 class="font-semibold text-gray-900">${step.step_name}</h4>
-                        <p class="text-sm text-gray-500">${step.description || ''}</p>
+                        <p class="text-sm text-gray-500">${step.notes || ''}</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
