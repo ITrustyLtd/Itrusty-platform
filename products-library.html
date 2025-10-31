@@ -361,8 +361,8 @@
                             <input type="text" id="boxDimensions" placeholder="40x30x25" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Gross Weight (kg)</label>
-                            <input type="number" id="grossWeight" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Box Weight (kg)</label>
+                            <input type="number" id="boxWeight" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                         </div>
                     </div>
                 </div>
@@ -376,16 +376,8 @@
                             <input type="text" id="supplierName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Supplier Contact</label>
-                            <input type="text" id="supplierContact" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Supplier Phone</label>
-                            <input type="text" id="supplierPhone" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Supplier Address</label>
-                            <input type="text" id="supplierAddress" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Supplier Product Code</label>
+                            <input type="text" id="supplierProductCode" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                         </div>
                     </div>
                 </div>
@@ -467,7 +459,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Internal Notes</label>
-                            <textarea id="internalNotes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"></textarea>
+                            <textarea id="notes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"></textarea>
                         </div>
                     </div>
                 </div>
@@ -528,12 +520,22 @@
             }
 
             emptyState.classList.add('hidden');
+            
+            // Helper function to get valid image URL
+            const getImageUrl = (product) => {
+                const imageUrl = product.image_url || product.image_url_1 || '';
+                // Filter out via.placeholder URLs and invalid URLs
+                if (!imageUrl || imageUrl.includes('via.placeholder') || imageUrl.includes('placeholder.com')) {
+                    return 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22150%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22300%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2218%22 fill=%22%23999%22%3ENo Image%3C/text%3E%3C/svg%3E';
+                }
+                return imageUrl;
+            };
+            
             grid.innerHTML = products.map(product => `
                 <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" onclick="editProduct('${product.id}')">
-                    <img src="${product.image_url_1 || 'https://via.placeholder.com/300x150?text=No+Image'}" 
+                    <img src="${getImageUrl(product)}" 
                          alt="${product.product_name}" 
-                         class="product-img"
-                         onerror="this.src='https://via.placeholder.com/300x150?text=No+Image'">
+                         class="product-img">
                     <div class="p-4">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-xs font-mono text-gray-500">${product.sku || 'No SKU'}</span>
@@ -634,16 +636,14 @@
             document.getElementById('markupPercent').value = product.default_markup_percent || 25;
             document.getElementById('qtyPerBox').value = product.qty_per_box || '';
             document.getElementById('boxDimensions').value = product.box_dimensions || '';
-            document.getElementById('grossWeight').value = product.gross_weight || '';
+            document.getElementById('boxWeight').value = product.box_weight || '';
             document.getElementById('supplierName').value = product.supplier_name || '';
-            document.getElementById('supplierContact').value = product.supplier_contact || '';
-            document.getElementById('supplierPhone').value = product.supplier_phone || '';
-            document.getElementById('supplierAddress').value = product.supplier_address || '';
+            document.getElementById('supplierProductCode').value = product.supplier_product_code || '';
             document.getElementById('imageUrl1').value = product.image_url_1 || '';
             document.getElementById('imageUrl2').value = product.image_url_2 || '';
             document.getElementById('imageUrl3').value = product.image_url_3 || '';
             document.getElementById('tags').value = product.tags || '';
-            document.getElementById('internalNotes').value = product.internal_notes || '';
+            document.getElementById('notes').value = product.notes || '';
 
             // Update carousel preview with existing images
             updateCarouselPreview();
@@ -670,7 +670,7 @@
             const productId = document.getElementById('productId').value;
             const isEdit = !!productId;
 
-            const productData = {
+            const productData = mapProductDataToSupabase({
                 sku: isEdit && currentEditingProduct ? currentEditingProduct.sku : generateSKU(),
                 product_name: document.getElementById('productName').value,
                 internal_code: document.getElementById('internalCode').value,
@@ -683,17 +683,15 @@
                 default_markup_percent: parseFloat(document.getElementById('markupPercent').value) || 25,
                 qty_per_box: parseInt(document.getElementById('qtyPerBox').value) || null,
                 box_dimensions: document.getElementById('boxDimensions').value,
-                gross_weight: parseFloat(document.getElementById('grossWeight').value) || null,
+                box_weight: parseFloat(document.getElementById('boxWeight').value) || null,
                 supplier_name: document.getElementById('supplierName').value,
-                supplier_contact: document.getElementById('supplierContact').value,
-                supplier_phone: document.getElementById('supplierPhone').value,
-                supplier_address: document.getElementById('supplierAddress').value,
+                supplier_product_code: document.getElementById('supplierProductCode').value,
                 image_url_1: document.getElementById('imageUrl1').value,
                 image_url_2: document.getElementById('imageUrl2').value,
                 image_url_3: document.getElementById('imageUrl3').value,
                 tags: document.getElementById('tags').value,
-                internal_notes: document.getElementById('internalNotes').value
-            };
+                notes: document.getElementById('notes').value
+            });
 
             try {
                 let response;
@@ -773,12 +771,12 @@
                     }
                     
                     // Validate required columns
-                    const requiredColumns = ['Name', 'Unit Price EUR'];
+                    const requiredColumns = ['Name'];
                     const headers = Object.keys(products[0]);
                     const missingColumns = requiredColumns.filter(col => !headers.includes(col));
                     
                     if (missingColumns.length > 0) {
-                        alert(`❌ Missing required columns:\n${missingColumns.join(', ')}\n\nPlease use the correct template!`);
+                        alert(`❌ Missing required column: Name\n\nPlease use the correct template!`);
                         hideBulkUploadLoading();
                         return;
                     }
@@ -805,56 +803,8 @@
                     
                     for (const product of products) {
                         try {
-                            // Skip if missing name or price
-                            if (!product['Name'] || !product['Unit Price EUR']) {
-                                stats.errors++;
-                                continue;
-                            }
-                            
-                            // Check for duplicate
-                            const isDuplicate = existingProducts.some(p => 
-                                p.product_name.toLowerCase().trim() === product['Name'].toLowerCase().trim() &&
-                                Math.abs((p.unit_price_eur || 0) - parseFloat(product['Unit Price EUR'])) < 0.01
-                            );
-                            
-                            if (isDuplicate) {
-                                stats.duplicates++;
-                                console.log(`⏩ Skipping duplicate: ${product['Name']}`);
-                                continue;
-                            }
-                            
-                            // Generate SKU
-                            const generateSKU = () => {
-                                const prefix = product['Name'].substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
-                                const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-                                return `${prefix}-${random}`;
-                            };
-                            
-                            // Map CSV columns to Products Library schema
-                            const productData = {
-                                sku: generateSKU(),
-                                product_name: product['Name'],
-                                internal_code: product['Item Number'] || '',
-                                category: 'CSV Import',
-                                is_active: true,
-                                description: product['Description'] || '',
-                                unit_price_rmb: parseFloat(product['Price CNY']) || 0,
-                                unit_price_eur: parseFloat(product['Unit Price EUR']) || 0,
-                                unit_price_usd: 0,
-                                default_markup_percent: parseFloat(product['Markup %']) || 25,
-                                qty_per_box: parseInt(product['QTY per CTN']) || null,
-                                box_dimensions: '',
-                                gross_weight: null,
-                                supplier_name: '',
-                                supplier_contact: '',
-                                supplier_phone: '',
-                                supplier_address: '',
-                                image_url_1: product['Image URL'] || product['Picture URL'] || '',
-                                image_url_2: '',
-                                image_url_3: '',
-                                tags: 'csv-import',
-                                internal_notes: `Imported from CSV. Product URL: ${product['Product URL'] || 'N/A'}\nNotes: ${product['Notes'] || 'N/A'}`
-                            };
+                            // Use mapper function
+                            const productData = mapCSVToSupabase(product);
                             
                             // Save to database
                             const saveResponse = await fetch('tables/products', {
@@ -885,7 +835,6 @@
 📦 Bulk Upload Complete!
 
 ✅ New products added: ${stats.new}
-⏩ Duplicates skipped: ${stats.duplicates}
 ❌ Errors: ${stats.errors}
 📊 Total processed: ${stats.total}
                     `.trim();
@@ -1004,7 +953,7 @@
                 imgElement.classList.remove('loading');
             };
             
-            // Handle broken images
+            // Handle broken images - FIXED: No more onerror loop!
             imgElement.onerror = () => {
                 imgElement.style.display = 'none';
                 placeholder.innerHTML = `
