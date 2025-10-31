@@ -547,7 +547,7 @@ class MessagingSystem {
             read_by: [],
             attachments: window.attachedFiles || [], // Include attached files
             thread_id: null, // Will be set to message ID after creation
-            sent_at: Date.now(),
+            // sent_at removed - let Supabase handle it with DEFAULT NOW()
             metadata: JSON.stringify({
                 category: document.getElementById('messageCategory').value,
                 related_order: document.getElementById('relatedOrder').value,
@@ -567,8 +567,15 @@ class MessagingSystem {
             console.log('📥 Response status:', response.status);
 
             if (response.ok) {
-                const createdMessage = await response.json();
-                console.log('✅ Message created:', createdMessage);
+                const responseData = await response.json();
+                console.log('✅ Message created:', responseData);
+                
+                // Extract the actual message from the API wrapper response
+                const createdMessage = responseData.data ? responseData.data[0] : responseData;
+                
+                if (!createdMessage || !createdMessage.id) {
+                    throw new Error('Failed to get message ID from response');
+                }
                 
                 // Update thread_id to self if not a reply
                 await fetch(`tables/messages/${createdMessage.id}`, {
@@ -655,7 +662,7 @@ class MessagingSystem {
             attachments: [],
             reply_to: thread.messages[thread.messages.length - 1].id,
             thread_id: this.selectedThread,
-            sent_at: Date.now(),
+            // sent_at removed - let Supabase handle it with DEFAULT NOW()
             metadata: '{}'
         };
 
@@ -667,8 +674,13 @@ class MessagingSystem {
             });
 
             if (response.ok) {
-                const createdMessage = await response.json();
-                await this.createNotificationsForMessage(createdMessage);
+                const responseData = await response.json();
+                // Extract the actual message from the API wrapper response
+                const createdMessage = responseData.data ? responseData.data[0] : responseData;
+                
+                if (createdMessage) {
+                    await this.createNotificationsForMessage(createdMessage);
+                }
                 
                 document.getElementById('quickReplyInput').value = '';
                 await this.loadData();
@@ -965,7 +977,7 @@ function openNotification(notificationId) {
             fetch(`tables/notifications/${notificationId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ is_read: true, read_at: Date.now() })
+                body: JSON.stringify({ is_read: true, read_at: new Date().toISOString() })
             });
             
             // Navigate to action URL if provided
