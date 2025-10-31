@@ -241,11 +241,10 @@ async function addWorkflowStep() {
     const stepData = {
         workflow_id: currentWorkflow.id,
         step_name: stepName.trim(),
-        description: description?.trim() || '',
+        notes: description?.trim() || '',
+        step_number: workflowSteps.length + 1,
         step_order: workflowSteps.length + 1,
-        status: 'pending',
-        assigned_to: null,
-        due_date: null
+        status: 'pending'
     };
     
     try {
@@ -285,7 +284,8 @@ async function quickAddStep(stepName) {
     const stepData = {
         workflow_id: currentWorkflow.id,
         step_name: stepName,
-        description: `Standard ${stepName} step`,
+        notes: `Standard ${stepName} step`,
+        step_number: workflowSteps.length + 1,
         step_order: workflowSteps.length + 1,
         status: 'pending'
     };
