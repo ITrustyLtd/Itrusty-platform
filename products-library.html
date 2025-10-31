@@ -62,6 +62,7 @@
         }
         
         .product-card {
+            position: relative;
             transition: all 0.2s;
             cursor: pointer;
         }
@@ -69,6 +70,23 @@
         .product-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+        
+        /* 🆕 Selection State */
+        .product-card.selected {
+            box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .product-checkbox {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: #9333ea;
         }
         
         .product-img {
@@ -119,6 +137,11 @@
             color: #16a34a;
         }
         
+        .badge-inactive {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
         /* 🆕 Carousel Styles */
         .carousel-indicator {
             cursor: pointer;
@@ -131,11 +154,6 @@
         
         #carouselImage.loading {
             opacity: 0.5;
-        }
-        
-        .badge-inactive {
-            background: #fee2e2;
-            color: #dc2626;
         }
     </style>
 </head>
@@ -159,19 +177,28 @@
                     </h1>
                     <p class="text-gray-600 mt-1">Manage your product catalog and inventory</p>
                 </div>
-                <div class="flex gap-3">
-                    <button onclick="showAddProductModal()" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all flex items-center gap-2 shadow-md">
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="showAddProductModal()" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all flex items-center gap-2 shadow-md text-sm">
                         <i class="fas fa-plus"></i>
-                        <span>Add New Product</span>
+                        <span>Add Product</span>
                     </button>
                     
-                    <!-- 🆕 CSV Upload Button -->
-                    <button onclick="document.getElementById('csvUploadInputProducts').click()" class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center gap-2 shadow-md">
+                    <button onclick="document.getElementById('csvUploadInputProducts').click()" class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center gap-2 shadow-md text-sm">
                         <i class="fas fa-upload"></i>
-                        <span>📤 Bulk Upload CSV</span>
+                        <span>Bulk Upload</span>
                     </button>
                     
-                    <!-- Hidden File Input -->
+                    <!-- 🆕 BULK DELETE BUTTONS -->
+                    <button id="deleteSelectedBtn" onclick="deleteSelectedProducts()" disabled class="bg-gradient-to-r from-red-600 to-rose-600 text-white px-4 py-2 rounded-lg hover:from-red-700 hover:to-rose-700 transition-all flex items-center gap-2 shadow-md disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+                        <i class="fas fa-trash-alt"></i>
+                        <span>Delete (<span id="selectedCount">0</span>)</span>
+                    </button>
+                    
+                    <button onclick="deleteAllProducts()" class="bg-gradient-to-r from-gray-700 to-gray-900 text-white px-4 py-2 rounded-lg hover:from-gray-800 hover:to-black transition-all flex items-center gap-2 shadow-md text-sm">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Delete All</span>
+                    </button>
+                    
                     <input type="file" id="csvUploadInputProducts" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleBulkCSVUpload(event)" />
                 </div>
             </div>
@@ -386,7 +413,7 @@
                 <div class="mb-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">Product Images (URLs only)</h3>
                     
-                    <!-- 🆕 IMAGE CAROUSEL PREVIEW -->
+                    <!-- IMAGE CAROUSEL PREVIEW -->
                     <div class="mb-6 bg-gray-50 rounded-lg p-4">
                         <div class="relative" style="max-width: 400px; margin: 0 auto;">
                             <!-- Main Image Display -->
@@ -482,6 +509,7 @@
         // Global variables
         let allProducts = [];
         let currentEditingProduct = null;
+        let selectedProductIds = []; // 🆕 Track selected products for bulk delete
 
         // Load navigation component
         async function loadNavigationComponent() {
@@ -524,7 +552,6 @@
             // Helper function to get valid image URL
             const getImageUrl = (product) => {
                 const imageUrl = product.image_url || product.image_url_1 || '';
-                // Filter out via.placeholder URLs and invalid URLs
                 if (!imageUrl || imageUrl.includes('via.placeholder') || imageUrl.includes('placeholder.com')) {
                     return 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22150%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22300%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2218%22 fill=%22%23999%22%3ENo Image%3C/text%3E%3C/svg%3E';
                 }
@@ -532,7 +559,13 @@
             };
             
             grid.innerHTML = products.map(product => `
-                <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" onclick="editProduct('${product.id}')">
+                <div class="product-card bg-white rounded-lg shadow-md overflow-hidden ${selectedProductIds.includes(product.id) ? 'selected' : ''}" onclick="editProduct('${product.id}')">
+                    <!-- 🆕 Selection Checkbox -->
+                    <input type="checkbox" 
+                           class="product-checkbox" 
+                           ${selectedProductIds.includes(product.id) ? 'checked' : ''}
+                           onclick="event.stopPropagation(); toggleProductSelection('${product.id}')">
+                    
                     <img src="${getImageUrl(product)}" 
                          alt="${product.product_name}" 
                          class="product-img">
@@ -723,18 +756,193 @@
         });
 
         // ============================================
-        // 🆕 BULK CSV UPLOAD TO PRODUCTS LIBRARY
+        // 🆕 BULK DELETE FUNCTIONALITY
         // ============================================
         
         /**
-         * Handles bulk CSV upload directly to Products Library
-         * @param {Event} event - File input change event
+         * Toggle product selection for bulk delete
          */
+        function toggleProductSelection(productId) {
+            const index = selectedProductIds.indexOf(productId);
+            
+            if (index > -1) {
+                selectedProductIds.splice(index, 1);
+            } else {
+                selectedProductIds.push(productId);
+            }
+            
+            updateBulkDeleteUI();
+            filterProducts(); // Re-render to update selection state
+        }
+        
+        /**
+         * Update bulk delete button states
+         */
+        function updateBulkDeleteUI() {
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            const countSpan = document.getElementById('selectedCount');
+            
+            countSpan.textContent = selectedProductIds.length;
+            deleteBtn.disabled = selectedProductIds.length === 0;
+        }
+        
+        /**
+         * Delete selected products
+         */
+        async function deleteSelectedProducts() {
+            if (selectedProductIds.length === 0) {
+                alert('⚠️ No products selected!');
+                return;
+            }
+            
+            const count = selectedProductIds.length;
+            const confirmed = confirm(`🗑️ Delete ${count} selected product${count > 1 ? 's' : ''}?\n\nThis action cannot be undone!`);
+            
+            if (!confirmed) return;
+            
+            showBulkDeleteLoading(`Deleting ${count} product${count > 1 ? 's' : ''}...`);
+            
+            let successCount = 0;
+            let errorCount = 0;
+            
+            for (const productId of selectedProductIds) {
+                try {
+                    const response = await fetch(`tables/products/${productId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok || response.status === 204) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                        console.error(`Failed to delete product ${productId}:`, response.status);
+                    }
+                } catch (error) {
+                    errorCount++;
+                    console.error(`Error deleting product ${productId}:`, error);
+                }
+            }
+            
+            hideBulkDeleteLoading();
+            
+            const summary = `✅ Successfully deleted: ${successCount}\n❌ Failed: ${errorCount}`;
+            alert(summary);
+            
+            selectedProductIds = [];
+            updateBulkDeleteUI();
+            await loadProducts();
+        }
+        
+        /**
+         * Delete ALL products (PARANOID MODE)
+         */
+        async function deleteAllProducts() {
+            if (allProducts.length === 0) {
+                alert('⚠️ No products to delete!');
+                return;
+            }
+            
+            const totalCount = allProducts.length;
+            
+            // FIRST CONFIRMATION
+            const firstConfirm = confirm(
+                `⚠️ DELETE ALL PRODUCTS?\n\n` +
+                `This will permanently delete ALL ${totalCount} products from your database!\n\n` +
+                `⚠️ THIS ACTION CANNOT BE UNDONE!\n\n` +
+                `Are you absolutely sure you want to continue?`
+            );
+            
+            if (!firstConfirm) return;
+            
+            // SECOND CONFIRMATION - TYPE "DELETE ALL"
+            const typedConfirmation = prompt(
+                `🔐 FINAL CONFIRMATION\n\n` +
+                `To delete ALL ${totalCount} products, type exactly:\n\n` +
+                `DELETE ALL\n\n` +
+                `(case-sensitive)`
+            );
+            
+            if (typedConfirmation !== 'DELETE ALL') {
+                alert('❌ Confirmation failed. Deletion cancelled.');
+                return;
+            }
+            
+            showBulkDeleteLoading(`Deleting ALL ${totalCount} products...`);
+            
+            let successCount = 0;
+            let errorCount = 0;
+            
+            for (const product of allProducts) {
+                try {
+                    const response = await fetch(`tables/products/${product.id}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok || response.status === 204) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                        console.error(`Failed to delete product ${product.id}:`, response.status);
+                    }
+                } catch (error) {
+                    errorCount++;
+                    console.error(`Error deleting product ${product.id}:`, error);
+                }
+            }
+            
+            hideBulkDeleteLoading();
+            
+            const summary = 
+                `🗑️ DELETE ALL COMPLETE\n\n` +
+                `✅ Successfully deleted: ${successCount}\n` +
+                `❌ Failed: ${errorCount}\n` +
+                `📊 Total: ${totalCount}`;
+            
+            alert(summary);
+            
+            selectedProductIds = [];
+            updateBulkDeleteUI();
+            await loadProducts();
+        }
+        
+        /**
+         * Show loading overlay for bulk delete
+         */
+        function showBulkDeleteLoading(message) {
+            const overlay = document.createElement('div');
+            overlay.id = 'bulkDeleteLoading';
+            overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            overlay.innerHTML = `
+                <div class="bg-white rounded-lg p-6 shadow-xl flex items-center space-x-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+                    <span class="text-lg font-semibold text-gray-700">${message}</span>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        
+        /**
+         * Hide loading overlay
+         */
+        function hideBulkDeleteLoading() {
+            const overlay = document.getElementById('bulkDeleteLoading');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+        
+        // ============================================
+        // END OF BULK DELETE
+        // ============================================
+
+        // ============================================
+        // BULK CSV UPLOAD TO PRODUCTS LIBRARY
+        // ============================================
+        
         async function handleBulkCSVUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
             
-            // Validate file type
             const validTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
             const fileName = file.name.toLowerCase();
             
@@ -744,69 +952,31 @@
                 return;
             }
             
-            // Show loading
             showBulkUploadLoading();
             
-            // Parse CSV
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
                 transformHeader: (header) => header.trim(),
                 complete: async function(results) {
-                    console.log('📊 CSV Parsed:', results);
-                    
                     if (results.errors.length > 0) {
-                        console.error('❌ CSV Parsing Errors:', results.errors);
-                        alert('⚠️ CSV file has formatting errors. Please check the file.');
+                        alert('⚠️ CSV file has formatting errors.');
                         hideBulkUploadLoading();
                         return;
                     }
                     
                     const products = results.data;
-                    
                     if (products.length === 0) {
                         alert('⚠️ CSV file is empty!');
                         hideBulkUploadLoading();
                         return;
                     }
                     
-                    // Validate required columns
-                    const requiredColumns = ['Name'];
-                    const headers = Object.keys(products[0]);
-                    const missingColumns = requiredColumns.filter(col => !headers.includes(col));
-                    
-                    if (missingColumns.length > 0) {
-                        alert(`❌ Missing required column: Name\n\nPlease use the correct template!`);
-                        hideBulkUploadLoading();
-                        return;
-                    }
-                    
-                    // Fetch existing products for duplicate check
-                    let existingProducts = [];
-                    try {
-                        const response = await fetch('tables/products?limit=10000');
-                        if (response.ok) {
-                            const data = await response.json();
-                            existingProducts = data.data || [];
-                        }
-                    } catch (error) {
-                        console.warn('Could not fetch existing products:', error);
-                    }
-                    
-                    // Process products
-                    const stats = {
-                        total: products.length,
-                        new: 0,
-                        duplicates: 0,
-                        errors: 0
-                    };
+                    const stats = { total: products.length, new: 0, errors: 0 };
                     
                     for (const product of products) {
                         try {
-                            // Use mapper function
                             const productData = mapCSVToSupabase(product);
-                            
-                            // Save to database
                             const saveResponse = await fetch('tables/products', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -815,52 +985,28 @@
                             
                             if (saveResponse.ok) {
                                 stats.new++;
-                                console.log(`✅ Saved: ${product['Name']}`);
                             } else {
                                 stats.errors++;
-                                console.error(`❌ Failed to save: ${product['Name']}`);
                             }
-                            
                         } catch (error) {
                             stats.errors++;
-                            console.error(`❌ Error processing product:`, error);
                         }
                     }
                     
-                    // Hide loading and show results
                     hideBulkUploadLoading();
+                    alert(`📦 Bulk Upload Complete!\n\n✅ Added: ${stats.new}\n❌ Errors: ${stats.errors}`);
                     
-                    // Show summary
-                    const summary = `
-📦 Bulk Upload Complete!
-
-✅ New products added: ${stats.new}
-❌ Errors: ${stats.errors}
-📊 Total processed: ${stats.total}
-                    `.trim();
-                    
-                    alert(summary);
-                    
-                    // Reload products list
-                    if (stats.new > 0) {
-                        loadProducts();
-                    }
-                    
-                    // Reset file input
+                    if (stats.new > 0) loadProducts();
                     event.target.value = '';
                 },
                 error: function(error) {
-                    console.error('❌ Papa Parse Error:', error);
-                    alert('❌ Error reading CSV file. Please try again.');
+                    alert('❌ Error reading CSV file.');
                     hideBulkUploadLoading();
                     event.target.value = '';
                 }
             });
         }
         
-        /**
-         * Shows loading indicator for bulk upload
-         */
         function showBulkUploadLoading() {
             const overlay = document.createElement('div');
             overlay.id = 'bulkUploadLoading';
@@ -868,58 +1014,40 @@
             overlay.innerHTML = `
                 <div class="bg-white rounded-lg p-6 shadow-xl flex items-center space-x-4">
                     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                    <span class="text-lg font-semibold text-gray-700">Uploading products to library...</span>
+                    <span class="text-lg font-semibold text-gray-700">Uploading products...</span>
                 </div>
             `;
             document.body.appendChild(overlay);
         }
         
-        /**
-         * Hides loading indicator
-         */
         function hideBulkUploadLoading() {
             const overlay = document.getElementById('bulkUploadLoading');
-            if (overlay) {
-                overlay.remove();
-            }
+            if (overlay) overlay.remove();
         }
         
         // ============================================
-        // END OF BULK CSV UPLOAD
-        // ============================================
-        
-        // ============================================
-        // 🆕 IMAGE CAROUSEL FUNCTIONALITY
+        // IMAGE CAROUSEL FUNCTIONALITY
         // ============================================
         
         let carouselImages = [];
         let currentCarouselIndex = 0;
         
-        /**
-         * Update carousel preview when image URLs change
-         */
         function updateCarouselPreview() {
             const url1 = document.getElementById('imageUrl1').value.trim();
             const url2 = document.getElementById('imageUrl2').value.trim();
             const url3 = document.getElementById('imageUrl3').value.trim();
             
-            // Build array of valid URLs
             carouselImages = [url1, url2, url3].filter(url => url.length > 0);
             
             if (carouselImages.length === 0) {
-                // No images - show placeholder
                 showCarouselPlaceholder();
             } else {
-                // Show first image
                 currentCarouselIndex = 0;
                 showCarouselImage(currentCarouselIndex);
                 updateCarouselControls();
             }
         }
         
-        /**
-         * Show placeholder when no images
-         */
         function showCarouselPlaceholder() {
             document.getElementById('carouselImage').style.display = 'none';
             document.getElementById('carouselPlaceholder').style.display = 'block';
@@ -928,9 +1056,6 @@
             document.getElementById('carouselIndicators').style.display = 'none';
         }
         
-        /**
-         * Show specific carousel image
-         */
         function showCarouselImage(index) {
             if (carouselImages.length === 0) {
                 showCarouselPlaceholder();
@@ -940,37 +1065,24 @@
             const imgElement = document.getElementById('carouselImage');
             const placeholder = document.getElementById('carouselPlaceholder');
             
-            // Show loading state
             imgElement.classList.add('loading');
-            
-            // Update image source
             imgElement.src = carouselImages[index];
             imgElement.style.display = 'block';
             placeholder.style.display = 'none';
             
-            // Remove loading state when image loads
-            imgElement.onload = () => {
-                imgElement.classList.remove('loading');
-            };
-            
-            // Handle broken images - FIXED: No more onerror loop!
+            imgElement.onload = () => imgElement.classList.remove('loading');
             imgElement.onerror = () => {
                 imgElement.style.display = 'none';
                 placeholder.innerHTML = `
                     <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-2"></i>
                     <p class="text-sm text-red-600">Failed to load image</p>
-                    <p class="text-xs text-gray-500">Check URL: ${carouselImages[index].substring(0, 40)}...</p>
                 `;
                 placeholder.style.display = 'block';
             };
             
-            // Update indicators
             updateCarouselIndicators();
         }
         
-        /**
-         * Show/hide navigation controls
-         */
         function updateCarouselControls() {
             const prevBtn = document.getElementById('carouselPrev');
             const nextBtn = document.getElementById('carouselNext');
@@ -987,66 +1099,36 @@
             }
         }
         
-        /**
-         * Update indicator dots
-         */
         function updateCarouselIndicators() {
             const indicators = document.querySelectorAll('.carousel-indicator');
             indicators.forEach((indicator, index) => {
                 if (index < carouselImages.length) {
                     indicator.style.display = 'block';
-                    if (index === currentCarouselIndex) {
-                        indicator.classList.add('active');
-                    } else {
-                        indicator.classList.remove('active');
-                    }
+                    indicator.classList.toggle('active', index === currentCarouselIndex);
                 } else {
                     indicator.style.display = 'none';
                 }
             });
         }
         
-        /**
-         * Navigate to previous image
-         */
         function previousCarouselImage() {
             if (carouselImages.length === 0) return;
-            
-            currentCarouselIndex--;
-            if (currentCarouselIndex < 0) {
-                currentCarouselIndex = carouselImages.length - 1;
-            }
-            
+            currentCarouselIndex = (currentCarouselIndex - 1 + carouselImages.length) % carouselImages.length;
             showCarouselImage(currentCarouselIndex);
         }
         
-        /**
-         * Navigate to next image
-         */
         function nextCarouselImage() {
             if (carouselImages.length === 0) return;
-            
-            currentCarouselIndex++;
-            if (currentCarouselIndex >= carouselImages.length) {
-                currentCarouselIndex = 0;
-            }
-            
+            currentCarouselIndex = (currentCarouselIndex + 1) % carouselImages.length;
             showCarouselImage(currentCarouselIndex);
         }
         
-        /**
-         * Set carousel to specific image
-         */
         function setCarouselImage(index) {
             if (index >= 0 && index < carouselImages.length) {
                 currentCarouselIndex = index;
                 showCarouselImage(currentCarouselIndex);
             }
         }
-        
-        // ============================================
-        // END OF IMAGE CAROUSEL
-        // ============================================
         
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
